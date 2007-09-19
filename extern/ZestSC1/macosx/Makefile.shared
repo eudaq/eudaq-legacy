@@ -1,9 +1,9 @@
 
-TARGET = libZestSC1.a
+TARGET = libZestSC1.so
 ARFLAGS = r
 OBJS = Main.o Error.o Data.o Config.o
 CC = gcc
-CFLAGS = -c -O2 -I../Inc
+CFLAGS = -c -O2 -fPIC -I../Inc
 
 all: $(TARGET)
 
@@ -12,5 +12,5 @@ clean:
 	rm $(OBJS)
 
 $(TARGET): $(OBJS)
-	$(AR) $(ARFLAGS) $(TARGET) $(OBJS)
+	$(CC) $(OBJS) -shared -o $(TARGET) 
 

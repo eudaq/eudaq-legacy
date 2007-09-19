@@ -5,6 +5,8 @@
 #include "ZestSC1.h"
 #include "Local.h"
 
+#define TLUDEBUG // dhaas: for debugging
+
 /*
  * Local function declaration
  */
@@ -58,14 +60,27 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
     // Find ZestSC1 devices
     usb_init();
 
-    usb_find_busses();
-    usb_find_devices();
+    int kk= usb_find_busses();
+    int k = usb_find_devices();
+#ifdef TLUDEBUG
+    printf("Busses: %d, Devices: %d\n", kk,k);
+    //    printf("waiting for changes!\n");sleep(10);
+    //    kk= usb_find_busses();
+    //    k = usb_find_devices();
+    //    printf("Busses: %d, Devices: %d\n", kk,k);
+#endif
+
     Buses = usb_get_busses();
     for (Bus = Buses; Bus!=NULL; Bus = Bus->next)
     {
         struct usb_device *Dev;
         for (Dev = Bus->devices; Dev!=NULL; Dev = Dev->next)
         {
+#ifdef TLUDEBUG
+	  int j;
+	  j++;
+	  printf("Dev: %d\n", j);
+#endif
             if (Dev->descriptor.idVendor == VENDOR_ID &&
                 Dev->descriptor.idProduct == PRODUCT_ID)
             {
@@ -80,17 +95,27 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
                 if (DeviceHandle==NULL)
                 {
                     // Can't open device - move to next
+#ifdef TLUDEBUG
+		  printf("Can't open device\n");
+#endif
                     continue;
                 }
 
                 // Get device details
                 Status = ZestSC1_ReadEEPROMRaw(DeviceHandle, EEPROM_CARDID_ADDRESS, &Value);
+#ifdef TLUDEBUG
+		printf("Value: %d, Status: %d\n", Value, Status);
+#endif
                 if (Status!=ZESTSC1_SUCCESS)
                 {
                     usb_close(DeviceHandle);
                     continue;
                 }
                 CardID = Value;
+#ifdef TLUDEBUG
+		printf("CardId: %d\n", CardID);
+#endif
+
 
                 for (i=0; i<4; i++)
                 {
@@ -109,6 +134,9 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
                     continue;
                 }
                 FPGAType = Value;
+#ifdef TLUDEBUG
+		printf("CardId: %d, SerialNum: %d, FPGAType: %d\n", CardID, SerialNum, FPGAType);
+#endif
 
                 if (RetHandle!=NULL && CardID==ReqCardID)
                 {
@@ -585,7 +613,7 @@ static ZESTSC1_STATUS ZestSC1_ReadEEPROMRaw(usb_dev_handle *Handle,
 {
     char Buffer[3];
 
-    if (usb_control_msg(Handle, EP_CTRL_READ, VR_READ_EEPROM, Address, 0, Buffer, 3, ZESTSC1_DEFAULT_TIMEOUT)<=0 ||
+    if ( usb_control_msg(Handle, EP_CTRL_READ, VR_READ_EEPROM, Address, 0, Buffer, 3, ZESTSC1_DEFAULT_TIMEOUT)<=0 ||
         Buffer[1]!=0)
     {
         return ZESTSC1_INTERNAL_ERROR;
