@@ -1,5 +1,5 @@
 
-TARGET = libZestSC1.so
+TARGET = Lib/libZestSC1.so
 ARFLAGS = r
 OBJS = Main.o Error.o Data.o Config.o
 CC = gcc

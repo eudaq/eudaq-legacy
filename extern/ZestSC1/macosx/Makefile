@@ -1,5 +1,5 @@
 
-TARGET = libZestSC1.a
+TARGET = Lib/libZestSC1.a
 ARFLAGS = r
 OBJS = Main.o Error.o Data.o Config.o
 CC = gcc
