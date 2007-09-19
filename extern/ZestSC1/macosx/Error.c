@@ -27,7 +27,7 @@ char *ZestSC1_ErrorStrings[] =
     "The configuration part type does not match the FPGA fitted to this board"
 
 };
-ZESTSC1_ERROR_FUNC ZestSC1_ErrorHandler;
+ZESTSC1_ERROR_FUNC ZestSC1_ErrorHandler = 0;
 
 
 /******************************************************************************

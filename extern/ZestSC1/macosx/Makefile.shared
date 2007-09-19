@@ -1,9 +1,10 @@
 
-TARGET = Lib/libZestSC1.so
+TARGET = Lib/libZestSC1.dylib
 ARFLAGS = r
 OBJS = Main.o Error.o Data.o Config.o
 CC = gcc
-CFLAGS = -c -O2 -fPIC -I../Inc
+CFLAGS = -c -O2 -fPIC -I../Inc -I/sw/include
+LFLAGS = -L/sw/lib -lusb -dynamiclib
 
 all: $(TARGET)
 
@@ -12,5 +13,5 @@ clean:
 	rm $(OBJS)
 
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -shared -o $(TARGET) 
+	$(CC) $(OBJS) $(LFLAGS) -o $(TARGET) 
 
