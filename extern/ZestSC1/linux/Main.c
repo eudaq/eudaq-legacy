@@ -50,7 +50,7 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
                                          int *Interface,
                                          unsigned long ReqCardID)
 {
-    int Count;
+    int Count = 0;
     usb_dev_handle *DeviceHandle;
     struct usb_bus *Buses;
     struct usb_bus *Bus;
