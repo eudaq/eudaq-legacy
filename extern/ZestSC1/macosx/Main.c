@@ -52,7 +52,7 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
                                          int *Interface,
                                          unsigned long ReqCardID)
 {
-    int Count;
+    int Count = 0;
     usb_dev_handle *DeviceHandle;
     struct usb_bus *Buses;
     struct usb_bus *Bus;
@@ -63,11 +63,13 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
     int kk= usb_find_busses();
     int k = usb_find_devices();
 #ifdef TLUDEBUG
+    printf("Looking for VendorID=%d, ProductID=%d\n", (int)VENDOR_ID, (int)PRODUCT_ID);
     printf("Busses: %d, Devices: %d\n", kk,k);
     //    printf("waiting for changes!\n");sleep(10);
     //    kk= usb_find_busses();
     //    k = usb_find_devices();
     //    printf("Busses: %d, Devices: %d\n", kk,k);
+    int j = 0;
 #endif
 
     Buses = usb_get_busses();
@@ -77,9 +79,8 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
         for (Dev = Bus->devices; Dev!=NULL; Dev = Dev->next)
         {
 #ifdef TLUDEBUG
-	  int j;
 	  j++;
-	  printf("Dev: %d\n", j);
+	  printf("Dev: %d, VendorID=%d, ProductID=%d\n", j, Dev->descriptor.idVendor, Dev->descriptor.idProduct);
 #endif
             if (Dev->descriptor.idVendor == VENDOR_ID &&
                 Dev->descriptor.idProduct == PRODUCT_ID)
@@ -103,19 +104,12 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
 
                 // Get device details
                 Status = ZestSC1_ReadEEPROMRaw(DeviceHandle, EEPROM_CARDID_ADDRESS, &Value);
-#ifdef TLUDEBUG
-		printf("Value: %d, Status: %d\n", Value, Status);
-#endif
                 if (Status!=ZESTSC1_SUCCESS)
                 {
                     usb_close(DeviceHandle);
                     continue;
                 }
                 CardID = Value;
-#ifdef TLUDEBUG
-		printf("CardId: %d\n", CardID);
-#endif
-
 
                 for (i=0; i<4; i++)
                 {
@@ -476,7 +470,8 @@ ZESTSC1_STATUS ZestSC1CloseCard(ZESTSC1_HANDLE Handle)
     /*
      * Reset 8051
      */
-    ZestSC1_Reset8051(Struct->DeviceHandle);
+    ZestSC1_Reset8051(Handle);
+    /*ZestSC1_Reset8051(Struct->DeviceHandle);*/
 
     /*
      * Free other resources
@@ -631,7 +626,8 @@ ZESTSC1_STATUS ZestSC1_Reset8051(ZESTSC1_HANDLE Handle)
 {
     char Buffer[3];
     int RetVal;
-    ZESTSC1_HANDLE_STRUCT *Struct = (ZESTSC1_HANDLE_STRUCT *)Handle;
+    ZESTSC1_CHECK_HANDLE("ZestSC1_Reset8051", Handle);
+    /*ZESTSC1_HANDLE_STRUCT *Struct = (ZESTSC1_HANDLE_STRUCT *)Handle;*/
     
     Buffer[0] = 1;
     RetVal = usb_control_msg(Struct->DeviceHandle, EP_CTRL_WRITE, ANCHOR_LOAD_INTERNAL, 

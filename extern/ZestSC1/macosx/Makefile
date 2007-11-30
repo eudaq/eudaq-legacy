@@ -13,4 +13,5 @@ clean:
 
 $(TARGET): $(OBJS)
 	$(AR) $(ARFLAGS) $(TARGET) $(OBJS)
+	ranlib $(TARGET)
 
