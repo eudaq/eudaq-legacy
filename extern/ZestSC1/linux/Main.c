@@ -448,7 +448,8 @@ ZESTSC1_STATUS ZestSC1CloseCard(ZESTSC1_HANDLE Handle)
     /*
      * Reset 8051
      */
-    ZestSC1_Reset8051(Struct->DeviceHandle);
+    /* ZestSC1_Reset8051(Struct->DeviceHandle); FIXED EC */
+    ZestSC1_Reset8051(Handle);
 
     /*
      * Free other resources
@@ -603,7 +604,8 @@ ZESTSC1_STATUS ZestSC1_Reset8051(ZESTSC1_HANDLE Handle)
 {
     char Buffer[3];
     int RetVal;
-    ZESTSC1_HANDLE_STRUCT *Struct = (ZESTSC1_HANDLE_STRUCT *)Handle;
+    /* ZESTSC1_HANDLE_STRUCT *Struct = (ZESTSC1_HANDLE_STRUCT *)Handle; FIXED EC */
+    ZESTSC1_CHECK_HANDLE("ZestSC1_Reset8051", Handle);
     
     Buffer[0] = 1;
     RetVal = usb_control_msg(Struct->DeviceHandle, EP_CTRL_WRITE, ANCHOR_LOAD_INTERNAL, 
