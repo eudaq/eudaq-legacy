@@ -8,7 +8,7 @@
 
 /******************************************************************************
 * Perform bulk transfer                                                       *
-* Maintain 2 active asynchronous URBs to maximise data transfer rate.         *
+* Just forward to usb_bulk_read, original linux version doesn't work on Mac.  *
 ******************************************************************************/
 ZESTSC1_STATUS ZestSC1_Transfer(ZESTSC1_HANDLE Handle, int EP, void *Buffer, int Length)
 {
