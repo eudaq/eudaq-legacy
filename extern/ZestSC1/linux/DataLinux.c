@@ -5,6 +5,7 @@
 #include <linux/compiler.h>
 #include <linux/usbdevice_fs.h> // interface to kernel portion of user mode usb driver
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include "ZestSC1.h"
 #include "Local.h"
 
@@ -47,7 +48,7 @@ ZESTSC1_STATUS ZestSC1_Transfer(ZESTSC1_HANDLE Handle, int EP, void *Buffer, int
 
     i = 0;
     LastTransfer = 1;
-    for (Count=0; Count<Length || LastTransfer==1; Count+=Bytes)
+    for (Count=0; Count<(unsigned long)Length || LastTransfer==1; Count+=Bytes)
     {
         int RetVal;
 
@@ -92,7 +93,7 @@ ZESTSC1_STATUS ZestSC1_Transfer(ZESTSC1_HANDLE Handle, int EP, void *Buffer, int
 
             FD_ZERO(&fset);
             FD_SET(fd, &fset);
-            gettimeofday(&TimeNow);
+            gettimeofday(&TimeNow, 0);
 
             while ((RetVal=ioctl(fd, USBDEVFS_REAPURBNDELAY, &urbreap))==-1 &&
                    ((TimeNow.tv_sec<TimeEnd.tv_sec) ||
@@ -104,7 +105,7 @@ ZESTSC1_STATUS ZestSC1_Transfer(ZESTSC1_HANDLE Handle, int EP, void *Buffer, int
                     goto Error;
                 }
                 select(fd+1, NULL, &fset, NULL, &TimeOut);
-                gettimeofday(&TimeNow);
+                gettimeofday(&TimeNow, 0);
             }
             if (RetVal==-1)
             {

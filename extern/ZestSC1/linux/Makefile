@@ -3,7 +3,10 @@ TARGET = Lib/libZestSC1.a
 ARFLAGS = r
 OBJS = Main.o Error.o Data.o DataLinux.o Config.o
 CC = gcc
-CFLAGS = -c -O2 -I../Inc
+# Production values:
+#CFLAGS = -c -O2 -W -Wall -I../Inc
+# Debugging values:
+CFLAGS = -c -g -O -W -Wall -fno-inline -I../Inc
 
 all: $(TARGET)
 

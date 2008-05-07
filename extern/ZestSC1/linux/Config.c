@@ -104,10 +104,10 @@ static ZESTSC1_STATUS ZestSC1_LoadFile(char *FileName,
     int ImageDone = 0;
     int PartDone = 0;
     int Char[5];
-    char *PartString;
+    char *PartString = 0;
     unsigned long Count;
     unsigned long BufferLength;
-    char *Buffer;
+    char *Buffer = 0;
 #ifdef MSVC
     struct _stat FileStat;
 #else
@@ -333,7 +333,7 @@ static ZESTSC1_STATUS ZestSC1_LoadFile(char *FileName,
     NewHandle->PartType = ZESTSC1_FPGA_UNKNOWN;
     for (Count=0; Count<ZESTSC1_NUM_PART_TYPES; Count++)
     {
-        if (strstr(PartString, ZestSC1_PartTypes[Count].Name)!=NULL)
+        if (PartString && strstr(PartString, ZestSC1_PartTypes[Count].Name)!=NULL)
         {
             NewHandle->PartType = ZestSC1_PartTypes[Count].PartType;
             break;
@@ -459,7 +459,7 @@ static ZESTSC1_STATUS ZestSC1_Configure(ZESTSC1_HANDLE Handle,
     }
 
     if (usb_bulk_write(Struct->DeviceHandle, EP_CONFIG_WRITE,
-                       ImageStruct->Buffer, Length, Struct->TimeOut)!=Length)
+                       ImageStruct->Buffer, Length, Struct->TimeOut)!=(long)Length)
     {
         return ZESTSC1_INTERNAL_ERROR;
     }
@@ -512,7 +512,7 @@ ZESTSC1_STATUS ZestSC1RegisterImage(void *Buffer,
      * Determine part type
      */
     NewHandle->PartType = ZESTSC1_FPGA_UNKNOWN;
-    for (Count=0; Count<ZESTSC1_NUM_PART_TYPES; Count++)
+    for (Count=0; Count<(int)ZESTSC1_NUM_PART_TYPES; Count++)
     {
         if ((ZestSC1_PartTypes[Count].MinLength==-1 || BufferLength>=(unsigned long)ZestSC1_PartTypes[Count].MinLength) &&
             (ZestSC1_PartTypes[Count].MaxLength==-1 || BufferLength<=(unsigned long)ZestSC1_PartTypes[Count].MaxLength))

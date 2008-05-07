@@ -51,7 +51,7 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
                                          unsigned long ReqCardID)
 {
     int Count = 0;
-    usb_dev_handle *DeviceHandle;
+    //usb_dev_handle *DeviceHandle;
     struct usb_bus *Buses;
     struct usb_bus *Bus;
 
@@ -268,7 +268,7 @@ ZESTSC1_STATUS ZestSC1OpenCard(unsigned long CardID,
         free(Struct);
         return ZESTSC1_TIMEOUT;
     }
-    for (Count=0; Count<sizeof(Buffer); Count+=ZESTSC1_MAX_TRANSFER_LENGTH)
+    for (Count=0; Count<(int)sizeof(Buffer); Count+=ZESTSC1_MAX_TRANSFER_LENGTH)
     {
         int Bytes;
 
@@ -527,7 +527,7 @@ ZESTSC1_STATUS ZestSC1ReadSignals(ZESTSC1_HANDLE Handle,
 ZESTSC1_STATUS ZestSC1WaitForInterrupt(ZESTSC1_HANDLE Handle)
 {
     char Buffer[8];
-    int RetVal;
+    //int RetVal;
     ZESTSC1_STATUS Status;
 
     // FIXME
