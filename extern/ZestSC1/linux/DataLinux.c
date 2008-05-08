@@ -17,16 +17,16 @@
 ZESTSC1_STATUS ZestSC1_Transfer(ZESTSC1_HANDLE Handle, int EP, void *Buffer, int Length)
 {
     ZESTSC1_HANDLE_STRUCT *Struct = (ZESTSC1_HANDLE_STRUCT *)Handle;
-    unsigned long Count;
+    unsigned long Count = 0;
     int fd = *((int *)(Struct->DeviceHandle)); // FIXME: Watch out here!
     struct usbdevfs_urb *urb[2];
     int Queued[2] = {0,0};
     ZESTSC1_STATUS Status = ZESTSC1_SUCCESS;
-    struct usbdevfs_urb *urbreap;
+    struct usbdevfs_urb *urbreap = 0;
     int i;
     struct timeval TimeEnd;
     struct timeval TimeOut;
-    int Bytes;
+    int Bytes = 0;
     int LastTransfer;
 
     for (i=0; i<2; i++)

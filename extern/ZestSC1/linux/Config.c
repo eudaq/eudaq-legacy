@@ -403,11 +403,11 @@ ZESTSC1_STATUS ZestSC1Configure(ZESTSC1_HANDLE Handle,
 static ZESTSC1_STATUS ZestSC1_Configure(ZESTSC1_HANDLE Handle,
                                         ZESTSC1_IMAGE Image)
 {
-    char Buffer[3];
+    char Buffer[3] = {0,0,0};
     ZESTSC1_HANDLE_STRUCT *Struct = (ZESTSC1_HANDLE_STRUCT *)Handle;
     ZESTSC1_IMAGE_HANDLE_STRUCT *ImageStruct = (ZESTSC1_IMAGE_HANDLE_STRUCT *)Image;
-    int RetVal;
-    unsigned long Length;
+    int RetVal = 0;
+    unsigned long Length = 0;
     ZESTSC1_STATUS Status;
 
     /*

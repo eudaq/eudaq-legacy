@@ -164,10 +164,10 @@ ZESTSC1_STATUS ZestSC1OpenCard(unsigned long CardID,
     ZESTSC1_STATUS Status;
     ZESTSC1_HANDLE_STRUCT *Struct;
     usb_dev_handle *DeviceHandle;
-    int Interface;
-    int Count;
-    char Buffer[4096];
-    int RetVal;
+    int Interface = 0;
+    int Count = 0;
+    char Buffer[4096] = {0};
+    int RetVal = 0;
     
     /*
      * Find the device index of the card
@@ -584,7 +584,7 @@ static ZESTSC1_STATUS ZestSC1_ReadEEPROMRaw(usb_dev_handle *Handle,
                                             unsigned long Address,
                                             unsigned char *Data)
 {
-    char Buffer[3];
+    char Buffer[3] = {0,0,0};
 
     if (usb_control_msg(Handle, EP_CTRL_READ, VR_READ_EEPROM, Address, 0, Buffer, 3, ZESTSC1_DEFAULT_TIMEOUT)<=0 ||
         Buffer[1]!=0)

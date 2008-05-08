@@ -34,7 +34,7 @@ ZESTSC1_STATUS ZestSC1ReadRegister(ZESTSC1_HANDLE Handle,
                                    unsigned long Offset,
                                    unsigned char *Value)
 {
-    char Buffer[2];
+    char Buffer[2] = {0,0};
     ZESTSC1_CHECK_HANDLE("ZestSC1ReadRegister", Handle);
 
     if (usb_control_msg(Struct->DeviceHandle, EP_CTRL_READ, VR_GET_REG, 
