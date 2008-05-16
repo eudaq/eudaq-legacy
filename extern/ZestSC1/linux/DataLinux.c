@@ -20,6 +20,7 @@ ZESTSC1_STATUS ZestSC1_Transfer(ZESTSC1_HANDLE Handle, int EP, void *Buffer, int
     unsigned long Count = 0;
     int fd = *((int *)(Struct->DeviceHandle)); // FIXME: Watch out here!
     struct usbdevfs_urb *urb[2];
+    struct usbdevfs_urb urbs[2]; /*EC*/
     int Queued[2] = {0,0};
     ZESTSC1_STATUS Status = ZESTSC1_SUCCESS;
     struct usbdevfs_urb *urbreap = 0;
@@ -31,6 +32,8 @@ ZESTSC1_STATUS ZestSC1_Transfer(ZESTSC1_HANDLE Handle, int EP, void *Buffer, int
 
     for (i=0; i<2; i++)
     {
+      urb[i] = &urbs[i]; /*EC*/
+    /* *EC*
         urb[i] = malloc(sizeof(struct usbdevfs_urb));
         if (urb[i]==NULL)
         {
@@ -38,6 +41,7 @@ ZESTSC1_STATUS ZestSC1_Transfer(ZESTSC1_HANDLE Handle, int EP, void *Buffer, int
                 free(urb[i]);
             return ZESTSC1_OUT_OF_MEMORY;
         }
+    */
     }
 
     gettimeofday(&TimeEnd, NULL);
@@ -121,8 +125,10 @@ ZESTSC1_STATUS ZestSC1_Transfer(ZESTSC1_HANDLE Handle, int EP, void *Buffer, int
         }
     }
 
+    /* *EC*
     for (i=0; i<2; i++)
         free(urb[i]);
+    */
 
     return ZESTSC1_SUCCESS;
 
@@ -134,7 +140,7 @@ Error:
             // Cancel URB
             ioctl(fd, USBDEVFS_DISCARDURB, &urb[i]);
         }
-        free(urb[i]);
+        /* *EC* free(urb[i]); */
     }
 
     return Status;
