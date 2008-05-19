@@ -2,7 +2,6 @@
 #include <usb.h>
 #include <errno.h>
 #include <memory.h>
-#include <linux/compiler.h>
 #include <linux/usbdevice_fs.h> // interface to kernel portion of user mode usb driver
 #include <sys/ioctl.h>
 #include <sys/time.h>

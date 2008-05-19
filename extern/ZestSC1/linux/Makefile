@@ -6,7 +6,7 @@ CC = gcc
 # Production values:
 #CFLAGS = -c -O2 -W -Wall -I../Inc
 # Debugging values:
-CFLAGS = -c -g -O -W -Wall -fno-inline -I../Inc
+CFLAGS = -c -fPIC -g -O -W -Wall -fno-inline -I../Inc
 
 all: $(TARGET)
 
