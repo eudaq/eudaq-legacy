@@ -76,6 +76,10 @@ namespace eudaq {
       m_boards.push_back(EUDRBBoard(id, data, bytes));
     }
     virtual void Print(std::ostream &) const;
+
+    /// Return "EUDRBEvent" as type.
+    virtual std::string GetType() const {return "EUDRBEvent";}
+
     unsigned NumBoards() const { return m_boards.size(); }
     EUDRBBoard & GetBoard(unsigned i) { return m_boards[i]; }
     const EUDRBBoard & GetBoard(unsigned i) const { return m_boards[i]; }

@@ -75,6 +75,10 @@ namespace eudaq {
       m_boards.push_back(DEPFETBoard(id, data, bytes));
     }
     virtual void Print(std::ostream &) const;
+
+    /// Return "DEPFETEvent" as type.
+    virtual std::string GetType() const {return "DEPFETEvent";}
+
     unsigned NumBoards() const { return m_boards.size(); }
     DEPFETBoard & GetBoard(unsigned i) { return m_boards[i]; }
     const DEPFETBoard & GetBoard(unsigned i) const { return m_boards[i]; }

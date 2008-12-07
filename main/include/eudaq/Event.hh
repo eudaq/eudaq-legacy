@@ -46,6 +46,12 @@ namespace eudaq {
     unsigned GetRunNumber() const { return m_runnumber; }
     unsigned GetEventNumber() const { return m_eventnumber; }
     unsigned long long GetTimestamp() const { return m_timestamp; }
+
+    /** Returns the type string of the event implementation.
+     *  Used by the plugin mechanism to identfy the event type.
+     */
+    virtual std::string GetType() const = 0;
+
     virtual void Print(std::ostream & os) const = 0;
 
     Event & SetTag(const std::string & name, const std::string & val);
