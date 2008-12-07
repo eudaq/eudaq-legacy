@@ -37,7 +37,7 @@ private:
      *  accoring event type string. This automatically registers
      *  the plugin to the plugin manager.
      */
-    TimepixConverterPlugin() : DataConverterPlugin("timepixEvent"){}
+    TimepixConverterPlugin() : DataConverterPlugin("TimepixEvent"){}
 
     /** The one single instance of the TimepixConverterPlugin.
      *  It has to be created in the .cc file
