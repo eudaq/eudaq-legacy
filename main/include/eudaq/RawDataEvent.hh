@@ -1,6 +1,8 @@
 #ifndef EUDAQ_INCLUDED_RawDataEvent
 #define EUDAQ_INCLUDED_RawDataEvent
 
+#include <sstream>
+
 #include <vector>
 #include "eudaq/Event.hh"
 
@@ -15,14 +17,39 @@ namespace eudaq {
     typedef std::vector<unsigned char> data_t;
     RawDataEvent(std::string type, unsigned run, unsigned event);
     RawDataEvent(Deserializer &);
+
+    /// Add a data block as std::vector
     template <typename T>
     void AddBlock(const std::vector<T> & data) {
       m_data.push_back(make_vector(data));
     }
+
+    /// Add a data block as array with given size
     template <typename T>
     void AddBlock(const T * data, size_t bytes) {
       m_data.push_back(make_vector(data, bytes));
     }
+
+    /** Get the data block number i as vector of \c{unsigned char}, which is the byte sequence which
+      *  which has been serialised. This is the recommended way to retrieve your
+      *  data from the RawDataEvent since the other GetBlock functions might
+      *  give different results depending on the endiannes of your mashine.
+      */
+    std::vector<unsigned char> GetBlockUChar(unsigned int i) const
+    {
+	if (i >= m_data.size())
+	{
+	    std::stringstream message;
+	    message << "RawDataEvent::GetBlockUChar("<<i<<"): Error :"
+		    << "Only "<< m_data.size() << " data blocks available!";
+	    EUDAQ_THROW(message.str());
+	}
+	return m_data[i];
+    }
+
+    /// Return the number of data blocks in the RawDataEvent
+    size_t NumBlocks() const { return m_data.size(); }    
+
     virtual void Print(std::ostream &) const;
     static RawDataEvent BORE(unsigned run) {
       return RawDataEvent(run);

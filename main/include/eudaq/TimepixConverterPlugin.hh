@@ -2,6 +2,8 @@
 #define EUDAQ_INCLUDED_TimepixConverterPlugin
 
 #include "eudaq/DataConverterPlugin.hh"
+#include "EVENT/LCEvent.h"
+#include "lcio.h"
 #include <string>
 
 namespace eudaq{
@@ -23,7 +25,7 @@ public:
     /** Returns the event converted to. This is the working horse and the 
      *  main part of this plugin.
      */
-    virtual lcioevent * GetLCIOEvent( eudaq::Event const * ee ) const;
+    virtual lcio::LCEvent * GetLCIOEvent( eudaq::Event const * ee ) const;
 
     /** Returns the event converted to. This is the working horse and the 
      *  main part of this plugin.

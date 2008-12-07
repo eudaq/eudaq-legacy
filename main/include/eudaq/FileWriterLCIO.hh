@@ -4,6 +4,8 @@
 #include "eudaq/FileWriter.hh"
 #include "eudaq/debugtools.hh"
 //#include "eudaq/FileSerializer.hh"
+#include <IO/LCWriter.h>
+#include <lcio.h>
 
 namespace eudaq {
 
@@ -15,7 +17,9 @@ namespace eudaq {
     virtual unsigned long long FileBytes() const;
     virtual ~FileWriterLCIO();
   private:
-//    FileSerializer * m_ser;
+
+      lcio::LCWriter *m_lcwriter; /// The lcio writer
+      bool m_fileopened; /// We have to keep track whether a file is open ourselves
   };
 
 }

@@ -4,6 +4,9 @@
 #include "eudaq/debugtools.hh"
 #include "eudaq/Event.hh"
 
+#include <EVENT/LCEvent.h>
+#include <lcio.h>
+
 #include <string>
 
 namespace eudaq{
@@ -25,7 +28,7 @@ class DataConverterPlugin
 public:
     /** Returns the LCIO version of the event.
      */
-    virtual lcioevent * GetLCIOEvent( eudaq::Event const * ee ) const = 0;
+    virtual lcio::LCEvent * GetLCIOEvent( eudaq::Event const * ee ) const = 0;
 
     /** Returns the StandardEvent version of the event.
      */

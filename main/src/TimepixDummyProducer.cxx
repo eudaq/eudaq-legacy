@@ -68,14 +68,14 @@ void TimepixDummyProducer::OnConfigure(const eudaq::Configuration & param)
 void TimepixDummyProducer::OnStartRun(unsigned param) 
 {
     m_run = param;
-    m_ev = 0;
+    m_ev = 1; // has to be 1 because BORE is event 0 :-(
     SendEvent(eudaq::RawDataEvent::BORE(m_run));
     std::cout << "Start Run: " << param << std::endl;
 }
 
 void TimepixDummyProducer::OnStopRun()
 {
-    SendEvent(eudaq::RawDataEvent::EORE(m_run, ++m_ev));
+    SendEvent(eudaq::RawDataEvent::EORE(m_run, m_ev));
     std::cout << "Stop Run" << std::endl;
 }
  
