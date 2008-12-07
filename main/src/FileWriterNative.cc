@@ -7,7 +7,10 @@ namespace eudaq {
     static RegisterFileWriter<FileWriterNative> reg("native");
   }
 
-  FileWriterNative::FileWriterNative(const std::string &) : m_ser(0) {}
+  FileWriterNative::FileWriterNative(const std::string & whatIsThisFor) : m_ser(0) {
+      // get an LCWriter from the factory
+      std::cout << "EUDAQ_DEBUG: This is FileWriterNative::FileWriterNative("<<
+	  whatIsThisFor <<")" <<std::endl;}
 
   void FileWriterNative::StartRun(unsigned runnumber) {
     if (m_ser) delete m_ser;
