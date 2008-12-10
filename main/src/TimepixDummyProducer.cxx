@@ -140,13 +140,13 @@ void TimepixDummyProducer::OnStartRun(unsigned param)
 {
     SetRunNumber( param );
     SetEventNumber( 1 ); // has to be 1 because BORE is event 0 :-(
-    SendEvent(eudaq::RawDataEvent::BORE( param )); // send param instead of GetRunNumber
+    SendEvent(eudaq::RawDataEvent::BORE( "TimepixEvent", param )); // send param instead of GetRunNumber
     std::cout << "Start Run: " << param << std::endl;
 }
 
 void TimepixDummyProducer::OnStopRun()
 {
-    SendEvent(eudaq::RawDataEvent::EORE(GetRunNumber(), GetEventNumber()));
+    SendEvent(eudaq::RawDataEvent::EORE("TimepixEvent", GetRunNumber(), GetEventNumber()));
     std::cout << "Stop Run" << std::endl;
 }
  

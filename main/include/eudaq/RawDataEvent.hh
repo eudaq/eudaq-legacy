@@ -51,11 +51,11 @@ namespace eudaq {
     size_t NumBlocks() const { return m_data.size(); }    
 
     virtual void Print(std::ostream &) const;
-    static RawDataEvent BORE(unsigned run) {
-      return RawDataEvent(run);
+    static RawDataEvent BORE(std::string type, unsigned run) {
+	return RawDataEvent(type, run, 0, Event::FLAG_BORE);
     }
-    static RawDataEvent EORE(unsigned run, unsigned event) {
-      return RawDataEvent(run, event);
+    static RawDataEvent EORE(std::string type, unsigned run, unsigned event) {
+	return RawDataEvent(type, run, event, Event::FLAG_EORE);
     }
     virtual void Serialize(Serializer &) const;
 
@@ -63,8 +63,10 @@ namespace eudaq {
     virtual std::string GetType() const {return m_type;}
 
   private:
-    RawDataEvent(unsigned run, unsigned event = 0)
-      : Event(run, event, NOTIMESTAMP, event ? Event::FLAG_EORE : Event::FLAG_BORE)
+      // private constructor to create BORE and EORE
+      // make sure that event number is 0 for BORE
+      RawDataEvent(std::string type, unsigned run, unsigned event, Event::Flags flag)
+	  : Event(run, event, NOTIMESTAMP, flag) ,  m_type(type)
       {}
 
     template <typename T>
