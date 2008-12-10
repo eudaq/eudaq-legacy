@@ -12,13 +12,84 @@
 
 TimepixDummyProducer::TimepixDummyProducer(const std::string & name,
 					   const std::string & runcontrol)
-    : eudaq::Producer(name, runcontrol), done(false), m_run(0) , m_ev(0)
+    : eudaq::Producer(name, runcontrol), m_done(false), m_run(0) , m_ev(0)
 {
+    // First initialise the mutex attributes
+    pthread_mutexattr_init(&m_mutexattr);
+
+    // Inititalise the mutexes
+    pthread_mutex_init( &m_done_mutex, 0 );
+    pthread_mutex_init( &m_run_mutex, 0 );
+    pthread_mutex_init( &m_ev_mutex, 0 );
+}
+
+TimepixDummyProducer::~TimepixDummyProducer()
+{
+    pthread_mutex_destroy( &m_done_mutex );
+    pthread_mutex_destroy( &m_run_mutex );
+    pthread_mutex_destroy( &m_ev_mutex );
+}
+
+bool TimepixDummyProducer::GetDone()
+{
+    bool retval;
+    pthread_mutex_lock( &m_done_mutex );
+      retval = m_done;
+    pthread_mutex_unlock( &m_done_mutex );    
+    return retval;
+}
+
+unsigned int TimepixDummyProducer::GetRunNumber()
+{
+    unsigned int retval;
+    pthread_mutex_lock( &m_run_mutex );
+      retval = m_run;
+    pthread_mutex_unlock( &m_run_mutex );    
+    return retval;
+}
+
+unsigned int TimepixDummyProducer::GetEventNumber()
+{
+    unsigned int retval;
+    pthread_mutex_lock( &m_ev_mutex );
+      retval = m_ev;
+    pthread_mutex_unlock( &m_ev_mutex );    
+    return retval;
+}
+
+unsigned int TimepixDummyProducer::GetIncreaseEventNumber()
+{
+    unsigned int retval;
+    pthread_mutex_lock( &m_ev_mutex );
+      retval = m_ev++;
+    pthread_mutex_unlock( &m_ev_mutex );
+    return retval;
+}
+
+void TimepixDummyProducer::SetDone(bool done)
+{
+    pthread_mutex_lock( &m_done_mutex );
+       m_done = done;
+    pthread_mutex_unlock( &m_done_mutex );    
+}
+
+void TimepixDummyProducer::SetEventNumber(unsigned int eventnumber)
+{
+    pthread_mutex_lock( &m_ev_mutex );
+       m_ev = eventnumber;
+    pthread_mutex_unlock( &m_ev_mutex );    
+}
+
+void TimepixDummyProducer::SetRunNumber(unsigned int runnumber)
+{
+    pthread_mutex_lock( &m_run_mutex );
+       m_run = runnumber;
+    pthread_mutex_unlock( &m_run_mutex );    
 }
 
 void TimepixDummyProducer::Event(unsigned short *timepixdata)
 {
-    eudaq::RawDataEvent ev("TimepixEvent",m_run, m_ev++);
+    eudaq::RawDataEvent ev("TimepixEvent",GetRunNumber(), GetIncreaseEventNumber() );
 
     // a 128 kB data block, in this the data is stored in little endian
     unsigned char serialdatablock[131072];
@@ -67,22 +138,22 @@ void TimepixDummyProducer::OnConfigure(const eudaq::Configuration & param)
 
 void TimepixDummyProducer::OnStartRun(unsigned param) 
 {
-    m_run = param;
-    m_ev = 1; // has to be 1 because BORE is event 0 :-(
-    SendEvent(eudaq::RawDataEvent::BORE(m_run));
+    SetRunNumber( param );
+    SetEventNumber( 1 ); // has to be 1 because BORE is event 0 :-(
+    SendEvent(eudaq::RawDataEvent::BORE( param )); // send param instead of GetRunNumber
     std::cout << "Start Run: " << param << std::endl;
 }
 
 void TimepixDummyProducer::OnStopRun()
 {
-    SendEvent(eudaq::RawDataEvent::EORE(m_run, m_ev));
+    SendEvent(eudaq::RawDataEvent::EORE(GetRunNumber(), GetEventNumber()));
     std::cout << "Stop Run" << std::endl;
 }
  
 void TimepixDummyProducer::OnTerminate()
 {
     std::cout << "Terminate (press enter)" << std::endl;
-    done = true;
+    SetDone( true );
 }
  
 void TimepixDummyProducer::OnReset()
@@ -165,7 +236,7 @@ int main(int /*argc*/, const char ** argv) {
         producer.SetStatus(eudaq::Status::LVL_ERROR, line);
         break;
       case 'q':
-        producer.done = true;
+	producer.SetDone(true);
         break;
       case '?':
         help = true;
@@ -173,7 +244,7 @@ int main(int /*argc*/, const char ** argv) {
       default:
         std::cout << "Unrecognised command, type ? for help" << std::endl;
      }
-    } while (!producer.done);
+    } while (!producer.GetDone());
     std::cout << "Quitting" << std::endl;
   } catch (...) {
     return op.HandleMainException();
