@@ -1,5 +1,5 @@
+#include "AltroProducer.hh"
 #include "eudaq/Producer.hh"
-#include "eudaq/altro/AltroProducer.hh"
 #include "eudaq/Logger.hh"
 #include "eudaq/RawDataEvent.hh"
 #include "eudaq/Utils.hh"
@@ -12,11 +12,8 @@
 
 AltroProducer::AltroProducer(const std::string & name,
 					   const std::string & runcontrol)
-    : eudaq::Producer(name, runcontrol), m_done(false), m_run(0) , m_ev(0)
+    : eudaq::Producer(name, runcontrol), m_run(0) , m_ev(0)
 {
-//    // First initialise the mutex attributes
-//    pthread_mutexattr_init(&m_mutexattr);
-
     // Inititalise the mutexes
     pthread_mutex_init( &m_commandqueue_mutex, 0 );
     pthread_mutex_init( &m_runactive_mutex, 0 );
@@ -26,13 +23,12 @@ AltroProducer::AltroProducer(const std::string & name,
 
 AltroProducer::~AltroProducer()
 {
+    // Destroy all mutexes
     pthread_mutex_destroy( &m_commandqueue_mutex );
     pthread_mutex_destroy( &m_runactive_mutex );
     pthread_mutex_destroy( &m_run_mutex );
     pthread_mutex_destroy( &m_ev_mutex );
 }
-
-int 
 
 unsigned int AltroProducer::GetRunNumber()
 {
@@ -52,6 +48,15 @@ unsigned int AltroProducer::GetEventNumber()
     return retval;
 }
 
+bool AltroProducer::GetRunActive()
+{
+    bool retval;
+    pthread_mutex_lock( &m_runactive_mutex );
+      retval = m_runactive;
+    pthread_mutex_unlock( &m_runactive_mutex );    
+    return retval;
+}
+
 unsigned int AltroProducer::GetIncreaseEventNumber()
 {
     unsigned int retval;
@@ -59,13 +64,6 @@ unsigned int AltroProducer::GetIncreaseEventNumber()
       retval = m_ev++;
     pthread_mutex_unlock( &m_ev_mutex );
     return retval;
-}
-
-void AltroProducer::SetDone(bool done)
-{
-    pthread_mutex_lock( &m_done_mutex );
-       m_done = done;
-    pthread_mutex_unlock( &m_done_mutex );    
 }
 
 void AltroProducer::SetEventNumber(unsigned int eventnumber)
@@ -82,23 +80,34 @@ void AltroProducer::SetRunNumber(unsigned int runnumber)
     pthread_mutex_unlock( &m_run_mutex );    
 }
 
-void AltroProducer::Event(unsigned short *timepixdata)
+void AltroProducer::SetRunActive(bool activestatus)
+{
+    pthread_mutex_lock( &m_runactive_mutex );
+       m_runactive = activestatus;
+    pthread_mutex_unlock( &m_runactive_mutex );    
+}
+
+void AltroProducer::Event(unsigned long *altrodata, int length)
 {
     eudaq::RawDataEvent ev("TimepixEvent",GetRunNumber(), GetIncreaseEventNumber() );
 
-    // a 128 kB data block, in this the data is stored in little endian
-    unsigned char serialdatablock[131072];
+    // a data block of unsigned char, in this the data is stored in little endian
+    unsigned char *serialdatablock =  new unsigned char[length*sizeof(unsigned long)];
     
-    for (unsigned i=0; i < 65536 ; i ++)
+    for (int i=0; i < length ; i ++)
     {
-	// send little endian, i. e. the most significant first
-	serialdatablock[2*i] = (timepixdata[i] & 0xFF00) >> 8 ;
-	serialdatablock[2*i + 1] = timepixdata[i] & 0xFF ;
+	for (unsigned int j = 0; j < sizeof(unsigned long); j++)
+	{
+	    // send little endian, i. e. the most significant first
+	    serialdatablock[sizeof(unsigned long)*i+j] 
+		= (altrodata[i] & (0xFF << 8*j)) >> (sizeof(unsigned long)-j-1)*8 ;
+	}
     }
 
-    ev.AddBlock(serialdatablock , 131072);
+    ev.AddBlock(serialdatablock , length*sizeof(unsigned long));
 
     SendEvent(ev);
+    delete[] serialdatablock;
 }
 
 void AltroProducer::OnConfigure(const eudaq::Configuration & param) 
@@ -111,12 +120,12 @@ void AltroProducer::OnConfigure(const eudaq::Configuration & param)
     // give a warning? an error to the run control/ logger
     if( GetRunActive() )
     {
-	// do the warning stuff
+	// do the warning stuff, but how to do it in eudq??
     }
     else
     {
-	//call the altro configuration
-	// note that this is happening in the communication thread
+	// send start daq command 
+	CommandPush( START_DAQ );    
     }
 
     EUDAQ_INFO("Configured (" + param.Name() + ")");
@@ -132,7 +141,7 @@ void AltroProducer::OnStartRun(unsigned param)
 
     SetRunActive(true);
     // Tell the main loop to start the run
-    CommandPush( Commands::START_RUN );    
+    CommandPush( START_RUN );    
 }
 
 void AltroProducer::OnStopRun()
@@ -140,27 +149,35 @@ void AltroProducer::OnStopRun()
 //    SendEvent(eudaq::RawDataEvent::EORE("TimepixEvent", GetRunNumber(), GetEventNumber()));
 
     // Tell the main loop to stop the run
-    CommandPush( Commands::STOP_RUN );
+    CommandPush( STOP_RUN );
+
+    // Wait for DAQ to turn off the runactive flag
+    while (GetRunActive())
+	eudaq::mSleep(1);
+
+    // turn off the daq? Or do it in the destructor?
+    // CommandPush( STOP_DAQ );
+
 }
  
 void AltroProducer::OnTerminate()
 {
     // Tell the main loop to terminate
-    CommandPush( Commands::TERMINATE );
+    CommandPush( TERMINATE );
 }
  
 void AltroProducer::OnReset()
 {
     std::cout << "Reset" << std::endl;
     // Tell the main loop to terminate
-    CommandPush( Commands::RESET );
+    CommandPush( RESET );
     SetStatus(eudaq::Status::LVL_OK);
 }
 
 void AltroProducer::OnStatus()
 {
     // Tell the main loop send the status
-    CommandPush( Commands::STATUS );
+    CommandPush( STATUS );
     //std::cout << "Status - " << m_status << std::endl;
     //SetStatus(eudaq::Status::WARNING, "Only joking");
 }
@@ -180,16 +197,34 @@ AltroProducer::Commands AltroProducer::CommandPop()
     pthread_mutex_lock( &m_commandqueue_mutex );
        if (m_commandQueue.empty())
        {
-	   retval = Commands::NONE;
+	   retval = NONE;
        }
        else
        {
-	   retval = m_commandQueue.first();
+	   retval = m_commandQueue.front();
 	   m_commandQueue.pop();
        }
     pthread_mutex_unlock( &m_commandqueue_mutex );
 
-    return retval();
+    return retval;
+}
+
+AltroProducer::Commands AltroProducer::CommandFront()
+{
+    Commands retval;
+
+    pthread_mutex_lock( &m_commandqueue_mutex );
+       if (m_commandQueue.empty())
+       {
+	   retval = NONE;
+       }
+       else
+       {
+	   retval = m_commandQueue.front();
+       }
+    pthread_mutex_unlock( &m_commandqueue_mutex );
+
+    return retval;
 }
 
 void  AltroProducer::CommandPush(Commands c)

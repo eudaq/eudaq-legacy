@@ -7,19 +7,13 @@ class AltroProducer : public eudaq::Producer
     AltroProducer(const std::string & name, const std::string & runcontrol);
     virtual ~AltroProducer();
 
-    /** The main loop of the producer
+    /** Send an recorded event from the physmem.
+     *  The length is the number of unsigned long words.
+     *  This function ensures little endian raw data. Use SendEvent to skip 
+     *  the conversion, which is faster (memory does not have to be allocated and
+     *  released).
      */
-    int Exec();
-
-protected:
-
-    /** Send an recorded event from the physmem(??)
-     */
-    void Event(unsigned short *timepixdata);
-
-    /** Threadsave version to get (a copy of) the m_done variable
-     */
-    bool GetDone();
+    void Event(unsigned long *altrodata, int length);
 
     /** Threadsave version to set the m_run variable
      */
@@ -37,6 +31,14 @@ protected:
      */
     unsigned int GetEventNumber();
 
+    /** Threadsave version to get (a copy of) the m_runactive variable
+     */
+    bool GetRunActive();
+
+    /** Threadsave version to set the m_runactive variable
+     */
+    void SetRunActive(bool activestatus);
+
     /** Threadsave version to get (a copy of) the m_event variable.
      *  After creating the copy m_event is increased before releasing the 
      *  mutex. The non-increased version is returned (like in the post-increment operator).
@@ -47,6 +49,7 @@ protected:
      *  Make sure they do not perfom computing intensive tasks and return as
      *  soon as possible.
      */
+protected:
     virtual void OnConfigure(const eudaq::Configuration & param);
     virtual void OnStartRun(unsigned param);
     virtual void OnStopRun();
@@ -55,13 +58,14 @@ protected:
     virtual void OnStatus();
     virtual void OnUnrecognised(const std::string & cmd, const std::string & param);
 
-    /** The available commands that the command receiver can pass to the main loop
+    /** The available commands that the command receiver can pass to the main loop.
      *  The configure is not a valid command for the loop since it is executed in
      *  the communication thread.
      */
-    enum Commands( NONE = 0; START_RUN = 1 , STOP_RUN =2 , STATUS =3 , TERMINATE =4 , RESET=5 );
+    enum Commands{ NONE = 0, START_RUN = 1 , STOP_RUN =2 , STATUS =3 , TERMINATE =4 , RESET=5 ,
+                   START_DAQ = 6, STOP_DAQ = 8 };
 
-    /** As the command recaiver runs in a separate thread we need a queue to ensure all 
+    /** As the command receiver runs in a separate thread we need a queue to ensure all 
      *  commands are executed. Do not access directly, only use the thread safe CommandPush() and
      *  CommandPop()!
      */
@@ -81,7 +85,7 @@ protected:
     /** The thread safe way to get a reference to the first command fom the command queue
      *  without removing it from the queue
      */
-//    Commands & CommandFront();
+    Commands CommandFront();
     
     // all data members have to be protected by mutex since they can be accessed by multiple 
     // threads
@@ -91,6 +95,4 @@ protected:
     unsigned m_run;  pthread_mutex_t m_run_mutex;
     /// The event number
     unsigned m_ev;   pthread_mutex_t m_ev_mutex;
-    
-    pthread_mutexattr_t m_mutexattr;
 };
