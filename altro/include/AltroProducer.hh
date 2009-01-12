@@ -13,7 +13,7 @@ class AltroProducer : public eudaq::Producer
      *  the conversion, which is faster (memory does not have to be allocated and
      *  released).
      */
-    void Event(unsigned long *altrodata, int length);
+    void Event(volatile unsigned long *altrodata, int length);
 
     /** Threadsave version to set the m_run variable
      */
@@ -58,6 +58,7 @@ protected:
     virtual void OnStatus();
     virtual void OnUnrecognised(const std::string & cmd, const std::string & param);
 
+public:
     /** The available commands that the command receiver can pass to the main loop.
      *  The configure is not a valid command for the loop since it is executed in
      *  the communication thread.

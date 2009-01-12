@@ -87,7 +87,7 @@ void AltroProducer::SetRunActive(bool activestatus)
     pthread_mutex_unlock( &m_runactive_mutex );    
 }
 
-void AltroProducer::Event(unsigned long *altrodata, int length)
+void AltroProducer::Event(volatile unsigned long *altrodata, int length)
 {
     eudaq::RawDataEvent ev("TimepixEvent",GetRunNumber(), GetIncreaseEventNumber() );
 
