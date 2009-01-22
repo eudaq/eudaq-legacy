@@ -9,6 +9,181 @@
 #include <cctype>
 
 
+namespace gear{
+
+namespace altroproducer{
+
+Power::Power( int powercommand ) : _powercommand(powercommand) {}
+
+void Power::Execute(RUNSTATUS *rs, AltroProducer *producer)
+{
+    // if daq is running only return the status
+    if (rs->daq) _powercommand = 0;
+
+    FECPOWER *fecpower;
+
+    switch(_powercommand) {
+	case 1: 
+	    fecpower = ilcFecPowerOn(); 
+	    producer->SetStatus(eudaq::Status::LVL_OK, "Power on");
+	    break;
+	case 2: 
+	    fecpower = ilcFecPowerOff(); 
+	    producer->SetStatus(eudaq::Status::LVL_OK, "Power off");
+	    break;
+	case 0:    
+	default: fecpower =  ilcFecPowerStatus(); break;
+    }
+    if (fecpower == NULL) fecpower = ilcFecPowerStatus();
+
+    // send status information to logger
+    for (i = 0; i <= RCU_MAX_ID; i++) {
+	stringtream s;
+	s << "Power Status S" << i <<" "<< fp[i].status,
+	  << " RCU"<<i<<" "<<fp[i].power << " P"<<hex<<fp[i].poweredon;
+	EUDAQ_INFO(s.str());
+    }
+}    
+    
+StartDAQ::StartDAQ( int control, int mode, int type )
+    : _control(control), _mode(mode), _type(type) {}
+
+StartDAQ::Execute(RUNSTATUS *rs, AltroProducer *producer)
+{
+    if (rs->daq == 0) 
+    {
+	rs->control = _control;
+	rs->runmode = _mode;
+	r->type     = _type;
+	rs->daq = 1;
+	rs->action = RUNACTION_START;
+	producer->SetStatus(eudaq::Status::LVL_OK, "DAQ on");
+    }
+    else // daq already was on
+	EUDAQ_WARN("Cannot turn on DAQ, is already running");	    
+}
+
+StopDAQ::Execute(RUNSTATUS *rs, AltroProducer *producer)
+{
+    producer->SetStatus(eudaq::Status::LVL_OK, "DAQ off");
+    if (rs->daq == 1)
+    {
+	if (rs->run == 0)
+	{
+	    rs->daq = 0;
+	    rs->run = 0;
+	    rs->action = RUNACTION_STOP;
+	    producer->SetStatus(eudaq::Status::LVL_OK, "DAQ off");
+	}
+	else // run is still active
+	{
+	    EUDAQ_WARN("Cannot turn off DAQ, run is still active");
+	}
+    }
+    else
+    {
+	EUDAQ_WARN("Cannot turn off DAQ, is already off");
+    }
+}
+
+StartRun::StartRun(unsigned int monevents, int logging, int type, 
+		       int maxevents, int maxmonevents)
+    :  _monevents(monevents), _logging(logging), _type(type)
+       _maxevents(maxevents), _maxmonevents(maxmonevents) {}
+
+StartRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
+{
+    if (rs->daq == 1)
+    {
+	if (rs->run == 0)
+	{
+	    rs->monevents = _monevents;
+	    rs->logging   = _logging;
+	    rs->type      = _type;
+	    /* number of events to read this run - run stopped when reached */
+	    if (_maxevents)
+	    {
+		rs->events = _maxevents;
+		rs->evtflag = 1;
+	    }
+	    /* number of events to monitor this run - run stopped when reached */
+	    if (_maxmonevents)
+	    {
+		rs->mevents = iarg;
+		rs->evtflag = 2;
+	    }
+    
+	    rs->run = 1;
+	    rs->action = RUNACTION_SOR;
+	    producer->SetStatus(eudaq::Status::LVL_OK, "DAQ off");
+	}
+	else // run is still active
+	    EUDAQ_WARN("Cannot start run, run is already active");
+    }
+    else // daq if off
+	EUDAQ_WARN("Cannot start run, DAQ is off");
+}
+
+PauseRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
+{
+    if((rs->daq == 1) && (rs->run == 1))
+    {
+      rs->run = 2;
+      rs->action = RUNACTION_PAUSE;
+      producer->SetStatus(eudaq::Status::LVL_OK, "Run paused");
+    }
+    else
+	EUDAQ_WARN("Cannot pause run, run is not active");	
+}
+
+ContinueRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
+{
+    if((rs->daq == 1) && (rs->run == 2))
+    {
+      rs->run = 1;
+      rs->action = RUNACTION_CONT;
+      producer->SetStatus(eudaq::Status::LVL_OK, "Run continued");
+    }
+    else
+	EUDAQ_WARN("Cannot continue run, run is not paused");	
+}
+
+EndRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
+{
+    if ((rs->daq == 1) && (rs->run > 0)) 
+    {
+      rs->run = 0;
+      rs->action = RUNACTION_EOR;
+      producer->SetStatus(eudaq::Status::LVL_OK, "Run stopped");
+    }
+    else
+	EUDAQ_WARN("Cannot stop run, run is already stopped");    
+}
+
+PCA::PCA( int shiftRegister, int DAC )
+    : _shiftRegister(shiftRegister) , _DAC(DAC) {}
+
+PCA::(RUNSTATUS *rs, AltroProducer *producer)
+{
+    retstat = 0;
+    /* decode what to do - but if daq is active we can only return the current status */ 
+    if (rs->daq == 0) 
+    {
+      /* if return value not zero - load settings from arguments, else send status */
+      if (decodepca(&pca) != 0) {
+	/* get the pieces set from shiftreg */
+	decodePca16Parameters(&pca);
+	/* Load into FEC, make new pca16.cfg file, remember current setting  */
+	retstat = ilcPcaLoadSettings(&pca);
+      }
+    }
+
+    /* get current values from readout */
+    PCA16 pcasettings = ilcPcaSettingsStatus();
+    /* send it to the client - retstat contain status/error from loading */
+    sendpca(client,pcasettings,retstat);
+    
+}
 
 AltroProducer::AltroProducer(const std::string & name,
 					   const std::string & runcontrol)
@@ -120,17 +295,34 @@ void AltroProducer::OnConfigure(const eudaq::Configuration & param)
     // give a warning? an error to the run control/ logger
     if( GetRunActive() )
     {
-	// do the warning stuff, but how to do it in eudq??
-    }
-    else
-    {
-	// send start daq command 
-	CommandPush( START_DAQ );    
+	// do the warning stuff
+	SetStatus(eudaq::Status::LVL_WARN, "Cannot reconfigure, run is active!");
+	return;
     }
 
+    // power up the hardware and set PCA
+    CommandPush( POWER );
+    CommandPush( PCA );
+    
     EUDAQ_INFO("Configured (" + param.Name() + ")");
     SetStatus(eudaq::Status::LVL_OK, "Configured (" + param.Name() + ")");
 }
+void AltroProducer::OnPrepareRun(unsigned /*param*/) 
+{
+    // if the run is active throw an exception?
+    // give a warning? an error to the run control/ logger
+    if( GetRunActive() )
+    {
+	// do the warning stuff
+	SetStatus(eudaq::Status::LVL_WARN, "Cannot prepare run, run is active!");
+	return;
+    }
+    // send start daq command 
+    CommandPush( START_DAQ );    
+    
+}
+
+
 
 void AltroProducer::OnStartRun(unsigned param) 
 {
@@ -156,7 +348,7 @@ void AltroProducer::OnStopRun()
 	eudaq::mSleep(1);
 
     // turn off the daq? Or do it in the destructor?
-    // CommandPush( STOP_DAQ );
+    CommandPush( STOP_DAQ );
 
 }
  
@@ -234,78 +426,6 @@ void  AltroProducer::CommandPush(Commands c)
     pthread_mutex_unlock( &m_commandqueue_mutex );    
 }
 
+}// namespace gear
 
-//int main(int /*argc*/, const char ** argv) {
-//  eudaq::OptionParser op("EUDAQ Producer", "0.0", "A comand-line version of a timepix dummy Producer");
-//  eudaq::Option<std::string> rctrl(op, "r", "runcontrol", "tcp://localhost:44000", "address",
-//                                   "The address of the RunControl application");
-//  eudaq::Option<std::string> level(op, "l", "log-level", "NONE", "level",
-//                                   "The minimum level for displaying log messages locally");
-//  eudaq::Option<std::string> name (op, "n", "name", "Altro", "string",
-//                                   "The name of this Producer");
-//  try {
-//    op.Parse(argv);
-//    EUDAQ_LOG_LEVEL(level.Value());
-//    AltroProducer producer(name.Value(), rctrl.Value());
-//    bool help = true;
-//    do {
-//      if (help) {
-//        help = false;
-//        std::cout << "--- Commands ---\n"
-//                  << "s      Send simple TimepixEvent\n"
-//                  << "b      Send blob TimepixEvent\n"
-//                  << "l msg  Send log message\n"
-//                  << "o msg  Set status=OK\n"
-//                  << "w msg  Set status=WARN\n"
-//                  << "e msg  Set status=ERROR\n"
-//                  << "q      Quit\n"
-//                  << "?      \n"
-//                  << "----------------" << std::endl;
-//      }
-//      std::string line;
-//      std::getline(std::cin, line);
-//      //std::cout << "Line=\'" << line << "\'" << std::endl;
-//      char cmd = '\0';
-//      if (line.length() > 0) {
-//        cmd = std::tolower(line[0]);
-//        line = eudaq::trim(std::string(line, 1));
-//      } else {
-//        line = "";
-//      }
-//      switch (cmd) {
-//      case '\0': // ignore
-//        break;
-//      case 's':
-//        producer.SimpleEvent();
-//        break;
-//      case 'b':
-//        producer.BlobEvent();
-//        break;
-//      case 'l':
-//        EUDAQ_USER(line);
-//        break;
-//      case 'o':
-//        producer.SetStatus(eudaq::Status::LVL_OK, line);
-//        break;
-//      case 'w':
-//        producer.SetStatus(eudaq::Status::LVL_WARN, line);
-//        break;
-//      case 'e':
-//        producer.SetStatus(eudaq::Status::LVL_ERROR, line);
-//        break;
-//      case 'q':
-//	producer.SetDone(true);
-//        break;
-//      case '?':
-//        help = true;
-//        break;
-//      default:
-//        std::cout << "Unrecognised command, type ? for help" << std::endl;
-//     }
-//    } while (!producer.GetDone());
-//    std::cout << "Quitting" << std::endl;
-//  } catch (...) {
-//    return op.HandleMainException();
-//  }
-//  return 0;
-//}
+}// namespace altroproducer
