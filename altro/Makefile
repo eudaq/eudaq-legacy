@@ -1,8 +1,11 @@
+ILCALTRO = $(HOME)/lctpcdaq/eudaq/readout
+ILCRORC  = $(HOME)/lctpcdaq/eudaq/ilcrorc
+
 TARGETLIB := AltroProducer
 EXTERNAL_DEFS += EUDAQ_FUNC=__PRETTY_FUNCTION__ EUDAQ_PLATFORM=PF_$(PLATFORM)
-EXTERNAL_LIBS += eudaq
+EXTERNAL_LIBS += eudaq 
 EXTERNAL_LIBDIRS += ../bin
-EXTERNAL_INCS += ../main/include
+EXTERNAL_INCS += ../main/include $(ILCALTRO) $(ILCRORC)
 
 include ../Makefile.common
 

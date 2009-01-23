@@ -8,6 +8,11 @@
 #include <ostream>
 #include <cctype>
 
+// the ilcaltro stuff
+#include "pca16.h"
+#include "readout.h"
+#include "runhandler.h"
+
 
 namespace gear{
 
@@ -136,7 +141,7 @@ PauseRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
 	EUDAQ_WARN("Cannot pause run, run is not active");	
 }
 
-ContinueRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
+void ContinueRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
 {
     if((rs->daq == 1) && (rs->run == 2))
     {
@@ -160,29 +165,45 @@ EndRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
 	EUDAQ_WARN("Cannot stop run, run is already stopped");    
 }
 
-PCA::PCA( int shiftRegister, int DAC )
-    : _shiftRegister(shiftRegister) , _DAC(DAC) {}
+PCA::PCA( int shiftRegister, int dac )
+    : _shiftRegister(shiftRegister) , _dac(dac) {}
 
-PCA::(RUNSTATUS *rs, AltroProducer *producer)
+void PCA::Execute(RUNSTATUS *rs, AltroProducer *producer)
 {
-    retstat = 0;
+    int retstat = 0;
     /* decode what to do - but if daq is active we can only return the current status */ 
     if (rs->daq == 0) 
     {
-      /* if return value not zero - load settings from arguments, else send status */
-      if (decodepca(&pca) != 0) {
-	/* get the pieces set from shiftreg */
+	PCA16 pca;
+	pca->shiftreg = _shiftRegister;
+	pca->dac = _dac;
+	// calculate all other pararam of the pca from the given shiftregister and dac
 	decodePca16Parameters(&pca);
+
 	/* Load into FEC, make new pca16.cfg file, remember current setting  */
 	retstat = ilcPcaLoadSettings(&pca);
       }
     }
-
+    else
+	EUDAQ_WARN("Setting PCA requested, but daq is active");    
+	
     /* get current values from readout */
-    PCA16 pcasettings = ilcPcaSettingsStatus();
-    /* send it to the client - retstat contain status/error from loading */
-    sendpca(client,pcasettings,retstat);
+    PCA16 *pcasettings = ilcPcaSettingsStatus();
+
+    /* send the PCA status - retstat contains status/error from loading */
+
+    stringtream s;
+    s << "PCA Status ShiftRegister " << pca->shiftreg 
+      <<" DAC "<< pca->dac,retstat 
+      << " Error "<<retstat;
+	EUDAQ_INFO(s.str());
     
+    if (retstat < 0) // there was an error 
+	producer->SetStatus(eudaq::Status::LVL_ERROR, "Error setting PCA");
+    else if (retstat > 0) // there was a warning
+	producer->SetStatus(eudaq::Status::LVL_ERROR, "Warning setting PCA");
+    else // retstat == 0 , everything OK
+	producer->SetStatus(eudaq::Status::LVL_OK, "Setting PCA OK");
 }
 
 AltroProducer::AltroProducer(const std::string & name,
