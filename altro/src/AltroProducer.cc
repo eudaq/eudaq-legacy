@@ -6,6 +6,7 @@
 #include "eudaq/OptionParser.hh"
 #include <iostream>
 #include <ostream>
+#include <sstream>
 #include <cctype>
 
 // the ilcaltro stuff
@@ -20,7 +21,7 @@ namespace altroproducer{
 
 Power::Power( int powercommand ) : _powercommand(powercommand) {}
 
-void Power::Execute(RUNSTATUS *rs, AltroProducer *producer)
+void Power::Execute(AltroProducer *producer, RUNSTATUS *rs)
 {
     // if daq is running only return the status
     if (rs->daq) _powercommand = 0;
@@ -42,10 +43,10 @@ void Power::Execute(RUNSTATUS *rs, AltroProducer *producer)
     if (fecpower == NULL) fecpower = ilcFecPowerStatus();
 
     // send status information to logger
-    for (i = 0; i <= RCU_MAX_ID; i++) {
-	stringtream s;
-	s << "Power Status S" << i <<" "<< fp[i].status,
-	  << " RCU"<<i<<" "<<fp[i].power << " P"<<hex<<fp[i].poweredon;
+    for (unsigned int i = 0; i <= RCU_MAX_ID; i++) {
+	std::stringstream s;
+	s << "Power Status S" << i <<" "<< fecpower[i].status
+	  << " RCU"<<i<<" "<<fecpower[i].power << " P"<<fecpower[i].poweredon;
 	EUDAQ_INFO(s.str());
     }
 }    
@@ -53,7 +54,7 @@ void Power::Execute(RUNSTATUS *rs, AltroProducer *producer)
 StartDAQ::StartDAQ( int control, int mode, int type )
     : _control(control), _mode(mode), _type(type) {}
 
-StartDAQ::Execute(RUNSTATUS *rs, AltroProducer *producer)
+void StartDAQ::Execute(AltroProducer *producer, RUNSTATUS *rs)
 {
     if (rs->daq == 0) 
     {
@@ -68,7 +69,7 @@ StartDAQ::Execute(RUNSTATUS *rs, AltroProducer *producer)
 	EUDAQ_WARN("Cannot turn on DAQ, is already running");	    
 }
 
-StopDAQ::Execute(RUNSTATUS *rs, AltroProducer *producer)
+void StopDAQ::Execute(AltroProducer *producer, RUNSTATUS *rs)
 {
     producer->SetStatus(eudaq::Status::LVL_OK, "DAQ off");
     if (rs->daq == 1)
@@ -96,7 +97,7 @@ StartRun::StartRun(unsigned int monevents, int logging, int type,
     :  _monevents(monevents), _logging(logging), _type(type)
        _maxevents(maxevents), _maxmonevents(maxmonevents) {}
 
-StartRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
+void StartRun::Execute(AltroProducer *producer, RUNSTATUS *rs)
 {
     if (rs->daq == 1)
     {
@@ -129,7 +130,7 @@ StartRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
 	EUDAQ_WARN("Cannot start run, DAQ is off");
 }
 
-PauseRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
+void PauseRun::Execute(AltroProducer *producer, RUNSTATUS *rs)
 {
     if((rs->daq == 1) && (rs->run == 1))
     {
@@ -141,7 +142,7 @@ PauseRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
 	EUDAQ_WARN("Cannot pause run, run is not active");	
 }
 
-void ContinueRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
+void ContinueRun::Execute(AltroProducer *producer, RUNSTATUS *rs)
 {
     if((rs->daq == 1) && (rs->run == 2))
     {
@@ -153,7 +154,7 @@ void ContinueRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
 	EUDAQ_WARN("Cannot continue run, run is not paused");	
 }
 
-EndRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
+void EndRun::Execute(AltroProducer *producer, RUNSTATUS *rs)
 {
     if ((rs->daq == 1) && (rs->run > 0)) 
     {
@@ -168,7 +169,7 @@ EndRun::Execute(RUNSTATUS *rs, AltroProducer *producer)
 PCA::PCA( int shiftRegister, int dac )
     : _shiftRegister(shiftRegister) , _dac(dac) {}
 
-void PCA::Execute(RUNSTATUS *rs, AltroProducer *producer)
+void void PCA::Execute(AltroProducer *producer, RUNSTATUS *rs)
 {
     int retstat = 0;
     /* decode what to do - but if daq is active we can only return the current status */ 

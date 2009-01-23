@@ -1,9 +1,13 @@
 #include "eudaq/Producer.hh"
 #include <pthread.h>
 
+#include "runhandler.h"
+
 namespace gear{
 
 namespace altroproducer{
+
+class AltroProducer;
 
 /** Nested command class, base class for all the commands */
 class Command
@@ -35,16 +39,16 @@ public:
     /** Execute the command. This is the purely virtual function which has to be implemented 
      *  
      */
-    virtual void Execute(RUNSTATUS *rs) = 0;
-}
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs) = 0;
+};
 
 class Power : public Command
 {
-pulic:
+public:
     Power( int powercommand ); ///< command can be status (0), on (1) or off (2)
     virtual ~Power(){}
     
-    virtual void Execute(RUNSTATUS *rs);
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 
 protected:
     int _powercommand;
@@ -52,29 +56,20 @@ protected:
 
 class PCA : public Command
 {
-pulic:
-    PCA( all the parameters) 
+public:
+    PCA( int shiftRegister, int dac ) ;
     virtual ~PCA(){}
     
-    virtual void Execute(RUNSTATUS *rs, AltroProducer *producer);
-};
-
-class PCA : public Command
-{
-pulic:
-    PCA( all the parameters) 
-    virtual ~PCA(){}
-    
-    virtual void Execute(RUNSTATUS *rs, AltroProducer *producer);
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
 class StartDAQ : public Command
 {
-pulic:
-    StartDAQ( int control, int mode, int type ) 
+public:
+    StartDAQ( int control, int mode, int type );
     virtual ~StartDAQ(){}
     
-    virtual void Execute(RUNSTATUS *rs, AltroProducer *producer);
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 
 protected:
     int _control, _mode, _type ;
@@ -82,7 +77,7 @@ protected:
 
 class StopDAQ : public Command
 {
-pulic:
+public:
     StopDAQ() {}
     virtual ~StopDAQ(){}
     
@@ -91,8 +86,8 @@ pulic:
 
 class Status : public Command
 {
-pulic:
-    Status( all the parameters) 
+public:
+    Status() ;
     virtual ~Status(){}
     
     virtual void Execute(RUNSTATUS *rs,  AltroProducer *producer);
@@ -100,52 +95,52 @@ pulic:
 
 class StartRun : public Command
 {
-pulic:
+public:
     StartRun( unsigned int monevents, int logging, int type, 
-		       int maxevents = 0, int maxmonevents = 0) 
+	      int maxevents = 0, int maxmonevents = 0);
     virtual ~StartRun(){}
     
-    virtual void Execute(RUNSTATUS *rs);
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 
-    protected;
+protected:
     unsigned int monevents;
     int logging, type, maxevents, maxmonevents;
 };
 
 class ContinueRun : public Command
 {
-pulic:
-    ContinueRun( all the parameters) 
+public:
+    ContinueRun();
     virtual ~ContinueRun(){}
     
-    virtual void Execute(RUNSTATUS *rs);
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
 class PauseRun : public Command
 {
-pulic:
-    PauseRun( all the parameters) 
+public:
+    PauseRun();
     virtual ~PauseRun(){}
     
-    virtual void Execute(RUNSTATUS *rs);
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
 class EndRun : public Command
 {
-pulic:
-    EndRun( all the parameters) 
+public:
+    EndRun();
     virtual ~EndRun(){}
     
-    virtual void Execute(RUNSTATUS *rs = 0);
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
 class Terminate : public Command
 {
-pulic:
-    Terminate( all the parameters) 
+public:
+    Terminate();
     virtual ~Terminate(){}
     
-    virtual void Execute(RUNSTATUS *rs = 0);
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
 /** The producer class for the Altro RORC readout */
@@ -220,17 +215,17 @@ public:
     pthread_mutex_t m_commandqueue_mutex;
 
     /// The thread safe way to push a command to the command queue
-    void CommandPush(Command c);
+    void CommandPush(Command *c);
 
     /** The thread safe way to pop a command fom the command queue. If the queue is emty
-     *  it returns Commands::NONE.
+     *  it returns 0. Attention: You have to delete the command after executing it!
      */
-    Command CommandPop();
+    Command * CommandPop();
 
     /** The thread safe way to get a reference to the first command fom the command queue
      *  without removing it from the queue
      */
-    Command CommandFront();
+    Command * CommandFront();
     
     // all data members have to be protected by mutex since they can be accessed by multiple 
     // threads

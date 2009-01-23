@@ -1,5 +1,5 @@
-ILCALTRO = $(HOME)/lctpcdaq/eudaq/readout
-ILCRORC  = $(HOME)/lctpcdaq/eudaq/ilcrorc
+ILCALTRO = $(HOME)/altro_daq/eudaq/readout
+ILCRORC  = $(HOME)/altro_daq/eudaq/ilcrorc
 
 TARGETLIB := AltroProducer
 EXTERNAL_DEFS += EUDAQ_FUNC=__PRETTY_FUNCTION__ EUDAQ_PLATFORM=PF_$(PLATFORM)
