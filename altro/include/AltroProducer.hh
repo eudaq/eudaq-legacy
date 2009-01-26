@@ -45,8 +45,11 @@ public:
 class Power : public Command
 {
 public:
-    Power( int powercommand ); ///< command can be status (0), on (1) or off (2)
+    enum PowerCommands{STATUS=0, ON=1, OFF=2 };
+
+    Power( PowerCommands command ); ///< command can be status (0), on (1) or off (2)
     virtual ~Power(){}
+
     
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 
@@ -61,6 +64,8 @@ public:
     virtual ~PCA(){}
     
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
+protected:
+    int _shiftRegister , _dac;
 };
 
 class StartDAQ : public Command
@@ -81,7 +86,7 @@ public:
     StopDAQ() {}
     virtual ~StopDAQ(){}
     
-    virtual void Execute(RUNSTATUS *rs,  AltroProducer *producer);
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
 class Status : public Command
@@ -90,7 +95,7 @@ public:
     Status() ;
     virtual ~Status(){}
     
-    virtual void Execute(RUNSTATUS *rs,  AltroProducer *producer);
+    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
 class StartRun : public Command
@@ -103,8 +108,8 @@ public:
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 
 protected:
-    unsigned int monevents;
-    int logging, type, maxevents, maxmonevents;
+    unsigned int _monevents;
+    int _logging, _type, _maxevents, _maxmonevents;
 };
 
 class ContinueRun : public Command
@@ -209,7 +214,7 @@ public:
      *  commands are executed. Do not access directly, only use the thread safe CommandPush() and
      *  CommandPop()!
      */
-    std::queue<Command> m_commandQueue;
+    std::queue<Command *> m_commandQueue;
 
     /// A mutex to protext the CommandQueue
     pthread_mutex_t m_commandqueue_mutex;

@@ -19,7 +19,7 @@ namespace gear{
 
 namespace altroproducer{
 
-Power::Power( int powercommand ) : _powercommand(powercommand) {}
+Power::Power( PowerCommands command ) : _powercommand(command) {}
 
 void Power::Execute(AltroProducer *producer, RUNSTATUS *rs)
 {
@@ -29,15 +29,15 @@ void Power::Execute(AltroProducer *producer, RUNSTATUS *rs)
     FECPOWER *fecpower;
 
     switch(_powercommand) {
-	case 1: 
+	case ON: 
 	    fecpower = ilcFecPowerOn(); 
 	    producer->SetStatus(eudaq::Status::LVL_OK, "Power on");
 	    break;
-	case 2: 
+	case OFF: 
 	    fecpower = ilcFecPowerOff(); 
 	    producer->SetStatus(eudaq::Status::LVL_OK, "Power off");
 	    break;
-	case 0:    
+	case STATUS:    
 	default: fecpower =  ilcFecPowerStatus(); break;
     }
     if (fecpower == NULL) fecpower = ilcFecPowerStatus();
@@ -60,7 +60,7 @@ void StartDAQ::Execute(AltroProducer *producer, RUNSTATUS *rs)
     {
 	rs->control = _control;
 	rs->runmode = _mode;
-	r->type     = _type;
+	rs->type     = _type;
 	rs->daq = 1;
 	rs->action = RUNACTION_START;
 	producer->SetStatus(eudaq::Status::LVL_OK, "DAQ on");
@@ -94,7 +94,7 @@ void StopDAQ::Execute(AltroProducer *producer, RUNSTATUS *rs)
 
 StartRun::StartRun(unsigned int monevents, int logging, int type, 
 		       int maxevents, int maxmonevents)
-    :  _monevents(monevents), _logging(logging), _type(type)
+    :  _monevents(monevents), _logging(logging), _type(type),
        _maxevents(maxevents), _maxmonevents(maxmonevents) {}
 
 void StartRun::Execute(AltroProducer *producer, RUNSTATUS *rs)
@@ -115,7 +115,7 @@ void StartRun::Execute(AltroProducer *producer, RUNSTATUS *rs)
 	    /* number of events to monitor this run - run stopped when reached */
 	    if (_maxmonevents)
 	    {
-		rs->mevents = iarg;
+		rs->mevents = _maxmonevents;
 		rs->evtflag = 2;
 	    }
     
@@ -169,21 +169,20 @@ void EndRun::Execute(AltroProducer *producer, RUNSTATUS *rs)
 PCA::PCA( int shiftRegister, int dac )
     : _shiftRegister(shiftRegister) , _dac(dac) {}
 
-void void PCA::Execute(AltroProducer *producer, RUNSTATUS *rs)
+void PCA::Execute(AltroProducer *producer, RUNSTATUS *rs)
 {
     int retstat = 0;
     /* decode what to do - but if daq is active we can only return the current status */ 
     if (rs->daq == 0) 
     {
 	PCA16 pca;
-	pca->shiftreg = _shiftRegister;
-	pca->dac = _dac;
+	pca.shiftreg = _shiftRegister;
+	pca.dac = _dac;
 	// calculate all other pararam of the pca from the given shiftregister and dac
 	decodePca16Parameters(&pca);
 
 	/* Load into FEC, make new pca16.cfg file, remember current setting  */
 	retstat = ilcPcaLoadSettings(&pca);
-      }
     }
     else
 	EUDAQ_WARN("Setting PCA requested, but daq is active");    
@@ -192,12 +191,11 @@ void void PCA::Execute(AltroProducer *producer, RUNSTATUS *rs)
     PCA16 *pcasettings = ilcPcaSettingsStatus();
 
     /* send the PCA status - retstat contains status/error from loading */
-
-    stringtream s;
-    s << "PCA Status ShiftRegister " << pca->shiftreg 
-      <<" DAC "<< pca->dac,retstat 
+    std::stringstream s;
+    s << "PCA Status ShiftRegister " << pcasettings->shiftreg 
+      <<" DAC "<< pcasettings->dac
       << " Error "<<retstat;
-	EUDAQ_INFO(s.str());
+    EUDAQ_INFO(s.str());
     
     if (retstat < 0) // there was an error 
 	producer->SetStatus(eudaq::Status::LVL_ERROR, "Error setting PCA");
@@ -323,8 +321,9 @@ void AltroProducer::OnConfigure(const eudaq::Configuration & param)
     }
 
     // power up the hardware and set PCA
-    CommandPush( POWER );
-    CommandPush( PCA );
+    CommandPush( new Power(Power::ON) );
+    // FIXME: what to write to pca?
+    //CommandPush( new PCA );
     
     EUDAQ_INFO("Configured (" + param.Name() + ")");
     SetStatus(eudaq::Status::LVL_OK, "Configured (" + param.Name() + ")");
@@ -340,7 +339,8 @@ void AltroProducer::OnPrepareRun(unsigned /*param*/)
 	return;
     }
     // send start daq command 
-    CommandPush( START_DAQ );    
+    // FIXME: where to get the parameters from? param?
+    // CommandPush( new StartDAQ(control, mode, type) );    
     
 }
 
@@ -355,7 +355,8 @@ void AltroProducer::OnStartRun(unsigned param)
 
     SetRunActive(true);
     // Tell the main loop to start the run
-    CommandPush( START_RUN );    
+    // FIXME: Where to get the parameters from? Configure?
+    // CommandPush( new StartRun(monevents, logging, type, maxevents, maxmonevents ) );    
 }
 
 void AltroProducer::OnStopRun()
@@ -363,35 +364,37 @@ void AltroProducer::OnStopRun()
 //    SendEvent(eudaq::RawDataEvent::EORE("TimepixEvent", GetRunNumber(), GetEventNumber()));
 
     // Tell the main loop to stop the run
-    CommandPush( STOP_RUN );
+    CommandPush( new EndRun );
 
     // Wait for DAQ to turn off the runactive flag
     while (GetRunActive())
 	eudaq::mSleep(1);
 
     // turn off the daq? Or do it in the destructor?
-    CommandPush( STOP_DAQ );
+    CommandPush( new StopDAQ );
 
 }
  
 void AltroProducer::OnTerminate()
 {
     // Tell the main loop to terminate
-    CommandPush( TERMINATE );
+    // FIXME: what to do? 
+    // CommandPush( TERMINATE );
 }
  
 void AltroProducer::OnReset()
 {
     std::cout << "Reset" << std::endl;
     // Tell the main loop to terminate
-    CommandPush( RESET );
+    // FIXME: is this forseen?
+    // CommandPush( RESET );
     SetStatus(eudaq::Status::LVL_OK);
 }
 
 void AltroProducer::OnStatus()
 {
     // Tell the main loop send the status
-    CommandPush( STATUS );
+    CommandPush( new Status );
     //std::cout << "Status - " << m_status << std::endl;
     //SetStatus(eudaq::Status::WARNING, "Only joking");
 }
@@ -404,14 +407,14 @@ void AltroProducer::OnUnrecognised(const std::string & cmd, const std::string & 
     SetStatus(eudaq::Status::LVL_WARN, "Received unkown command " + cmd);
 }
 
-AltroProducer::Commands AltroProducer::CommandPop()
+Command * AltroProducer::CommandPop()
 {
-    Commands retval;
+    Command * retval;
 
     pthread_mutex_lock( &m_commandqueue_mutex );
        if (m_commandQueue.empty())
        {
-	   retval = NONE;
+	   retval = 0;
        }
        else
        {
@@ -423,14 +426,14 @@ AltroProducer::Commands AltroProducer::CommandPop()
     return retval;
 }
 
-AltroProducer::Commands AltroProducer::CommandFront()
+Command * AltroProducer::CommandFront()
 {
-    Commands retval;
+    Command * retval;
 
     pthread_mutex_lock( &m_commandqueue_mutex );
        if (m_commandQueue.empty())
        {
-	   retval = NONE;
+	   retval = 0;
        }
        else
        {
@@ -441,7 +444,7 @@ AltroProducer::Commands AltroProducer::CommandFront()
     return retval;
 }
 
-void  AltroProducer::CommandPush(Commands c)
+void  AltroProducer::CommandPush(Command * c)
 {
     pthread_mutex_lock( &m_commandqueue_mutex );
        m_commandQueue.push(c);
