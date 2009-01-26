@@ -159,12 +159,12 @@ public:
 class Terminate : public Command
 {
 public:
-    Terminate();
+    Terminate(){}
     virtual ~Terminate(){}
     
     virtual Command::CommandTypes GetCommandType() { return TERMINATE; }
 
-    virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
+    virtual void Execute(AltroProducer *, RUNSTATUS *){}
 };
 
 /** The producer class for the Altro RORC readout */

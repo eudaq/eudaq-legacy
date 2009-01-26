@@ -19,7 +19,7 @@ namespace eudaq{
 
 namespace altroproducer{
 
-void Status::Execute(AltroProducer *producer, RUNSTATUS *rs)
+void Status::Execute(AltroProducer *, RUNSTATUS *rs)
 {
     ilcGetLocalStatus(rs);
 
@@ -339,8 +339,8 @@ void AltroProducer::OnConfigure(const eudaq::Configuration & param)
 
     // power up the hardware and set PCA
     CommandPush( new Power(Power::ON) );
-    // FIXME: what to write to pca?
-    //CommandPush( new PCA );
+    // FIXME: where to we get the values for pca from ?
+    //CommandPush( new PCA( shiftRegister, dac )  );
     
     EUDAQ_INFO("Configured (" + param.Name() + ")");
     SetStatus(eudaq::Status::LVL_OK, "Configured (" + param.Name() + ")");
@@ -356,7 +356,7 @@ void AltroProducer::OnPrepareRun(unsigned /*param*/)
 	return;
     }
     // send start daq command 
-    // FIXME: where to get the parameters from? param?
+    // FIXME: where to get the parameters from? Config file of the run control?
     // CommandPush( new StartDAQ(control, mode, type) );    
     
 }
@@ -372,7 +372,8 @@ void AltroProducer::OnStartRun(unsigned param)
 
     SetRunActive(true);
     // Tell the main loop to start the run
-    // FIXME: Where to get the parameters from? Configure?
+
+    // FIXME: Where to get the parameters from? Config file of the run control?
     // CommandPush( new StartRun(monevents, logging, type, maxevents, maxmonevents ) );    
 }
 
@@ -395,15 +396,15 @@ void AltroProducer::OnStopRun()
 void AltroProducer::OnTerminate()
 {
     // Tell the main loop to terminate
-    // FIXME: what to do? 
-    // CommandPush( TERMINATE );
+    CommandPush( new Terminate );
 }
  
 void AltroProducer::OnReset()
 {
     std::cout << "Reset" << std::endl;
     // Tell the main loop to terminate
-    // FIXME: is this forseen?
+
+    // FIXME: Reset is not implemented in readout. Just ignore the request?
     // CommandPush( RESET );
     SetStatus(eudaq::Status::LVL_OK);
 }
