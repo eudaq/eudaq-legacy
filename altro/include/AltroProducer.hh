@@ -3,7 +3,7 @@
 
 #include "runhandler.h"
 
-namespace gear{
+namespace eudaq{
 
 namespace altroproducer{
 
@@ -31,10 +31,10 @@ public:
 //     *  \li \c SIGUSR2: TERMINATE
 //     *
 //     */
-//    enum CommandTypes{ NONE = 0, START_RUN = 1 , STOP_RUN, STATUS, TERMINATE, RESET,
-//		       START_DAQ, STOP_DAQ, POWER, PCA, PAUSE_RUN, CONTINUE_RUN  };
-// 
-//   CommandTypes commandType;
+    enum CommandTypes{ NONE = 0, START_RUN = 1 , END_RUN, STATUS, TERMINATE, RESET,
+		       START_DAQ, STOP_DAQ, POWER, PCA, PAUSE_RUN, CONTINUE_RUN  };
+    
+    virtual CommandTypes GetCommandType() = 0;
 
     /** Execute the command. This is the purely virtual function which has to be implemented 
      *  
@@ -50,7 +50,8 @@ public:
     Power( PowerCommands command ); ///< command can be status (0), on (1) or off (2)
     virtual ~Power(){}
 
-    
+    virtual Command::CommandTypes GetCommandType() { return POWER; }
+
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 
 protected:
@@ -63,6 +64,8 @@ public:
     PCA( int shiftRegister, int dac ) ;
     virtual ~PCA(){}
     
+    virtual Command::CommandTypes GetCommandType() { return Command::PCA; }
+
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 protected:
     int _shiftRegister , _dac;
@@ -74,6 +77,8 @@ public:
     StartDAQ( int control, int mode, int type );
     virtual ~StartDAQ(){}
     
+    virtual Command::CommandTypes GetCommandType() { return START_DAQ; }
+
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 
 protected:
@@ -86,14 +91,18 @@ public:
     StopDAQ() {}
     virtual ~StopDAQ(){}
     
+    virtual Command::CommandTypes GetCommandType() { return STOP_DAQ; }
+
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
 class Status : public Command
 {
 public:
-    Status() ;
+    Status(){}
     virtual ~Status(){}
+    
+    virtual Command::CommandTypes GetCommandType() { return STATUS; }
     
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
@@ -105,6 +114,8 @@ public:
 	      int maxevents = 0, int maxmonevents = 0);
     virtual ~StartRun(){}
     
+    virtual Command::CommandTypes GetCommandType() { return START_RUN; }
+
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 
 protected:
@@ -118,6 +129,8 @@ public:
     ContinueRun();
     virtual ~ContinueRun(){}
     
+    virtual Command::CommandTypes GetCommandType() { return CONTINUE_RUN; }
+
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
@@ -127,15 +140,19 @@ public:
     PauseRun();
     virtual ~PauseRun(){}
     
+    virtual Command::CommandTypes GetCommandType() { return PAUSE_RUN; }
+
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
 class EndRun : public Command
 {
 public:
-    EndRun();
+    EndRun(){}
     virtual ~EndRun(){}
     
+    virtual Command::CommandTypes GetCommandType() { return END_RUN; }
+
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 
@@ -145,6 +162,8 @@ public:
     Terminate();
     virtual ~Terminate(){}
     
+    virtual Command::CommandTypes GetCommandType() { return TERMINATE; }
+
     virtual void Execute(AltroProducer *producer, RUNSTATUS *rs);
 };
 

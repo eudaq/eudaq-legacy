@@ -15,9 +15,26 @@
 #include "runhandler.h"
 
 
-namespace gear{
+namespace eudaq{
 
 namespace altroproducer{
+
+void Status::Execute(AltroProducer *producer, RUNSTATUS *rs)
+{
+    ilcGetLocalStatus(rs);
+
+    std::stringstream  s;
+    s << "STATUS DAQ "<< rs->daq
+      <<" RUN " <<  rs->run
+      <<" LOG "<< rs->logging
+      <<" MON "<< rs->monevents
+      <<" EVT "<< rs->nbevents 
+      <<" TYPE "<< rs->type
+      <<" MODE "<< rs->runmode
+      <<" RUNNB "<< rs->runnb
+      <<" ERR "<< rs->feerrors;
+    EUDAQ_INFO(s.str());   
+}
 
 Power::Power( PowerCommands command ) : _powercommand(command) {}
 
