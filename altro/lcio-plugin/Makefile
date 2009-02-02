@@ -1,13 +1,10 @@
-ILCALTRO = $(HOME)/altro_daq/eudaq/readout
-ILCRORC  = $(HOME)/altro_daq/eudaq/ilcrorc
-
-TARGETLIB := AltroProducer
+TARGETLIB := AltroConverterPlugin
 EXTERNAL_DEFS += EUDAQ_FUNC=__PRETTY_FUNCTION__ EUDAQ_PLATFORM=PF_$(PLATFORM)
-EXTERNAL_LIBS += eudaq 
-EXTERNAL_LIBDIRS += ../bin
-EXTERNAL_INCS += ../main/include $(ILCALTRO) $(ILCRORC)
+EXTERNAL_LIBS += eudaq lcio
+EXTERNAL_LIBDIRS += ../../bin ${LCIO}/lib
+EXTERNAL_INCS += ../../main/include ${LCIO}/include
 
-include ../Makefile.common
+include ../../Makefile.common
 
 ifeq ($(PLATFORM),WIN32)
 EXTERNAL_LIBS += Ws2_32

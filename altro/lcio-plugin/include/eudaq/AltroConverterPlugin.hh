@@ -8,6 +8,47 @@
 
 namespace eudaq{
 
+/** A helper class to read the byte sequence of big endian 32 bit data as 10 bit, 32 bit or
+ *  40 bit data.
+ *  This class only contains a reference to the data, not a copy, to avoid copying of the data.
+ */
+
+class UCharBigEndianVec
+{
+private:
+
+    /** Helper function to return the correct index for accessing the big endian 32 bit data.
+     *  In this order the index sequence is 3 2 1 0 7 6 5 4 11 10 9 8 etc.
+     */
+    inline unsigned int endian(unsigned int i) const
+    {
+	// unsigned int j = i % 4; // we'll need that remainder twice
+	// return (i - j) + (3 - j); // i - j: this is the correct 4-byte block, 3 - j: revert the endianness inside the 4-byte block
+	
+	return i - 2 * (i % 4) + 3;
+    }
+
+    std::vector<unsigned char> const & bytedata;
+
+public:
+    UCharBigEndianVec(std::vector<unsigned char> const & datavec);
+
+    // size in 32 bit words
+    size_t Size(){ return bytedata.size() / 4 ; }
+    
+
+    unsigned short Get10bitWord(unsigned int tenBitIndex, unsigned int offset32bit) const; 
+
+    /** Helper function to get a 32 bit word with correct endinanness out of the byte vector.
+     */
+    unsigned int Get32bitWord(unsigned int index32bit) const;
+
+    /** Helper function to get a 40 bit word with correct endinanness out of the byte vector.
+     *  The offset32bit is the position of the first 40 bit within the 32bit stream
+     */
+    unsigned long long int Get40bitWord(unsigned int index40bit, unsigned int offset32bit) const;
+};
+
 /** Implementation of the DataConverterPlugin to convert an eudaq::Event
  *  to an lcio::event.
  *
@@ -33,7 +74,7 @@ public:
     virtual StandardEvent * GetStandardEvent( eudaq::Event const * ee ) const;
 
     /** Returns the on instance for access to the plugin. Or do this with the handler? */
-    virtual const AltroConverterPlugin * GetInstance() const;
+    // virtual const AltroConverterPlugin * GetInstance() const;
 
 protected:
     /** The private constructor. The only time it is called is when the
@@ -44,24 +85,6 @@ protected:
      */
     AltroConverterPlugin() : DataConverterPlugin("AltroEvent"){}
 
-    /** Helper function to return the correct index for accessing the big endian 32 bit data.
-     *  In this order the index sequence is 3 2 1 0 7 6 5 4 11 10 9 8 etc.
-     */
-    inline unsigned int endian(unsigned int i)
-    {
-	// unsigned int j = i % 4; // we'll need that remainder twice
-	// return (i - j) + (3 - j); // i - j: this is the correct 4-byte block, 3 - j: revert the endianness inside the 4-byte block
-	
-	return i - 2 * (i % 4) + 3;
-    }
-
-    unsigned short get10bitWord(unsigned int tenBitIndex, unsigned int offset32bit); 
-
-    /** Helper function to get a 32 bit word with correct eninanness out of the byte vector.
-     */
-    unsigned int get32bitWord(unsigned int index32bit);
-    
-    std::vector<unsigned char> bytedata;
 
 private:
     /** The one single instance of the AltroConverterPlugin.
