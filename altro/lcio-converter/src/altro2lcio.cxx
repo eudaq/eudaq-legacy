@@ -1,5 +1,7 @@
-//#include "eudaq/PluginManager.hh"
-//#include "eudaq/RawDataEvent"
+#include "eudaq/PluginManager.hh"
+#include "eudaq/RawDataEvent.hh"
+#include "EVENT/LCEvent.h"
+#include "lcio.h"
 #include <iostream>
 #include <cstdio>
 #include <stdint.h>
@@ -18,7 +20,7 @@ uint32_t read32bitword(unsigned char const * const buffer)
 	    static_cast<uint32_t> (buffer[3]) << 24;
 }
 
-int main(unsigned int argc, char * argv[])
+int main(int argc, char * argv[])
 {
     if ( (argc != 2) && (argc != 3) )
     {
@@ -104,8 +106,17 @@ int main(unsigned int argc, char * argv[])
 	    case 0x22222222: // rawdata event
 		// genereate eudaq event, convert to lcio and add lcevent to file
 //		std::cout << "DEBUG: Reading event with "<<(blocklength+1) *4 << std::endl;
-		std::cout << "Reading event number "<< read32bitword(inputbuffer + 12) 
-			  << std::endl;
+	        {
+		    unsigned int eventnumber =  read32bitword(inputbuffer + 12);
+		    std::cout << "Reading event number "<< eventnumber << std::endl;
+		    eudaq::RawDataEvent eudaqevent( "AltroEvent", runnumber, eventnumber);
+		    eudaqevent.AddBlock(inputbuffer, (blocklength+1) *4);
+		    
+		    const eudaq::DataConverterPlugin * plugin = 
+			eudaq::PluginManager::GetInstance().GetPlugin( eudaqevent.GetType() );
+		    lcio::LCEvent * lcevent= plugin->GetLCIOEvent (&eudaqevent);
+		}
+		
 		break;
 	    case 0x33333333: // end of run format
 		// quit the loop?
