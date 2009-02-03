@@ -9,6 +9,7 @@
 #include <EVENT/LCIO.h>
 
 #include <iostream>
+#include <cmath>
 
 namespace eudaq
 {
@@ -27,11 +28,11 @@ unsigned long long int UCharBigEndianVec::Get40bitWord(unsigned int index40bit,
 
     unsigned int index8bit = offset32bit*4 + index40bit*5;
     unsigned long long int retval = 
-	static_cast<unsigned long long int>( bytedata[ endian(index8bit)     ] )       |
-	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 1) ] ) <<  8 |
+	static_cast<unsigned long long int>( bytedata[ endian(index8bit)     ] ) << 32 |
+	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 1) ] ) << 24 |
 	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 2) ] ) << 16 |
-	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 3) ] ) << 24 |
-	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 4) ] ) << 32 ;
+	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 3) ] ) <<  8 |
+	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 4) ] )  ;
     return retval;
 }
 
@@ -40,10 +41,10 @@ unsigned int UCharBigEndianVec::Get32bitWord(unsigned int index32bit) const
     unsigned int index8bit = index32bit*4;
 
     unsigned int retval = 
-	static_cast<unsigned int>( bytedata[ endian(index8bit)     ] )       |
-	static_cast<unsigned int>( bytedata[ endian(index8bit + 1) ] ) <<  8 |
-	static_cast<unsigned int>( bytedata[ endian(index8bit + 2) ] ) << 16 |
-	static_cast<unsigned int>( bytedata[ endian(index8bit + 3) ] ) << 24 ;
+	static_cast<unsigned int>( bytedata[ endian(index8bit)     ] ) << 24 |
+	static_cast<unsigned int>( bytedata[ endian(index8bit + 1) ] ) << 16 |
+	static_cast<unsigned int>( bytedata[ endian(index8bit + 2) ] ) <<  8 |
+	static_cast<unsigned int>( bytedata[ endian(index8bit + 3) ] ) ;
 
     return retval;
 }
@@ -92,15 +93,16 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 
 	// test integrity
 	unsigned int eventlength = altrodatavec.Get32bitWord(0);
-	if (eventlength != altrodatavec.Size())
+	if ( eventlength+1 != altrodatavec.Size())
 	{
+	    std::cout << "event length = "<<( eventlength+1)*4<< " data size " << altrodatavec.Size() << std::endl; 
 	    EUDAQ_WARN("AltroConverterPlugin::GetLCIOEvent: Wrong event length given in raw data");
 	}
 
 	unsigned int headerlength = altrodatavec.Get32bitWord(1);
 	if ( (headerlength == 4) )
 	{
-	    EUDAQ_WARN("AltroConverterPlugin::GetLCIOEvent: Wrong event length given in raw data");
+	    EUDAQ_WARN("AltroConverterPlugin::GetLCIOEvent: Suspicious header length given in raw data");
 	    headerlength = 5; // this should be the correct size
 	}
 
@@ -128,16 +130,19 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 	{
 	    // the first word in the rcu block is its length
 	    unsigned int rcublocklength = altrodatavec.Get32bitWord(rcublockstart);
+	    std::cout << "DEBUG: rcublocklength = "<<rcublocklength<< " at rcublockstart" 
+		      << rcublockstart << std::endl;
 
 	    // the rcu block ends with the trailer, 
 	    // the last trailer word contains the trailer length (bits [6:0] )
-	    unsigned int rcutrailerlength =  altrodatavec.Get32bitWord(rcublockstart + rcublocklength -1 ) 
+	    unsigned int rcutrailerlength =  altrodatavec.Get32bitWord(rcublockstart + rcublocklength ) 
                                              & 0x7F ;
+	    std::cout << "DEBUG: rcutrailerlength "<<rcutrailerlength << std::endl;
 
 	    // the number of 40 bit words is the first entry in the rcu trailer
 	    unsigned int n40bitwords = altrodatavec.Get32bitWord(rcublockstart 
 						    + rcublocklength 
-						    - rcutrailerlength);
+						    - rcutrailerlength + 1);
 
 	    // read the sequence of 40 bit altro words backward. It is made up of blocks
 	    // ending with a trailer word
@@ -146,6 +151,7 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
             // the position of the next trailer word to read
             // use a signed int, it will become negative if there are no more words to read
 	    int altrotrailerposition = n40bitwords-1;
+	    std::cout << "DEBUG: altrotrailerposition" << altrotrailerposition << std::endl;
 
 	    while (altrotrailerposition > 0)
 	    {
@@ -175,6 +181,11 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 
 		    altrolciodata->setCellID0(channelnumber);
 		    altrolciodata->setCellID1(block);
+		    altrolciodata->setTime(timestamp);
+		    
+		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
+			      <<" ndatasamples at time index " << timestamp 
+			      <<" on channel " << channelnumber << std::endl;
 
 		    lcio::ShortVec datasamples( ndatasamples );
 		    for ( unsigned int sample = index10bit - length + 1 , i = 0 ;
@@ -185,10 +196,16 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 		    }
 		    altrolciodata->setADCValues(datasamples);
 		    altrocollection->addElement(altrolciodata);
+
+		    index10bit -= length;
 		} // while (index10bit > 0)
 
+		unsigned int n40bitwords_in_altroblock = static_cast<unsigned int>(
+		                                 std::ceil(static_cast<double>(n10bitwords)/4.)+1);
+		altrotrailerposition -= n40bitwords_in_altroblock;
 	    } // while (altrotrailerposition > 0)
 	    
+	    rcublockstart += rcublocklength +1;
 	} // while ( rcublockstart < (bytedata.size() / 4 ))
 
     }// for (block)
