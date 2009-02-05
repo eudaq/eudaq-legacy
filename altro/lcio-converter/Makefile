@@ -1,5 +1,5 @@
 EXTERNAL_DEFS += EUDAQ_FUNC=__PRETTY_FUNCTION__ EUDAQ_PLATFORM=PF_$(PLATFORM)
-EXTERNAL_LIBS += eudaq lcio
+EXTERNAL_LIBS += eudaq lcio AltroConverterPlugin
 EXTERNAL_LIBDIRS += ../../bin ${LCIO}/lib
 EXTERNAL_INCS += ../../main/include ${LCIO}/include
 

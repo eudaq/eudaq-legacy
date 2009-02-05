@@ -22,17 +22,24 @@ UCharBigEndianVec::UCharBigEndianVec(std::vector<unsigned char> const & datavec)
 unsigned long long int UCharBigEndianVec::Get40bitWord(unsigned int index40bit,
 							  unsigned int offset32bit) const
 {
+//    std::cout << "DEBUG: offset32bit "<<offset32bit<<std::endl;
     // check position in data stream
     if ( Get32bitWord(offset32bit - 8) != 0xFFFFFFFF )
 	    EUDAQ_WARN("AltroConverterPlugin::Get40bitWord: Suspicious position in data stream, altro sequence does not start 8 words after rcu header");	
 
     unsigned int index8bit = offset32bit*4 + index40bit*5;
+    
+    // The 32  bit words have big endian order. The 40 bit word is always contained in 2 consecutive 32 bit words,
+    // the most significant bytes being in the second word (big endian 32 bit sequence). This means the 5 bytes are in a consecutive
+    // sequence in the big endian data stream, but in reverse order. We just have to pick them out and place them in the long long word
+//    std::cout << "DEBUG: read 40 bits from bytes "<< endian(index8bit) <<" "<<  endian(index8bit + 1) <<" "
+//	      << endian(index8bit + 2) << " "<< endian(index8bit + 3) << " "<<endian(index8bit + 4) << std::endl;
     unsigned long long int retval = 
-	static_cast<unsigned long long int>( bytedata[ endian(index8bit)     ] ) << 32 |
-	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 1) ] ) << 24 |
-	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 2) ] ) << 16 |
-	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 3) ] ) <<  8 |
-	static_cast<unsigned long long int>( bytedata[ endian(index8bit + 4) ] )  ;
+	static_cast<unsigned long long int>( bytedata[ index8bit ] )  |
+	static_cast<unsigned long long int>( bytedata[ index8bit + 1 ] ) << 8  |
+	static_cast<unsigned long long int>( bytedata[ index8bit + 2 ] ) << 16 |
+	static_cast<unsigned long long int>( bytedata[ index8bit + 3 ] ) << 24 |
+	static_cast<unsigned long long int>( bytedata[ index8bit + 4 ] ) << 32 ;
     return retval;
 }
 
@@ -133,16 +140,23 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 	    std::cout << "DEBUG: rcublocklength = "<<rcublocklength<< " at rcublockstart" 
 		      << rcublockstart << std::endl;
 
+	    // check that we have the correct position of the rcu block, third word has to be 0xFFFFFFFF
+	    if (  altrodatavec.Get32bitWord(rcublockstart +2 ) != 0xFFFFFFFF )
+		std::cerr << "invalid rcu identifier 0x"<<std::hex << altrodatavec.Get32bitWord(rcublockstart +2 )
+			  <<std::dec << std::endl;
+
 	    // the rcu block ends with the trailer, 
 	    // the last trailer word contains the trailer length (bits [6:0] )
 	    unsigned int rcutrailerlength =  altrodatavec.Get32bitWord(rcublockstart + rcublocklength ) 
                                              & 0x7F ;
+	    // 
 	    std::cout << "DEBUG: rcutrailerlength "<<rcutrailerlength << std::endl;
 
 	    // the number of 40 bit words is the first entry in the rcu trailer
 	    unsigned int n40bitwords = altrodatavec.Get32bitWord(rcublockstart 
 						    + rcublocklength 
 						    - rcutrailerlength + 1);
+
 
 	    // read the sequence of 40 bit altro words backward. It is made up of blocks
 	    // ending with a trailer word
@@ -153,10 +167,42 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 	    int altrotrailerposition = n40bitwords-1;
 	    std::cout << "DEBUG: altrotrailerposition" << altrotrailerposition << std::endl;
 
+	    // dump the 10 bit hex data
+	    for (unsigned int i=0; i < n40bitwords ; i++)
+	    {
+		std::cout << std::hex << std::setfill('0')
+			  << std::setw(3)<< altrodatavec.Get10bitWord(i+3, rcublockstart + 10 )<<" "
+			  << std::setw(3)<< altrodatavec.Get10bitWord(i+2, rcublockstart + 10 )<<" "
+			  << std::setw(3)<< altrodatavec.Get10bitWord(i+1, rcublockstart + 10 )<<" "
+			  << std::setw(3)<< altrodatavec.Get10bitWord(i  , rcublockstart + 10 )
+			  <<std::dec<<std:: endl;
+	    }
+	    // dump the 40 bit hex data
+	    std::cout <<"blip"<<std::endl;
+	    for (unsigned int i=0; i <= n40bitwords ; i++)
+	    {
+		std::cout << std::hex << std::setfill('0')
+			  << std::setw(10)<< altrodatavec.Get40bitWord(i, rcublockstart + 10 )
+			  <<std::dec<<std:: endl;
+	    }
+
+//	    std::cout <<"blub"<<std::endl;
+//	    // dump the 32 bit hex data
+//	    for (unsigned int i= rcublockstart ; i <= rcublockstart + rcublocklength ; i++)
+//	    {
+//		std::cout << std::hex << std::setfill('0')
+//			  << std::setw(8)<< altrodatavec.Get32bitWord(i)
+//			  <<std::dec<<std:: endl;
+//	    }
+
 	    while (altrotrailerposition > 0)
 	    {
 		unsigned long long int altrotrailer 
 		    = altrodatavec.Get40bitWord(altrotrailerposition, rcublockstart +10 );
+
+		// test if we realy have the altro trailer word
+		if ( (altrotrailer & 0xFFFC00F000) != 0xAAA800A000 )
+		    std::cerr << "error wrong altro trailer word 0x"<< std::hex << altrotrailer << std::dec << std::endl;
 
 		unsigned int n10bitwords = (altrotrailer & 0x3FF0000) >> 16;
 		unsigned int channelnumber = altrotrailer & 0xFFF;
