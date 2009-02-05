@@ -17,34 +17,32 @@ class UCharBigEndianVec
 {
 private:
 
-    /** Helper function to return the correct index for accessing the big endian 32 bit data.
-     *  In this order the index sequence is 3 2 1 0 7 6 5 4 11 10 9 8 etc.
+    /** A reference to the data vector.
+     *  Can only be accessed through the GetNNbitWord() functions.
      */
-    inline unsigned int endian(unsigned int i) const
-    {
-	// unsigned int j = i % 4; // we'll need that remainder twice
-	// return (i - j) + (3 - j); // i - j: this is the correct 4-byte block, 3 - j: revert the endianness inside the 4-byte block
-	
-	return i - 2 * (i % 4) + 3;
-    }
-
     std::vector<unsigned char> const & bytedata;
 
 public:
+    /** The constructor. 
+     *  It reqires a reference of the actual data vector.
+     */
     UCharBigEndianVec(std::vector<unsigned char> const & datavec);
 
-    // size in 32 bit words
+    /// size in 32 bit words
     size_t Size(){ return bytedata.size() / 4 ; }
     
 
-    unsigned short Get10bitWord(unsigned int tenBitIndex, unsigned int offset32bit) const; 
+    /** Helper function to get a 40 bit word with correct endinanness out of the byte vector.
+     *  The offset32bit is the position of the first 10 bit word within the 32bit stream
+     */
+    unsigned short Get10bitWord(unsigned int index10bit, unsigned int offset32bit) const; 
 
     /** Helper function to get a 32 bit word with correct endinanness out of the byte vector.
      */
     unsigned int Get32bitWord(unsigned int index32bit) const;
 
     /** Helper function to get a 40 bit word with correct endinanness out of the byte vector.
-     *  The offset32bit is the position of the first 40 bit within the 32bit stream
+     *  The offset32bit is the position of the first 40 bit word within the 32bit stream
      */
     unsigned long long int Get40bitWord(unsigned int index40bit, unsigned int offset32bit) const;
 };
@@ -63,18 +61,15 @@ class AltroConverterPlugin : public DataConverterPlugin
 {
     
 public:
-    /** Returns the event converted to. This is the working horse and the 
+    /** Returns the event converted to lcio. This is the working horse and the 
      *  main part of this plugin.
      */
     virtual lcio::LCEvent * GetLCIOEvent( eudaq::Event const * ee ) const;
 
-    /** Returns the event converted to. This is the working horse and the 
-     *  main part of this plugin.
+    /** Returns the event converted to eudaq::StandardEvent.
+     *  Only contains the primitive implementation for the dummy StandardEvent.
      */
     virtual StandardEvent * GetStandardEvent( eudaq::Event const * ee ) const;
-
-    /** Returns the on instance for access to the plugin. Or do this with the handler? */
-    // virtual const AltroConverterPlugin * GetInstance() const;
 
 protected:
     /** The private constructor. The only time it is called is when the
