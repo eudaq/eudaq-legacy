@@ -63,7 +63,7 @@ unsigned short UCharBigEndianVec::Get10bitWord(unsigned int index10bit,
     unsigned short M = 0x03FF << y; // 10-bit mask, shifted
 
     unsigned int   i = index10bit * 10 / 8 + offset32bit*4; // keep external 10-bit index and internal 8-bit index in sync
-    unsigned short N = (bytedata[endian(i + 1)] << 8) | bytedata[endian(i)]; // compose the 2-byte word onto which the mask will be applied
+    unsigned short N = (bytedata[i + 1] << 8) | bytedata[i]; // compose the 2-byte word onto which the mask will be applied
     return (N & M) >> y; // apply the mask and shift the result back to the LSB
     
 }
@@ -157,6 +157,8 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 						    + rcublocklength 
 						    - rcutrailerlength + 1);
 
+	    std::cout << "DEBUG: rcu block contains "<<n40bitwords<<" 40bit words"<< std::endl;
+
 
 	    // read the sequence of 40 bit altro words backward. It is made up of blocks
 	    // ending with a trailer word
@@ -206,6 +208,9 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 
 		unsigned int n10bitwords = (altrotrailer & 0x3FF0000) >> 16;
 		unsigned int channelnumber = altrotrailer & 0xFFF;
+		
+		std::cout <<"DEBUG: altro block on channel "<< channelnumber <<" contains " 
+			  <<n10bitwords << " 10bit words"<< std::endl;
 
 		int index10bit = n10bitwords - 1;
 		while (index10bit > 0)
@@ -218,6 +223,10 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 		    unsigned short timestamp = altrodatavec.Get10bitWord( index10bit - 1 ,
 									  rcublockstart +10);
 
+		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
+			      <<" ndatasamples at time index " << timestamp 
+			      <<" on channel " << channelnumber << std::endl;
+
 		    // the time stamp in the data stream corresponds to the last sample
 		    // in lcio it has to be the first sample
 		    timestamp -= (ndatasamples - 1);
@@ -229,9 +238,9 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 		    altrolciodata->setCellID1(block);
 		    altrolciodata->setTime(timestamp);
 		    
-		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
-			      <<" ndatasamples at time index " << timestamp 
-			      <<" on channel " << channelnumber << std::endl;
+//		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
+//			      <<" ndatasamples at time index " << timestamp 
+//			      <<" on channel " << channelnumber << std::endl;
 
 		    lcio::ShortVec datasamples( ndatasamples );
 		    for ( unsigned int sample = index10bit - length + 1 , i = 0 ;
