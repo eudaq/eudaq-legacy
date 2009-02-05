@@ -1,11 +1,22 @@
+// the eudaq stuff
 #include "eudaq/PluginManager.hh"
 #include "eudaq/RawDataEvent.hh"
+
+// the lcio stuff
 #include "EVENT/LCEvent.h"
 #include "lcio.h"
+#include "IO/LCWriter.h"
+#include "EVENT/LCIO.h"
+#include "IMPL/LCRunHeaderImpl.h" 
+#include "IMPL/LCTOOLS.h"
+
+// the standard c++ stuff
 #include <iostream>
 #include <cstdio>
 #include <stdint.h>
 #include <errno.h>
+#include <string>
+#include <sstream>
 #include <cstring>
 
 // initial buffer size is 2MB 
@@ -42,7 +53,28 @@ int main(int argc, char * argv[])
 
     bool continue_reading = true;
 
-    // read continuoutsly from file.
+    // open an lcio file
+    // generate outfile name
+    std::string outFileName;
+    if (argc==3) // take outfile name from command line if given
+	outFileName=argv[2];
+    else // generate it from the infile name
+    {
+	outFileName=argv[1];
+	// find last dot
+	size_t lastdotposition = outFileName.find_last_of(".");
+	// erase the file extension
+	outFileName.erase(lastdotposition);
+	// append new extension ".slcio"
+	outFileName.append(".slcio");
+	std::cout << "using oufile name "<<outFileName<< std::endl;
+    }
+
+    // create sio writer and open the file
+    lcio::LCWriter* lciowriter = lcio::LCFactory::getInstance()->createLCWriter() ;
+    lciowriter->open( outFileName, lcio::LCIO::WRITE_NEW ) ;
+
+    // read continuoutsly from infile.
     // Loop will exit when end of file is reached
     // or an error occurs
     while (continue_reading)
@@ -64,7 +96,7 @@ int main(int argc, char * argv[])
 	    // delete inputbuffer and reacclocate sufficient memory
 	    delete[] inputbuffer;
 	    inputbuffer = new unsigned char[ (blocklength + 1) * 4 ];
-	    std::cout << "DEBUG: allocated "<<(blocklength + 1) * 4 << " for inputbuffer"<<std::endl;
+//	    std::cout << "DEBUG: allocated "<<(blocklength + 1) * 4 << " for inputbuffer"<<std::endl;
 	    
 	    // set the first four bytes to the length
 	    inputbuffer[0] = static_cast<unsigned char>(blocklength & 0xFF) ;
@@ -100,8 +132,25 @@ int main(int argc, char * argv[])
 	    case 0x11111111: // start of run block
 		dataformat = read32bitword(inputbuffer + 12);
 		runnumber  = read32bitword(inputbuffer + 16);
-		// create runheader and write it to the lcio file
+
 		std::cout << "Starting run "<<runnumber << " with data format "<<dataformat<<std::endl;
+
+		{ // create runheader and fill it
+		    lcio::LCRunHeaderImpl* runheader = new lcio::LCRunHeaderImpl ; 
+		    
+		    runheader->setRunNumber( runnumber ) ;
+		    runheader->setDetectorName( std::string("LP TPC") ) ;
+		    runheader->addActiveSubdetector( std::string("GEM Module 0" ) );
+		    std::stringstream description ; 
+		    description << "Data directly converted from altro raw data (format "<<dataformat
+				<<")";
+		    runheader->setDescription( description.str() );
+		    
+		    // write run header and delete it
+		    lciowriter->writeRunHeader( runheader ) ;
+		    delete runheader;
+		}
+
 		break;
 	    case 0x22222222: // rawdata event
 		// genereate eudaq event, convert to lcio and add lcevent to file
@@ -115,6 +164,12 @@ int main(int argc, char * argv[])
 		    const eudaq::DataConverterPlugin * plugin = 
 			eudaq::PluginManager::GetInstance().GetPlugin( eudaqevent.GetType() );
 		    lcio::LCEvent * lcevent= plugin->GetLCIOEvent (&eudaqevent);
+		
+		    // write the event to the file
+		    lciowriter->writeEvent( lcevent ) ;
+		    
+		    // delete the lcio event
+		    delete lcevent;
 		}
 		
 		break;
@@ -143,8 +198,11 @@ int main(int argc, char * argv[])
 	}
     }
 
-    // close the file
+    // close the infile
     fclose(infile);
+
+    // close the outfile
+    lciowriter->close() ;
 
     // release the memory of the inputbuffer
     delete[] inputbuffer;
