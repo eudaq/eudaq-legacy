@@ -124,11 +124,11 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 	}
 
 	unsigned int headerlength = altrodatavec.Get32bitWord(1);
-	if ( (headerlength == 4) )
-	{
-	    EUDAQ_WARN("AltroConverterPlugin::GetLCIOEvent: Suspicious header length given in raw data");
-	    headerlength = 5; // this should be the correct size
-	}
+//	if ( (headerlength == 4) )
+//	{
+//	    EUDAQ_WARN("AltroConverterPlugin::GetLCIOEvent: Suspicious header length given in raw data");
+//	    headerlength = 5; // this should be the correct size
+//	}
 
 	// the third word is the block ID, it has to be 0x22222222
 	unsigned int blockID = altrodatavec.Get32bitWord(2);
@@ -138,7 +138,11 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 	}
 
 	// read the TLU event number (7th word)
-	unsigned int tlu_eventnumber = altrodatavec.Get32bitWord(6);
+	unsigned int tlu_eventnumber = 0;
+	// the 7th bit in the header only exists from data format version 4.1 on, 
+	// which has header length > 4)
+	if (headerlength > 4)
+	    tlu_eventnumber = altrodatavec.Get32bitWord(6);
 	if (tlu_eventnumber != 0)
 	{
 	       lcioevent->setEventNumber( tlu_eventnumber  );
@@ -149,7 +153,9 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 	} 
 
 	// the start position of the rcu block in 32bit bords
-	unsigned int rcublockstart = 7;
+	// the two extra words are the event length and the header length, which are not counted
+	// in the length word
+	unsigned int rcublockstart = headerlength + 2 ;
 	while ( rcublockstart < altrodatavec.Size() )
 	{
 	    // the first word in the rcu block is its length
@@ -231,8 +237,8 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 		unsigned int n10bitwords = (altrotrailer & 0x3FF0000) >> 16;
 		unsigned int channelnumber = altrotrailer & 0xFFF;
 		
-//		std::cout <<"DEBUG: altro block on channel "<< channelnumber <<" contains " 
-//			  <<n10bitwords << " 10bit words"<< std::endl;
+		std::cout <<"DEBUG: altro block on channel "<< channelnumber <<" contains " 
+			  <<n10bitwords << " 10bit words"<< std::endl;
 
 		// loop all pulse blocks, starting with the last 10 bit word
 		int index10bit = n10bitwords - 1;
@@ -264,9 +270,9 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 		    altrolciodata->setCellID1(block);
 		    altrolciodata->setTime(timestamp);
 		    
-//		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
-//			      <<" ndatasamples at time index " << timestamp 
-//			      <<" on channel " << channelnumber << std::endl;
+		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
+			      <<" ndatasamples at time index " << timestamp 
+			      <<" on channel " << channelnumber << std::endl;
 
 		    // fill the data samples into a vactor and add it to the lcio raw data
 		    lcio::ShortVec datasamples( ndatasamples );

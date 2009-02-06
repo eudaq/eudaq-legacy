@@ -160,6 +160,11 @@ int main(int argc, char * argv[])
 		    std::cout << "Reading event number "<< eventnumber << std::endl;
 		    eudaq::RawDataEvent eudaqevent( "AltroEvent", runnumber, eventnumber);
 		    eudaqevent.AddBlock(inputbuffer, (blocklength+1) *4);
+
+		    // set the data format version read from header
+		    std::stringstream dataformat_string;
+		    dataformat_string << dataformat;
+		    eudaqevent.SetTag("Data format version",dataformat_string.str() );
 		    
 		    const eudaq::DataConverterPlugin * plugin = 
 			eudaq::PluginManager::GetInstance().GetPlugin( eudaqevent.GetType() );
