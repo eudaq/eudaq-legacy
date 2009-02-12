@@ -20,22 +20,26 @@ private:
     /** A reference to the data vector.
      *  Can only be accessed through the GetNNbitWord() functions.
      */
-    std::vector<unsigned char> const & bytedata;
+    std::vector<unsigned char> const & _bytedata;
+
+protected:
+    bool _altrowordsreversed;
 
 public:
     /** The constructor. 
      *  It reqires a reference of the actual data vector.
      */
-    UCharBigEndianVec(std::vector<unsigned char> const & datavec);
+  UCharBigEndianVec(std::vector<unsigned char> const & datavec, bool altrowordsreversed);
 
     /// size in 32 bit words
-    size_t Size(){ return bytedata.size() / 4 ; }
+    size_t Size(){ return _bytedata.size() / 4 ; }
     
 
     /** Helper function to get a 40 bit word with correct endinanness out of the byte vector.
      *  The offset32bit is the position of the first 10 bit word within the 32bit stream
      */
-    unsigned short Get10bitWord(unsigned int index10bit, unsigned int offset32bit) const; 
+    unsigned short Get10bitWord(unsigned int index10bit, unsigned int n40bitwords,
+				unsigned int offset32bit) const; 
 
     /** Helper function to get a 32 bit word with correct endinanness out of the byte vector.
      */
@@ -44,7 +48,8 @@ public:
     /** Helper function to get a 40 bit word with correct endinanness out of the byte vector.
      *  The offset32bit is the position of the first 40 bit word within the 32bit stream
      */
-    unsigned long long int Get40bitWord(unsigned int index40bit, unsigned int offset32bit) const;
+    unsigned long long int Get40bitWord(unsigned int index40bit, unsigned int n40bitwords, 
+					unsigned int offset32bit) const;
 };
 
 /** Implementation of the DataConverterPlugin to convert an eudaq::Event
@@ -70,6 +75,7 @@ public:
      *  Only contains the primitive implementation for the dummy StandardEvent.
      */
     virtual StandardEvent * GetStandardEvent( eudaq::Event const * ee ) const;
+
 
 protected:
     /** The private constructor. The only time it is called is when the
