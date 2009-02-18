@@ -136,7 +136,7 @@ CXX_FILES := $(wildcard $(SRC)/*.cxx)
 #SRC_FILES := $(C_FILES) $(CC_FILES) $(CXX_FILES)
 OBJ_FILES := $(CC_FILES:$(SRC)/%.cc=$(OBJ)/%.o) $(C_FILES:$(SRC)/%.c=$(OBJ)/%.o)
 DEP_FILES := $(CC_FILES:$(SRC)/%.cc=$(DEP)/%.d) $(CXX_FILES:$(SRC)/%.cxx=$(DEP)/%.d) $(C_FILES:$(SRC)/%.c=$(DEP)/%.d)
-EXEOBJ_FILES := $(CXX_FILES:$(SRC)/%.cxx=$(OBJ)/%.o)
+EXEOBJ_FILES := $(CXX_FILES:$(SRC)/%.cxx=$(OBJ)/%_exe.o)
 EXE_FILES := $(CXX_FILES:$(SRC)/%.cxx=$(BIN)/%.exe)
 
 ifeq ($(VERBOSE),1)
@@ -186,7 +186,7 @@ debug:
 
 .SUFFIXES:
 
-$(BIN)/%.exe: $(OBJ)/%.o
+$(BIN)/%.exe: $(OBJ)/%_exe.o
 	@echo "   * Linking    $@"
 	$V$(LD) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
@@ -214,7 +214,7 @@ $(OBJ)/%.o: %.cc
 	@echo "  ** Compiling  `basename $@`"
 	$V$(CXX) -o $@ $< -c $(CXXFLAGS)
 
-$(OBJ)/%.o: %.cxx
+$(OBJ)/%_exe.o: %.cxx
 	@echo "  ** Compiling  `basename $@`"
 	$V$(CXX) -o $@ $< -c $(CXXFLAGS)
 
