@@ -8,6 +8,8 @@
 #include <ostream>
 #include <cctype>
 
+#define REAL_DAQ
+
 #ifdef REAL_DAQ
 
 #include "ilcdaq.h"
@@ -53,6 +55,8 @@ AltroUSBProducer::~AltroUSBProducer()
 
     // the ending sequence of  ilcsa
     DaqWriteLastConf();
+
+    delete[] m_data_block;
 
     pthread_mutex_unlock( &m_ilcdaq_mutex );
 #endif
@@ -202,12 +206,23 @@ void AltroUSBProducer::OnConfigure(const eudaq::Configuration & param)
     }
     else
     {
-	EUDAQ_INFO("Configured (" + param.Name() + ")");
-	SetStatus(eudaq::Status::LVL_OK, "Configured (" + param.Name() + ")");
+	EUDAQ_INFO("DAQ opened (" + param.Name() + ")");
+	SetStatus(eudaq::Status::LVL_OK, "DAQ opened (" + param.Name() + ")");
     }
 #endif
 
-    //allocate memory
+    //allocate memory depending on config?
+    // no max 1024 10bitWords per channel (2 bytes each) = 2048 bytes / channel
+    // + 8 bytes altro trailer word per channel
+    // max 16 FECs with 128 channels each
+    // + U2F trailer (a few (32bit?) words)
+    // (2048+8)*16*128 = 4210688 bytes
+    // allocate  4300800 = 4200 * 1024 bytes , that should always be enough for one u2f
+    if (m_data_block == 0)
+    {
+	m_block_size = 4300800;
+	m_data_block = new unsigned char[m_block_size];
+    }
     
 
     pthread_mutex_unlock( &m_ilcdaq_mutex );
@@ -347,6 +362,11 @@ void  AltroUSBProducer::Exec()
     bool terminate=false;
     // flag set if the run is to be finished, i.e. trigger is switched off, all remaining events are read out
     bool finish_run = false;
+
+    // mode flag for the acquisiton, can contain M_FIRST, M_TRIGGER and M_LAST
+    unsigned int acquisition_mode = 0;
+
+
     while(!terminate)
     {
 	if (counter++%1000 == 0)
@@ -371,6 +391,7 @@ void  AltroUSBProducer::Exec()
 		  // bit 0: u2f will push data to usb
 		  // bit 1: enable hardware trigger
 		  U2F_Reg_Write(m_daq_config->devices[0].handle, O_TRCFG2, 3);
+		  acquisition_mode = M_FIRST;
 
 		pthread_mutex_unlock( &m_ilcdaq_mutex );
 #endif
@@ -425,13 +446,107 @@ void  AltroUSBProducer::Exec()
 	}
 	else // run is active, read out next event
 	{
+#ifdef REAL_DAQ
+	    pthread_mutex_lock( &m_ilcdaq_mutex );
+	    // perform the readout
+	    if (finish_run)
+	    {
+		// set the last acquisiton flag
+		acquisition_mode |= M_LAST;
+	    }
+
+	    // read the altro in block of 1024 bytes. This is the minimal size, and the size of a USB burst
+	    // Like this it is ensured that the data is shipped once the event is finished, and is read
+	    // as soon as it is available
+	    unsigned int nbytesread = 0;
+	    for (unsigned int block_index = 0 ;   block_index < m_block_size/1024 ; block_index++)
+	    {
+
+		std::cout << "bing "<< std::endl;
+
+		unsigned int retval =0;
+		unsigned int osize = 0;
+		
+		std::cout <<  "Readings in mode "<< acquisition_mode <<" to address " <<
+		    std::hex << reinterpret_cast<void *>(m_data_block +( block_index * 1024)) << std::dec << std::endl;
+
+		// read the next (up to) 1024 bytes. Always write to the next block
+		retval = U2F_ReadOut(m_daq_config->devices[0].handle, 1024, &osize, 
+				     m_data_block +( block_index * 1024) , acquisition_mode);
+
+		// delete the first acquisition flag
+		acquisition_mode &= (~M_FIRST);
+
+		std::cout <<  "Return value of  U2F_ReadOut is "<< retval << std::endl;
+		
+		nbytesread += osize;
+
+		if (osize >= 8)
+		{
+		    std::cout << std:: hex << "0x "  << std::setfill('0')
+			      << std::setw(2) << static_cast<unsigned int>(m_data_block[nbytesread-8])
+			      << std::setw(2) << static_cast<unsigned int>(m_data_block[nbytesread-7])
+			      << std::setw(2) << static_cast<unsigned int>(m_data_block[nbytesread-6]) 
+			      << std::setw(2) << static_cast<unsigned int>(m_data_block[nbytesread-5])
+			      << std::setw(2) << static_cast<unsigned int>(m_data_block[nbytesread-4]) 
+			      << std::setw(2) << static_cast<unsigned int>(m_data_block[nbytesread-3]) 
+			      << std::setw(2) << static_cast<unsigned int>(m_data_block[nbytesread-2]) 
+			      << std::setw(2) << static_cast<unsigned int>(m_data_block[nbytesread-1]) 
+			      << std::dec << std::endl;
+			}
+
+		// check if event is finished, the last 8 bytes have to be 0xff
+		if( osize ) // only do this check if the outsize is not 0
+		{
+		    if ( ( m_data_block[nbytesread-1] == 0xff ) && 
+			 ( m_data_block[nbytesread-2] == 0xff ) && 
+			 ( m_data_block[nbytesread-3] == 0xff ) && 
+			 ( m_data_block[nbytesread-4] == 0xff ) && 
+			 ( m_data_block[nbytesread-5] == 0xff ) && 
+			 ( m_data_block[nbytesread-6] == 0xff ) && 
+			 ( m_data_block[nbytesread-7] == 0xff ) && 
+			 ( m_data_block[nbytesread-8] == 0xff ) )
+		    { // end of event signature found
+			break;
+		    }
+		    else // number of bytes has to be 1024, otherwise there is something wrong
+		    {
+			if (osize != 1024)
+			{
+			    EUDAQ_THROW("Error reading U2F, data block is < 1024 bytes");
+			}
+		    }
+		}
+		else // check for new commands 
+		{
+		    break;
+		}
+		 
+		std::cout << "bong "<< std::endl;
+	    }
+	    
+            // dump 32 bit words instead of sending an eudaq event for the time being
+	    
+//	    for (unsigned int i = 0; i < nbytesread ; i++)
+//	    {
+//		if (i%4==0)
+//		    std::cout << std::dec<<  std::endl << i/4  <<"\t 0x " << std::hex << std::setfill('0');
+//		
+//		std::cout << std::setw(2) << static_cast<unsigned short>(m_data_block[i]) <<" ";
+//	    }
+//	    std::cout << std::dec << std::endl;
+//	    
+
+
+	    pthread_mutex_unlock( &m_ilcdaq_mutex );
+#endif
 	    
 	    // if the run is to be finished turn off the daq and the run active flagg
 	    if (finish_run)
 	    {
 #ifdef REAL_DAQ
 		pthread_mutex_lock( &m_ilcdaq_mutex );
-		DAQ_Stop();
+		  DAQ_Stop();
 		pthread_mutex_unlock( &m_ilcdaq_mutex );
 #endif
 
@@ -440,7 +555,7 @@ void  AltroUSBProducer::Exec()
 
 	    // if the run is not active
 	    // wait 1 ms and return to the start of the loop
-	    eudaq::mSleep(100);
+//	    eudaq::mSleep(100);
 	    std::cout << "processing event" << GetIncreaseEventNumber() << std::endl;;	    
 	}
     }
