@@ -157,7 +157,8 @@ int main(int argc, char * argv[])
 //		std::cout << "DEBUG: Reading event with "<<(blocklength+1) *4 << std::endl;
 	        {
 		    unsigned int eventnumber =  read32bitword(inputbuffer + 12);
-		    std::cout << "Reading event number "<< eventnumber << std::endl;
+		    if (eventnumber%100 == 0)
+		      std::cout << "Reading event number "<< eventnumber << std::endl;
 		    eudaq::RawDataEvent eudaqevent( "AltroEvent", runnumber, eventnumber);
 		    eudaqevent.AddBlock(inputbuffer, (blocklength+1) *4);
 
@@ -171,7 +172,14 @@ int main(int argc, char * argv[])
 		    lcio::LCEvent * lcevent= plugin->GetLCIOEvent (&eudaqevent);
 		
 		    // write the event to the file
-		    lciowriter->writeEvent( lcevent ) ;
+		    if (lcevent)
+		    {
+		      lciowriter->writeEvent( lcevent ) ;
+		    }
+		    else
+		    {
+		      std::cout << "Got empty event "<<eventnumber<< " from the converter plugin"<< std::endl;
+		    }
 		    
 		    // delete the lcio event
 		    delete lcevent;

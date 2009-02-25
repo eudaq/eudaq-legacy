@@ -142,14 +142,14 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 
     if ( (formatversion > 410) && (formatversion % 2) )
     {
-      std::cout << "reading event in reversed order"<< std::endl;
+      //      std::cout << "reading event in reversed order"<< std::endl;
 	// if formatversions from 4.1.0 have the last digit set to 1 
 	// the order of the altro words is reversed in each rvu block
 	altrowordsreversed =true;
     }
     else
     {
-      std::cout << "reading event in normal order"<< std::endl;
+      // std::cout << "reading event in normal order"<< std::endl;
 	altrowordsreversed =false;
     }
     
@@ -304,8 +304,11 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 //			  <<n10bitwords << " 10bit words"<< std::endl;
 
 		// loop all pulse blocks, starting with the last 10 bit word
-		int index10bit = n10bitwords - 1;
-		while (index10bit > 0)
+
+		int nfillwords =  (4 - n10bitwords%4)%4; // the number of fill words to complete the 40 bit words
+		int index10bit = (altrotrailerposition*4) - nfillwords -1;
+
+		while (index10bit > (altrotrailerposition*4) - static_cast<int>(n10bitwords + nfillwords) )
 		{
 		    // length of this data record, it also counts this length word
 		    // and the timestamp word, so the number of data samples is length - 2
@@ -372,7 +375,7 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
     }// for (eudaq data block)
 	
 
-    // If the collection is not empty, delete the empty collection and event
+    // If the collection is empty, delete the empty collection and event
     // and return 0
     if ( altrocollection->getNumberOfElements() == 0 )
     {
