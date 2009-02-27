@@ -297,13 +297,23 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 		unsigned long long int altrotrailer 
 		  = altrodatavec.Get40bitWord(altrotrailerposition, n40bitwords, rcublockstart +10 );
 
+		bool channel_is_broken = false;
 		// test if we realy have the altro trailer word
 		if ( (altrotrailer & 0xFFFC00F000ULL) != 0xAAA800A000ULL )
 		{
+
+		  if ( (altrotrailer & 0xFFFC00F000ULL) == 0xABB800A000ULL )
+		  {
+		     channel_is_broken = true;
+		  }
+		  else // now something really went wrong, and we cannot recover
+		  {  
 		    std::cerr << "error wrong altro trailer word 0x"<< std::hex << altrotrailer << std::dec << std::endl;
 		    EUDAQ_THROW("Invalid Altro trailer word");
+		  }
 		}
 
+		// even if the channel is broken we have to continue and read the number of 10bit words contine the event
 		unsigned int n10bitwords = (altrotrailer & 0x3FF0000) >> 16;
 		unsigned int channelnumber = altrotrailer & 0xFFF;
 		
@@ -315,56 +325,63 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 		int nfillwords =  (4 - n10bitwords%4)%4; // the number of fill words to complete the 40 bit words
 		int index10bit = (altrotrailerposition*4) - nfillwords -1;
 
-		while (index10bit > (altrotrailerposition*4) - static_cast<int>(n10bitwords + nfillwords) )
+		if (channel_is_broken) 
 		{
-		    // length of this data record, it also counts this length word
-		    // and the timestamp word, so the number of data samples is length - 2
-		    unsigned short length    = altrodatavec.Get10bitWord( index10bit, n40bitwords,
-									  rcublockstart +10);
-		    // the length word also coints itself and the timestamp
-		    // so number of data samples is two less
-		    unsigned short ndatasamples = length - 2;
-		    // timestamp is the next to last word
-		    unsigned short timestamp = altrodatavec.Get10bitWord( index10bit - 1, n40bitwords,
-									  rcublockstart +10);
-
-//		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
-//			      <<" ndatasamples at time index " << timestamp 
-//			      <<" on channel " << channelnumber << std::endl;
-
-		    // the time stamp in the data stream corresponds to the last sample
-		    // in lcio it has to be the first sample
-		    timestamp -= (ndatasamples - 1);
-
-		    // create the lcio data record
-		    lcio::TrackerRawDataImpl *altrolciodata=new lcio::TrackerRawDataImpl;
-
-		    altrolciodata->setCellID0(channelnumber);
-		    //		    std::cout << "rcu ID is " << rcuID<< std::endl; 
-		    altrolciodata->setCellID1(rcuID);
-		    altrolciodata->setTime(timestamp);
-		    
-//		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
-//			      <<" ndatasamples at time index " << timestamp 
-//			      <<" on channel " << channelnumber << std::endl;
-
-		    // fill the data samples into a vactor and add it to the lcio raw data
-		    lcio::ShortVec datasamples( ndatasamples );
-		    for ( unsigned int sample = index10bit - length + 1 , i = 0 ;
-			  sample < static_cast<unsigned int>(index10bit) - 1 ;
-			  sample ++ , i++  )
+		  std::cout << "skipping broken altro block on channel " << channelnumber << " in event " << lcioevent->getEventNumber() << std::endl;
+		}
+		else // alto block is ok process it
+		{
+		  while (index10bit > (altrotrailerposition*4) - static_cast<int>(n10bitwords + nfillwords) )
 		    {
-		      datasamples[ i ] = altrodatavec.Get10bitWord( sample, n40bitwords,
-								    rcublockstart +10 );
-		    }
-		    altrolciodata->setADCValues(datasamples);
-
-		    // add the TrackerRawData to the lcio collection
-		    altrocollection->addElement(altrolciodata);
-
-		    // set index to the next 10 bit word to read
-		    index10bit -= length;
-		} // while (index10bit > 0)
+		      // length of this data record, it also counts this length word
+		      // and the timestamp word, so the number of data samples is length - 2
+		      unsigned short length    = altrodatavec.Get10bitWord( index10bit, n40bitwords,
+									    rcublockstart +10);
+		      // the length word also coints itself and the timestamp
+		      // so number of data samples is two less
+		      unsigned short ndatasamples = length - 2;
+		      // timestamp is the next to last word
+		      unsigned short timestamp = altrodatavec.Get10bitWord( index10bit - 1, n40bitwords,
+									    rcublockstart +10);
+		      
+		      //		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
+		      //			      <<" ndatasamples at time index " << timestamp 
+		      //			      <<" on channel " << channelnumber << std::endl;
+		      
+		      // the time stamp in the data stream corresponds to the last sample
+		      // in lcio it has to be the first sample
+		      timestamp -= (ndatasamples - 1);
+		      
+		      // create the lcio data record
+		      lcio::TrackerRawDataImpl *altrolciodata=new lcio::TrackerRawDataImpl;
+		      
+		      altrolciodata->setCellID0(channelnumber);
+		      //		    std::cout << "rcu ID is " << rcuID<< std::endl; 
+		      altrolciodata->setCellID1(rcuID);
+		      altrolciodata->setTime(timestamp);
+		      
+		      //		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
+		      //			      <<" ndatasamples at time index " << timestamp 
+		      //			      <<" on channel " << channelnumber << std::endl;
+		      
+		      // fill the data samples into a vactor and add it to the lcio raw data
+		      lcio::ShortVec datasamples( ndatasamples );
+		      for ( unsigned int sample = index10bit - length + 1 , i = 0 ;
+			    sample < static_cast<unsigned int>(index10bit) - 1 ;
+			    sample ++ , i++  )
+			{
+			  datasamples[ i ] = altrodatavec.Get10bitWord( sample, n40bitwords,
+									rcublockstart +10 );
+			}
+		      altrolciodata->setADCValues(datasamples);
+		      
+		      // add the TrackerRawData to the lcio collection
+		      altrocollection->addElement(altrolciodata);
+		      
+		      // set index to the next 10 bit word to read
+		      index10bit -= length;
+		    } // while (index10bit > 0)
+		}// if channel_is_broken
 
 		// calculate the number of 40bit words.
 		// It is n10bitwords/4, rounded up (so we have to perform a floating point division)
