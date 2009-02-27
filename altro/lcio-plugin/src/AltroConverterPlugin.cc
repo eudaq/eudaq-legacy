@@ -7,6 +7,7 @@
 #include <IMPL/TrackerRawDataImpl.h>
 #include <IMPL/LCCollectionVec.h>
 #include <EVENT/LCIO.h>
+#include <IMPL/LCFlagImpl.h>
 
 #include <iostream>
 #include <cmath>
@@ -164,6 +165,11 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 
     lcio::LCCollectionVec * altrocollection = new lcio::LCCollectionVec(lcio::LCIO::TRACKERRAWDATA);
 
+    // set the flags that cellID1 should be stored
+    lcio::LCFlagImpl trkFlag(0) ;
+    trkFlag.setBit( lcio::LCIO::TRAWBIT_ID1 ) ;
+    altrocollection->setFlag( trkFlag.getFlag() );
+
     // loop all data blocks
     for (size_t block = 0 ; block < rawdataevent->NumBlocks(); block++)
     {
@@ -217,6 +223,7 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 	{
 	    // the first word in the rcu block is its length
 	    unsigned int rcublocklength = altrodatavec.Get32bitWord(rcublockstart);
+	    unsigned int rcuID =  altrodatavec.Get32bitWord(rcublockstart + 1);
 //	    std::cout << "DEBUG: rcublocklength = "<<rcublocklength<< " at rcublockstart" 
 //		      << rcublockstart << std::endl;
 
@@ -333,7 +340,8 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 		    lcio::TrackerRawDataImpl *altrolciodata=new lcio::TrackerRawDataImpl;
 
 		    altrolciodata->setCellID0(channelnumber);
-		    altrolciodata->setCellID1(block);
+		    //		    std::cout << "rcu ID is " << rcuID<< std::endl; 
+		    altrolciodata->setCellID1(rcuID);
 		    altrolciodata->setTime(timestamp);
 		    
 //		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
