@@ -170,235 +170,272 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
     trkFlag.setBit( lcio::LCIO::TRAWBIT_ID1 ) ;
     altrocollection->setFlag( trkFlag.getFlag() );
 
-    // loop all data blocks
-    for (size_t block = 0 ; block < rawdataevent->NumBlocks(); block++)
+    try 
     {
-	std::vector<unsigned char> bytedata = rawdataevent->GetBlockUChar(block);
-	UCharBigEndianVec altrodatavec(bytedata, altrowordsreversed);
-
-	// interpret the byte sequence
-
-	// test integrity
-	unsigned int eventlength = altrodatavec.Get32bitWord(0);
-	if ( eventlength+1 != altrodatavec.Size())
+      // loop all data blocks
+      for (size_t block = 0 ; block < rawdataevent->NumBlocks(); block++)
 	{
-	    std::cout << "event length = "<<( eventlength+1)*4<< " data size " << altrodatavec.Size() << std::endl; 
-	    EUDAQ_WARN("AltroConverterPlugin::GetLCIOEvent: Wrong event length given in raw data");
-	}
-
-	unsigned int headerlength = altrodatavec.Get32bitWord(1);
-//	if ( (headerlength == 4) )
-//	{
-//	    EUDAQ_WARN("AltroConverterPlugin::GetLCIOEvent: Suspicious header length given in raw data");
-//	    headerlength = 5; // this should be the correct size
-//	}
-
-	// the third word is the block ID, it has to be 0x22222222
-	unsigned int blockID = altrodatavec.Get32bitWord(2);
-	if (blockID != 0x22222222)
-	{
-	    EUDAQ_THROW("AltroConverterPlugin::GetLCIOEvent: Error reading event header");
-	}
-
-	// read the TLU event number (7th word)
-	unsigned int tlu_eventnumber = 0;
-	// the 7th bit in the header only exists from data format version 4.1 on, 
-	// which has header length > 4)
-	if (headerlength > 4)
-	    tlu_eventnumber = altrodatavec.Get32bitWord(6);
-	if (tlu_eventnumber != 0)
-	{
-	       lcioevent->setEventNumber( tlu_eventnumber  );
-	}
-	else // tlu event number is not set, use the software number
-	{
-	       lcioevent->setEventNumber( eudaqevent->GetEventNumber () );
-	} 
-
-	// the start position of the rcu block in 32bit bords
-	// the two extra words are the event length and the header length, which are not counted
-	// in the length word
-	unsigned int rcublockstart = headerlength + 2 ;
-	while ( rcublockstart < altrodatavec.Size() )
-	{
-	    // the first word in the rcu block is its length
-	    unsigned int rcublocklength = altrodatavec.Get32bitWord(rcublockstart);
-	    unsigned int rcuID =  altrodatavec.Get32bitWord(rcublockstart + 1);
-//	    std::cout << "DEBUG: rcublocklength = "<<rcublocklength<< " at rcublockstart" 
-//		      << rcublockstart << std::endl;
-
-	    // check that we have the correct position of the rcu block, third word has to be 0xFFFFFFFF
-	    if (  altrodatavec.Get32bitWord(rcublockstart +2 ) != 0xFFFFFFFF )
+	  std::vector<unsigned char> bytedata = rawdataevent->GetBlockUChar(block);
+	  UCharBigEndianVec altrodatavec(bytedata, altrowordsreversed);
+	  
+	  // interpret the byte sequence
+	  
+	  // test integrity
+	  unsigned int eventlength = altrodatavec.Get32bitWord(0);
+	  if ( eventlength+1 != altrodatavec.Size())
 	    {
-		std::cerr << "invalid rcu identifier 0x"<<std::hex << altrodatavec.Get32bitWord(rcublockstart +2 )
-			  <<std::dec << std::endl;
-		EUDAQ_THROW("Invalid RCU identifier");
+	      std::cout << "event length = "<<( eventlength+1)*4<< " data size " << altrodatavec.Size() << std::endl; 
+	      EUDAQ_WARN("AltroConverterPlugin::GetLCIOEvent: Wrong event length given in raw data");
 	    }
-
-	    // the rcu block ends with the trailer, 
-	    // the last trailer word contains the trailer length (bits [6:0] )
-	    unsigned int rcutrailerlength =  altrodatavec.Get32bitWord(rcublockstart + rcublocklength ) 
-                                             & 0x7F ;
-//	    std::cout << "DEBUG: rcutrailerlength "<<rcutrailerlength << std::endl;
-
-	    // the number of 40 bit words is the first entry in the rcu trailer
-	    unsigned int n40bitwords = altrodatavec.Get32bitWord(rcublockstart 
-						    + rcublocklength 
-						    - rcutrailerlength + 1);
-
-//	    std::cout << "DEBUG: rcu block contains "<<n40bitwords<<" 40bit words"<< std::endl;
-
-
-	    // read the sequence of 40 bit altro words backward. It is made up of blocks
-	    // ending with a trailer word
-
-	    // the position of the next trailer word to read
-            // use a signed int, it will become negative if there are no more words to read
-	    int altrotrailerposition = n40bitwords-1;
-//	    std::cout << "DEBUG: altrotrailerposition" << altrotrailerposition << std::endl;
-
-//	    // dump the 10 bit hex data
-//	    for (unsigned int i=0; i < n40bitwords ; i++)
-//	    {
-//		std::cout << std::hex << std::setfill('0')
-//			  << std::setw(10) 
-//			  << altrodatavec.Get40bitWord(i, n40bitwords,  rcublockstart + 10 ) << "\t"
-//			  << std::setw(3)
-//			  << altrodatavec.Get10bitWord(4*i+3, n40bitwords, rcublockstart + 10 )<<" "
-//			  << std::setw(3)
-//			  << altrodatavec.Get10bitWord(4*i+2, n40bitwords, rcublockstart + 10 )<<" "
-//			  << std::setw(3)
-//			  << altrodatavec.Get10bitWord(4*i+1, n40bitwords, rcublockstart + 10 )<<" "
-//			  << std::setw(3)
-//			  << altrodatavec.Get10bitWord(4*i  , n40bitwords, rcublockstart + 10 )
-//			  <<std::dec<<std:: endl;
-//	    }
-
-//	    // dump the 40 bit hex data
-//	    std::cout <<"blip"<<std::endl;
-//	    for (unsigned int i=0; i <= n40bitwords ; i++)
-//	    {
-//		std::cout << std::hex << std::setfill('0')
-//			  << std::setw(10)<< altrodatavec.Get40bitWord(i, rcublockstart + 10 )
-//			  <<std::dec<<std:: endl;
-//	    }
-
-//	    std::cout <<"blub"<<std::endl;
-//	    // dump the 32 bit hex data
-//	    for (unsigned int i= rcublockstart ; i <= rcublockstart + rcublocklength ; i++)
-//	    {
-//		std::cout << std::hex << std::setfill('0')
-//			  << std::setw(8)<< altrodatavec.Get32bitWord(i)
-//			  <<std::dec<<std:: endl;
-//	    }
-
-	    while (altrotrailerposition > 0)
+	  
+	  unsigned int headerlength = altrodatavec.Get32bitWord(1);
+	  //	if ( (headerlength == 4) )
+	  //	{
+	  //	    EUDAQ_WARN("AltroConverterPlugin::GetLCIOEvent: Suspicious header length given in raw data");
+	  //	    headerlength = 5; // this should be the correct size
+	  //	}
+	  
+	  // the third word is the block ID, it has to be 0x22222222
+	  unsigned int blockID = altrodatavec.Get32bitWord(2);
+	  if (blockID != 0x22222222)
 	    {
-		unsigned long long int altrotrailer 
-		  = altrodatavec.Get40bitWord(altrotrailerposition, n40bitwords, rcublockstart +10 );
-
-		bool channel_is_broken = false;
-		// test if we realy have the altro trailer word
-		if ( (altrotrailer & 0xFFFC00F000ULL) != 0xAAA800A000ULL )
-		{
-
-		  if ( (altrotrailer & 0xFFFC00F000ULL) == 0xABB800A000ULL )
+	      EUDAQ_THROW("AltroConverterPlugin::GetLCIOEvent: Error reading event header");
+	    }
+	  
+	  // read the TLU event number (7th word)
+	  unsigned int tlu_eventnumber = 0;
+	  // the 7th bit in the header only exists from data format version 4.1 on, 
+	  // which has header length > 4)
+	  if (headerlength > 4)
+	    tlu_eventnumber = altrodatavec.Get32bitWord(6);
+	  if (tlu_eventnumber != 0)
+	    {
+	      lcioevent->setEventNumber( tlu_eventnumber  );
+	    }
+	  else // tlu event number is not set, use the software number
+	    {
+	      lcioevent->setEventNumber( eudaqevent->GetEventNumber () );
+	    } 
+	  
+	  // the start position of the rcu block in 32bit bords
+	  // the two extra words are the event length and the header length, which are not counted
+	  // in the length word
+	  unsigned int rcublockstart = headerlength + 2 ;
+	  while ( rcublockstart < altrodatavec.Size() )
+	  {
+	      // the first word in the rcu block is its length
+	      unsigned int rcublocklength = altrodatavec.Get32bitWord(rcublockstart);
+	      unsigned int rcuID =  altrodatavec.Get32bitWord(rcublockstart + 1);
+	      //	    std::cout << "DEBUG: rcublocklength = "<<rcublocklength<< " at rcublockstart" 
+	      //		      << rcublockstart << std::endl;
+	      
+	      // check that we have the correct position of the rcu block, third word has to be 0xFFFFFFFF
+	      if (  altrodatavec.Get32bitWord(rcublockstart +2 ) != 0xFFFFFFFF )
+	      {
+		  std::cerr << "invalid rcu identifier 0x"<<std::hex << altrodatavec.Get32bitWord(rcublockstart +2 )
+			    <<std::dec << std::endl;
+		  EUDAQ_THROW("Invalid RCU identifier");
+	      }
+	      
+	      // the rcu block ends with the trailer, 
+	      // the last trailer word contains the trailer length (bits [6:0] )
+	      unsigned int rcutrailerlength =  altrodatavec.Get32bitWord(rcublockstart + rcublocklength ) 
+		& 0x7F ;
+	      //	    std::cout << "DEBUG: rcutrailerlength "<<rcutrailerlength << std::endl;
+	      
+	      // the number of 40 bit words is the first entry in the rcu trailer
+	      unsigned int n40bitwords = altrodatavec.Get32bitWord(rcublockstart 
+								   + rcublocklength 
+								   - rcutrailerlength + 1);
+	      
+	      //	    std::cout << "DEBUG: rcu block contains "<<n40bitwords<<" 40bit words"<< std::endl;
+	      
+	      
+	      // read the sequence of 40 bit altro words backward. It is made up of blocks
+	      // ending with a trailer word
+	      
+	      // the position of the next trailer word to read
+	      // use a signed int, it will become negative if there are no more words to read
+	      int altrotrailerposition = n40bitwords-1;
+	      //	    std::cout << "DEBUG: altrotrailerposition" << altrotrailerposition << std::endl;
+	      
+	      //	    // dump the 10 bit hex data
+	      //	    for (unsigned int i=0; i < n40bitwords ; i++)
+	      //	    {
+	      //		std::cout << std::hex << std::setfill('0')
+	      //			  << std::setw(10) 
+	      //			  << altrodatavec.Get40bitWord(i, n40bitwords,  rcublockstart + 10 ) << "\t"
+	      //			  << std::setw(3)
+	      //			  << altrodatavec.Get10bitWord(4*i+3, n40bitwords, rcublockstart + 10 )<<" "
+	      //			  << std::setw(3)
+	      //			  << altrodatavec.Get10bitWord(4*i+2, n40bitwords, rcublockstart + 10 )<<" "
+	      //			  << std::setw(3)
+	      //			  << altrodatavec.Get10bitWord(4*i+1, n40bitwords, rcublockstart + 10 )<<" "
+	      //			  << std::setw(3)
+	      //			  << altrodatavec.Get10bitWord(4*i  , n40bitwords, rcublockstart + 10 )
+	      //			  <<std::dec<<std:: endl;
+	      //	    }
+	      
+	      //	    // dump the 40 bit hex data
+	      //	    std::cout <<"blip"<<std::endl;
+	      //	    for (unsigned int i=0; i <= n40bitwords ; i++)
+	      //	    {
+	      //		std::cout << std::hex << std::setfill('0')
+	      //			  << std::setw(10)<< altrodatavec.Get40bitWord(i, rcublockstart + 10 )
+	      //			  <<std::dec<<std:: endl;
+	      //	    }
+	      
+	      //	    std::cout <<"blub"<<std::endl;
+	      //	    // dump the 32 bit hex data
+	      //	    for (unsigned int i= rcublockstart ; i <= rcublockstart + rcublocklength ; i++)
+	      //	    {
+	      //		std::cout << std::hex << std::setfill('0')
+	      //			  << std::setw(8)<< altrodatavec.Get32bitWord(i)
+	      //			  <<std::dec<<std:: endl;
+	      //	    }
+	      
+	      // helper variable to detect endless loops
+	      int previous_altrotrailer = -1;
+	      while (altrotrailerposition > 0)
+	      {
+		  // check for endless loop
+		  if (altrotrailerposition == previous_altrotrailer)
 		  {
-		     channel_is_broken = true;
+		      throw BadDataBlockException("Endless loop, reading same altro trailer position twice.");
 		  }
-		  else // now something really went wrong, and we cannot recover
-		  {  
-		    std::cerr << "error wrong altro trailer word 0x"<< std::hex << altrotrailer << std::dec << std::endl;
-		    EUDAQ_THROW("Invalid Altro trailer word");
+		  else
+		  {
+		    previous_altrotrailer = altrotrailerposition;
 		  }
-		}
+		  
+		  unsigned long long int altrotrailer 
+		    = altrodatavec.Get40bitWord(altrotrailerposition, n40bitwords, rcublockstart +10 );
 
-		// even if the channel is broken we have to continue and read the number of 10bit words contine the event
-		unsigned int n10bitwords = (altrotrailer & 0x3FF0000) >> 16;
-		unsigned int channelnumber = altrotrailer & 0xFFF;
-		
-//		std::cout <<"DEBUG: altro block on channel "<< channelnumber <<" contains " 
-//			  <<n10bitwords << " 10bit words"<< std::endl;
+		  // bool channel_is_broken = false;
+		  // test if we realy have the altro trailer word
+		  if ( (altrotrailer & 0xFFFC00F000ULL) != 0xAAA800A000ULL )
+		  {
+		      throw BadDataBlockException("Invalid Altro trailer word");
 
-		// loop all pulse blocks, starting with the last 10 bit word
+		  //    if ( (altrotrailer & 0xFFFC00F000ULL) == 0xABB800A000ULL )
+		  //    {
+		  //	  channel_is_broken = true;
+		  //    }
+		  //    else // now something really went wrong, and we cannot recover
+		  //    {  
+		  //	  std::cerr << "error wrong altro trailer word 0x"<< std::hex << altrotrailer << std::dec << std::endl;
+		  //	  EUDAQ_THROW("Invalid Altro trailer word");
+		  //    }
+		  }
+		  
+		  // even if the channel is broken we have to continue and read the number of 10bit words contine the event
+		  unsigned int n10bitwords = (altrotrailer & 0x3FF0000) >> 16;
+		  unsigned int channelnumber = altrotrailer & 0xFFF;
+		  
+		  //		std::cout <<"DEBUG: altro block on channel "<< channelnumber <<" contains " 
+		  //			  <<n10bitwords << " 10bit words"<< std::endl;
+		  
+		  // loop all pulse blocks, starting with the last 10 bit word
+		  
+		  int nfillwords =  (4 - n10bitwords%4)%4; // the number of fill words to complete the 40 bit words
+		  int index10bit = (altrotrailerposition*4) - nfillwords -1;
+		  
+		  //if (channel_is_broken) 
+		  //  {
+		  //    std::cout << "skipping broken altro block on channel " << channelnumber << " in event " << lcioevent->getEventNumber() << std::endl;
+		  //  }
+		  //else // alto block is ok process it
+		  {
+		      int previous_index10bit = -1;
 
-		int nfillwords =  (4 - n10bitwords%4)%4; // the number of fill words to complete the 40 bit words
-		int index10bit = (altrotrailerposition*4) - nfillwords -1;
+		      while (index10bit > (altrotrailerposition*4) - static_cast<int>(n10bitwords + nfillwords) )
+		      {
+			  // check for endless loop
+			  if (index10bit == previous_index10bit)
+			  {
+			    throw BadDataBlockException("Endless loop, reading same 10bit index twice.");
+			  }
+			  else
+			  {
+			    previous_index10bit = index10bit;
+			  }
 
-		if (channel_is_broken) 
-		{
-		  std::cout << "skipping broken altro block on channel " << channelnumber << " in event " << lcioevent->getEventNumber() << std::endl;
-		}
-		else // alto block is ok process it
-		{
-		  while (index10bit > (altrotrailerposition*4) - static_cast<int>(n10bitwords + nfillwords) )
-		    {
-		      // length of this data record, it also counts this length word
-		      // and the timestamp word, so the number of data samples is length - 2
-		      unsigned short length    = altrodatavec.Get10bitWord( index10bit, n40bitwords,
-									    rcublockstart +10);
-		      // the length word also coints itself and the timestamp
-		      // so number of data samples is two less
-		      unsigned short ndatasamples = length - 2;
-		      // timestamp is the next to last word
-		      unsigned short timestamp = altrodatavec.Get10bitWord( index10bit - 1, n40bitwords,
-									    rcublockstart +10);
-		      
-		      //		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
-		      //			      <<" ndatasamples at time index " << timestamp 
-		      //			      <<" on channel " << channelnumber << std::endl;
-		      
-		      // the time stamp in the data stream corresponds to the last sample
-		      // in lcio it has to be the first sample
-		      timestamp -= (ndatasamples - 1);
-		      
-		      // create the lcio data record
-		      lcio::TrackerRawDataImpl *altrolciodata=new lcio::TrackerRawDataImpl;
-		      
-		      altrolciodata->setCellID0(channelnumber);
-		      //		    std::cout << "rcu ID is " << rcuID<< std::endl; 
-		      altrolciodata->setCellID1(rcuID);
-		      altrolciodata->setTime(timestamp);
-		      
-		      //		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
-		      //			      <<" ndatasamples at time index " << timestamp 
-		      //			      <<" on channel " << channelnumber << std::endl;
-		      
-		      // fill the data samples into a vactor and add it to the lcio raw data
-		      lcio::ShortVec datasamples( ndatasamples );
-		      for ( unsigned int sample = index10bit - length + 1 , i = 0 ;
-			    sample < static_cast<unsigned int>(index10bit) - 1 ;
-			    sample ++ , i++  )
-			{
-			  datasamples[ i ] = altrodatavec.Get10bitWord( sample, n40bitwords,
-									rcublockstart +10 );
-			}
-		      altrolciodata->setADCValues(datasamples);
-		      
-		      // add the TrackerRawData to the lcio collection
-		      altrocollection->addElement(altrolciodata);
-		      
-		      // set index to the next 10 bit word to read
-		      index10bit -= length;
-		    } // while (index10bit > 0)
-		}// if channel_is_broken
-
-		// calculate the number of 40bit words.
-		// It is n10bitwords/4, rounded up (so we have to perform a floating point division)
-		// plus the altro trailer word.
-		unsigned int n40bitwords_in_altroblock = static_cast<unsigned int>(
-		                                 std::ceil(static_cast<double>(n10bitwords)/4.)+1);
-
-		// calculate the position of the next altro block trailer word
-		altrotrailerposition -= n40bitwords_in_altroblock;
-	    } // while (altrotrailerposition > 0)
-	    
-	    // calculate the position of the next rcu block
-	    rcublockstart += rcublocklength +1;
-	} // while ( rcublockstart < (bytedata.size() / 4 ))
-
-    }// for (eudaq data block)
-	
+			  // length of this data record, it also counts this length word
+			  // and the timestamp word, so the number of data samples is length - 2
+			  unsigned short length    = altrodatavec.Get10bitWord( index10bit, n40bitwords,
+										rcublockstart +10);
+			  // the length word also coints itself and the timestamp
+			  // so number of data samples is two less
+			  unsigned short ndatasamples = length - 2;
+			  // timestamp is the next to last word
+			  unsigned short timestamp = altrodatavec.Get10bitWord( index10bit - 1, n40bitwords,
+										rcublockstart +10);
+			  
+			  //		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
+			  //			      <<" ndatasamples at time index " << timestamp 
+			  //			      <<" on channel " << channelnumber << std::endl;
+			  
+			  // the time stamp in the data stream corresponds to the last sample
+			  // in lcio it has to be the first sample
+			  timestamp -= (ndatasamples - 1);
+			  
+			  // create the lcio data record
+			  lcio::TrackerRawDataImpl *altrolciodata=new lcio::TrackerRawDataImpl;
+			  
+			  altrolciodata->setCellID0(channelnumber);
+			  //		    std::cout << "rcu ID is " << rcuID<< std::endl; 
+			  altrolciodata->setCellID1(rcuID);
+			  altrolciodata->setTime(timestamp);
+			  
+			  //		    std::cout <<"DEBUG: found pulse with "<< ndatasamples 
+			  //			      <<" ndatasamples at time index " << timestamp 
+			  //			      <<" on channel " << channelnumber << std::endl;
+			  
+			  // fill the data samples into a vactor and add it to the lcio raw data
+			  lcio::ShortVec datasamples( ndatasamples );
+			  for ( unsigned int sample = index10bit - length + 1 , i = 0 ;
+				sample < static_cast<unsigned int>(index10bit) - 1 ;
+				sample ++ , i++  )
+			  {
+			      datasamples[ i ] = altrodatavec.Get10bitWord( sample, n40bitwords,
+									    rcublockstart +10 );
+			  }
+			  altrolciodata->setADCValues(datasamples);
+			  
+			  // add the TrackerRawData to the lcio collection
+			  altrocollection->addElement(altrolciodata);
+			  
+			  // set index to the next 10 bit word to read
+			  index10bit -= length;
+		      } // while (index10bit > 0)
+		  }// if channel_is_broken
+		  
+		  // calculate the number of 40bit words.
+		  // It is n10bitwords/4, rounded up (so we have to perform a floating point division)
+		  // plus the altro trailer word.
+		  unsigned int n40bitwords_in_altroblock = static_cast<unsigned int>(
+										     std::ceil(static_cast<double>(n10bitwords)/4.)+1);
+		  
+		  // calculate the position of the next altro block trailer word
+		  altrotrailerposition -= n40bitwords_in_altroblock;
+	      } // while (altrotrailerposition > 0)
+	      
+	      // calculate the position of the next rcu block
+	      rcublockstart += rcublocklength +1;
+	  } // while ( rcublockstart < (bytedata.size() / 4 ))
+	  
+	}// for (eudaq data block)
+      
+    }// try
+    catch (BadDataBlockException &e)
+    {
+      std::cout << "Event " <<  lcioevent->getEventNumber() << " contains bad data block, skipping it " 
+		<< e.what()
+		<< std::endl;
+	delete altrocollection;
+	delete lcioevent;
+	return 0;
+    }
 
     // If the collection is empty, delete the empty collection and event
     // and return 0
@@ -408,7 +445,7 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 	delete lcioevent;
 	return 0;
     }
-
+    
     // If the collection is not empty, add the collection to the event and return the event
     lcioevent->addCollection(altrocollection,"AltroRawData");
     return lcioevent;

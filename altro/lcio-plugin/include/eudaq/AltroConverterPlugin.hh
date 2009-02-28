@@ -2,8 +2,9 @@
 #define EUDAQ_INCLUDED_AltroConverterPlugin
 
 #include "eudaq/DataConverterPlugin.hh"
-#include "EVENT/LCEvent.h"
-#include "lcio.h"
+#include <EVENT/LCEvent.h>
+#include <Exceptions.h>
+#include <lcio.h>
 #include <string>
 
 namespace eudaq{
@@ -76,6 +77,14 @@ public:
      */
     virtual StandardEvent * GetStandardEvent( eudaq::Event const * ee ) const;
 
+
+    /** Nested helper class: Exception which is throws in case of bad data block
+     */
+    class BadDataBlockException : public lcio::Exception 
+    {
+      public:
+        BadDataBlockException(std::string const & text) : lcio::Exception(text) {}
+    };
 
 protected:
     /** The private constructor. The only time it is called is when the
