@@ -83,7 +83,8 @@ public:
     try {
       std::cout << "Configuring." << std::endl;
       if (m_tlu) m_tlu = 0;
-      m_tlu = counted_ptr<TLUController>(new TLUController());
+      int errorhandler = param.Get("ErrorHandler", 2);
+      m_tlu = counted_ptr<TLUController>(new TLUController(errorhandler));
 
       trigger_interval = param.Get("TriggerInterval", 0);
       dut_mask = param.Get("DutMask", 2);
@@ -121,7 +122,7 @@ public:
     try {
       m_run = param;
       m_ev = 0;
-      //m_tlu->Configure();
+      m_tlu->ResetTriggerCounter();
       std::cout << "Start Run: " << param << std::endl;
       TLUEvent ev(TLUEvent::BORE(m_run));
       ev.SetTag("FirmwareID",  to_string(m_tlu->GetFirmwareID()));

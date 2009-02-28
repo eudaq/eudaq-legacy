@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <ostream>
+#include <fstream>
 #include <cctype>
 
 // stuff for VME/C-related business
@@ -21,25 +22,41 @@
 #include <errno.h>
 #include <sys/time.h>
 
-//#include "vmedrv.h"
-//#include "eudrblib.h"
-//#include "vmelib.h"
 #include "VMEInterface.hh"
 
-#define DMABUFFERSIZE   0x100000                               //MBLT Buffer Dimension
+#define DMABUFFERSIZE   0x100000   //MBLT Buffer Dimension
 
 using eudaq::EUDRBEvent;
 using eudaq::to_string;
 using eudaq::Timer;
 
-// VME stuff, not very clean like this
-//int fdOut;                                                                      //File descriptor of the dev_m#
-//unsigned long int readdata32=0;                         //For Longword Read
-//unsigned long int i=0;
-//unsigned long int address=0;                            //VME address
-//unsigned long int BaseAddress=0x30000000;       //EUDRB VME Base address
-//unsigned long int number_of_bytes, total_bytes;                      //Number of byte for a MBLT read
-//unsigned long int * mblt_dstbuffer=NULL, * temp_buffer=NULL;
+static int decode_offset_mimotel(int x, int y) {
+  if (x >= 256 || y >= 256) EUDAQ_THROW("Bad coordinates in pedestal file");
+  unsigned subm = x>>6;
+  if (subm == 1 || subm == 2) subm = 3-subm; // fix for submatrix ordering
+  x %= 64;
+  return (x+2) | (y << 9) | (subm << 18); // x+2, because 0 and 1 are dummy pixels
+}
+
+static int decode_offset_mimosa18(int x, int y) {
+  if (x >= 508 || y >= 512) EUDAQ_THROW("Bad coordinates in pedestal file");
+  // Arbitrary submatrix numbering - not the same as Strasbourg's numbers
+  unsigned subm = x / 254 + 2*(y / 256);
+  if (subm == 1 || subm == 3) subm = 4-subm; // fix for submatrix ordering
+  x %= 254;
+  y %= 256;
+  if (subm == 3) {
+    x = 253-x;
+  } else if (subm == 2) {
+    y = 255-y;
+  } else if (subm == 1) {
+    x = 253-x;
+    y = 255-y;
+  }
+  x += 2; // for the dummy pixels
+  unsigned offset = x | (y << 9) | (subm << 18);
+  return offset;
+}
 
 class EUDRBProducer : public eudaq::Producer {
 public:
@@ -50,16 +67,9 @@ public:
       juststopped(false),
       n_error(0),
       buffer(DMABUFFERSIZE),
-      //fdOut(open("/dev/vme_m0", O_RDWR)),
       m_idoffset(0),
       m_version(-1)
     {
-//       if (fdOut < 0) {
-//         EUDAQ_THROW("Open device failed Errno = " + to_string(errno));
-//       }
-//       if (getMyInfo() != 0) {
-//         EUDAQ_THROW("getMyInfo failed.  Errno = " + to_string(errno));
-//       }
     }
   void Process() {
     if (!started) {
@@ -77,7 +87,6 @@ public:
     for (size_t n_eudrb=0;n_eudrb<boards.size();n_eudrb++) {
 
       Timer t_board;
-      ///unsigned long address;
 
       bool badev=false;
 
@@ -107,8 +116,6 @@ public:
           badev=true;
         }
         t_mblt.Restart();
-        ///address = boards[n_eudrb].BaseAddress | 0x00400000;
-        ///vme_A32_D32_User_Data_MBLT_read((number_of_bytes+7)&~7, address, &buffer[0]);
         buffer.resize(((number_of_bytes+7) & ~7) / 4);
         boards[n_eudrb].vmed->Read(0x00400000, buffer);
         t_mblt.Stop();
@@ -117,14 +124,11 @@ public:
         // Reset the BUSY on the MASTER after all MBLTs are done
         t_reset.Restart();
         if (n_eudrb==boards.size()-1) { // Master
-          ///address=boards[n_eudrb].BaseAddress;
           unsigned long readdata32 = 0x2000; // for raw mode only
           if (boards[n_eudrb].zs) readdata32 |= 0x20; // ZS mode
           readdata32 |= 0x80;
-          ///vme_A32_D32_User_Data_SCT_write(fdOut,readdata32,address);
           boards[n_eudrb].vmes->Write(0, readdata32);
           readdata32 &= ~0x80;
-          ///vme_A32_D32_User_Data_SCT_write(fdOut,readdata32,address);
           boards[n_eudrb].vmes->Write(0, readdata32);
         }
         t_reset.Stop();
@@ -141,12 +145,14 @@ public:
       ev.AddBoard(n_eudrb,&buffer[0], number_of_bytes);
       t_add.Stop();
       total_bytes+=(number_of_bytes+7)&~7;
-      std::cout << "B" << n_eudrb << ": wait=" << t_wait.uSeconds() << "us, "
-                << "mblt=" << t_mblt.uSeconds() << "us, "
-                << "reset=" << t_reset.uSeconds() << "us, "
-                << "add=" << t_add.uSeconds() << "us, "
-                << "board=" << t_board.uSeconds() << "us, "
-                << "bytes=" << number_of_bytes << "\n";
+      if (m_ev % 100 == 0) {
+        std::cout << "B" << n_eudrb << ": wait=" << t_wait.uSeconds() << "us, "
+                  << "mblt=" << t_mblt.uSeconds() << "us, "
+                  << "reset=" << t_reset.uSeconds() << "us, "
+                  << "add=" << t_add.uSeconds() << "us, "
+                  << "board=" << t_board.uSeconds() << "us, "
+                  << "bytes=" << number_of_bytes << "\n";
+      }
     }
 
     if (total_bytes) {
@@ -179,13 +185,10 @@ public:
       bool unsync = param.Get("Unsynchronized", 0);
       std::cout << "Running in " << (unsync ? "UNSYNCHRONIZED" : "synchronized") << " mode" << std::endl;
       for (size_t n_eudrb = 0; n_eudrb < boards.size(); n_eudrb++) {
-        ///unsigned long address=boards[n_eudrb].BaseAddress;
         unsigned long data = 0;
         if (boards[n_eudrb].zs) data |= 0x20; // ZS mode
         if (n_eudrb==boards.size()-1 || unsync) data |= 0x2000; // Internal Timing
-        ///vme_A32_D32_User_Data_SCT_write(fdOut, 0x80000000, address); // Reset
         boards[n_eudrb].vmes->Write(0, 0x80000000);
-        ///vme_A32_D32_User_Data_SCT_write(fdOut, data, address); // Set mode
         boards[n_eudrb].vmes->Write(0, data);
         unsigned long mimoconf = 0x48d00000;
         if (m_version == 1) {
@@ -226,22 +229,16 @@ public:
           } else {
             EUDAQ_THROW("Unknown detector type: " + boards[n_eudrb].det);
           }
-          ///vme_A32_D32_User_Data_SCT_write(fdOut, reg01, address+0x20);
           boards[n_eudrb].vmes->Write(0x20, reg01);
-          ///vme_A32_D32_User_Data_SCT_write(fdOut, reg23, address+0x24);
           boards[n_eudrb].vmes->Write(0x24, reg23);
-          ///vme_A32_D32_User_Data_SCT_write(fdOut, reg45, address+0x28);
           boards[n_eudrb].vmes->Write(0x28, reg45);
-          ///vme_A32_D32_User_Data_SCT_write(fdOut, reg6 , address+0x2c);
           boards[n_eudrb].vmes->Write(0x2c, reg6);
-          ///vme_A32_D32_User_Data_SCT_write(fdOut, data, address);
           boards[n_eudrb].vmes->Write(0, data);
         } else {
           EUDAQ_THROW("Must set Version = 1 or 2 in config file");
         }
         data = 0xd0000001;
         if (n_eudrb==boards.size()-1 || unsync) data = 0xd0000000;
-        ///vme_A32_D32_User_Data_SCT_write(fdOut, data, address+0x10);
         boards[n_eudrb].vmes->Write(0x10, data);
         eudaq::mSleep(1000);
         int marker1 = param.Get("Board" + to_string(n_eudrb) + ".Marker1", "Marker1", -1);
@@ -251,14 +248,11 @@ public:
           if (marker2 < 0) marker2 = marker1;
           std::cout << "Setting board " << n_eudrb << " markers to "
                     << eudaq::hexdec(marker1, 2) << ", " << eudaq::hexdec(marker2, 2) << std::endl;
-          ///vme_A32_D32_User_Data_SCT_write(fdOut, 0x48110800 | (marker1 & 0xff), address+0x10);
           boards[n_eudrb].vmes->Write(0x10, 0x48110800 | (marker1 & 0xff));
           eudaq::mSleep(1000);
-          ///vme_A32_D32_User_Data_SCT_write(fdOut, 0x48110700 | (marker2 & 0xff), address+0x10);
           boards[n_eudrb].vmes->Write(0x10, 0x48110700 | (marker2 & 0xff));
           eudaq::mSleep(1000);
         }
-        ///vme_A32_D32_User_Data_SCT_write(fdOut, mimoconf, address+0x10);
         boards[n_eudrb].vmes->Write(0x10, mimoconf);
         eudaq::mSleep(1000);
       }
@@ -269,7 +263,6 @@ public:
         bool ready = true;
         for (size_t n_eudrb = 0; n_eudrb < boards.size(); n_eudrb++) {
           unsigned long data = 0;
-          ///vme_A32_D32_User_Data_SCT_read(fdOut, &data, boards[boards.size()-1].BaseAddress);
           data = boards[n_eudrb].vmes->Read(0);
           if (!(data & 0x02000000)) {
             ready = false;
@@ -278,18 +271,15 @@ public:
         if (ready) break;
       }
       std::cout << "OK" << std::endl;
-// new loop added by Angelo
+      // new loop added by Angelo
       for (size_t n_eudrb = 0; n_eudrb < boards.size(); n_eudrb++) {
-        //unsigned long address=boards[n_eudrb].BaseAddress;
         unsigned long data = 0x40;
         if (boards[n_eudrb].zs) data |= 0x20;
         if (n_eudrb==boards.size()-1) data |= 0x2000;
-        ///vme_A32_D32_User_Data_SCT_write(fdOut, data, address);
         boards[n_eudrb].vmes->Write(0, data);
         data=0;
         if (boards[n_eudrb].zs) data |= 0x20;
         if (n_eudrb==boards.size()-1) data |= 0x2000;
-        ///vme_A32_D32_User_Data_SCT_write(fdOut, data, address);
         boards[n_eudrb].vmes->Write(0, data);
       }
 
@@ -298,6 +288,7 @@ public:
         if (boards[n_eudrb].zs) {
           int thresh = param.Get("Board" + to_string(n_eudrb) + ".Thresh", "Thresh", 10);
           int ped = param.Get("Board" + to_string(n_eudrb) + ".Ped", "Ped", 0);
+          float mult = param.Get("Board" + to_string(n_eudrb) + ".Mult", "Mult", 2.0);
           std::string fname = param.Get("Board" + to_string(n_eudrb) + ".PedestalFile", "PedestalFile", "");
           if (thresh < 0 && fname == "") {
             fname = "ped%.dat";
@@ -313,12 +304,12 @@ public:
             fname = std::string(fname, 0, n) + to_string(n_eudrb) + std::string(fname, n+1);
           }
           if (fname != "") fname = "../pedestal/" + fname;
-          pedestal_t peds = (fname != "") ? ReadPedestals(fname)
-            : GeneratePedestals(thresh, ped);
+          pedestal_t peds = (fname == "") ? GeneratePedestals(thresh, ped)
+            : ReadPedestals(fname, mult, boards[n_eudrb].det);
           LoadPedestals(boards[n_eudrb], peds);
 
           std::string msg = "Board " + to_string(n_eudrb) + " pedestals loading";
-          if (fname != "") msg += " from file " + fname;
+          if (fname != "") msg += " from file " + fname + " * " + to_string(mult);
           else msg += " values = " + to_string(ped) + ", " + to_string(thresh);
           puts(msg.c_str());
           EUDAQ_INFO(msg);
@@ -408,17 +399,11 @@ public:
     try {
       std::cout << "Reset" << std::endl;
       for (size_t n_eudrb = 0; n_eudrb < boards.size(); n_eudrb++) {
-        unsigned long readdata32;
-        ///unsigned long address=boards[n_eudrb].BaseAddress;
-        ///vme_A32_D32_User_Data_SCT_read(fdOut,&readdata32,address);
-        readdata32 = boards[n_eudrb].vmes->Read(0);
+        unsigned long readdata32 = boards[n_eudrb].vmes->Read(0);
         readdata32 |= 0x80000000;
-        ///vme_A32_D32_User_Data_SCT_write(fdOut,readdata32,address);
         boards[n_eudrb].vmes->Write(0, readdata32);
-        ///vme_A32_D32_User_Data_SCT_read(fdOut,&readdata32,address);
         readdata32 = boards[n_eudrb].vmes->Read(0);
         readdata32&=~(0x80000000);
-        ///vme_A32_D32_User_Data_SCT_write(fdOut,readdata32,address);
         boards[n_eudrb].vmes->Write(0, readdata32);
       }
       sleep(8);
@@ -445,63 +430,52 @@ public:
   pedestal_t GeneratePedestals(int thresh = 10, int ped = 0) const {
     return pedestal_t(1UL<<20, thresh | (ped << 6));
   }
-  pedestal_t ReadPedestals(const std::string & filename) const {
-    pedestal_t result(1UL<<20);
-    FILE *fp;
-    unsigned long /*readdata32,*/ newdata32, offset;
-    int board,x,y,flag,subm,thresh2bit,ped2bit;
-    float ped, thresh,sigma=2.0; // sigma is hardcoded for the moment
+  pedestal_t ReadPedestals(const std::string & filename, float sigma, const std::string & sensor) const {
+    static const unsigned badpix = 0x1f + (1<<11);
+    pedestal_t result(1UL<<20, badpix);
     //printf("Fill Matrices on board: %lx\n",address);
-    char dummy[100];
-    if ( (fp = fopen(filename.c_str(), "r") ) ) {
-      printf("Opened file %s\n",filename.c_str());
-      //printf("\tDownloading pedestals to board: %d\n",n_eudrb);
-      fgets(dummy,100,fp); fscanf(fp,"\n");
-      printf("\t%s\n",dummy);
-      fgets(dummy,100,fp); fscanf(fp,"\n");// skip 2 lines
-      printf("\t%s\n",dummy);
-      
-      while (fscanf(fp,"%d %d %d %f %f %d\n",&board,&x,&y,&ped,&thresh,&flag)!=EOF) {
-        //printf("I read: board: %1d, x: %3d, y: %3d, ped: %2.3f, thresh: %2.3f, flag: %2d\n",board,x,y,ped,thresh,flag);
-        subm=(x>>6);
-        if (subm == 1 || subm == 2) subm = 3-subm; // fix for submatrix ordering
-        x=x%64;
-        offset=((x+2)+(y<<9)+(subm<<18))<<2; // x+2, because 0 and 1 are dummy pixels
-        thresh2bit=(int) (thresh*sigma); // prepare for 2bits complement
-        ped2bit=(int) ped&0x1f; // prepare for 2bits complement
-        //              newdata32=0xc;
-        if (thresh2bit>31) thresh2bit=31;
-        if (thresh2bit<-32) thresh2bit=-32;
-        if (ped2bit>31) ped2bit=31;
-        if (ped2bit<-32) ped2bit=-32;
-        newdata32=(thresh2bit & 0x3f) | ((ped2bit & 0x3f) << 6);
-        
-        if (flag) newdata32=0x1f+(1<<11); // mask bad pixels as good as you can (high thresh and very low ped)
-        
-//            if ((y<2 || y>253) && (x<4||x>61)) {
-//              printf("\tsubm=%2d,y=%3d,x=%3d,address=0x%8lx,data=0x%3lx,thresh2bit=%3d\n",subm,y,x,address,newdata32,thresh2bit);
-//            }
-        //vme_A32_D32_User_Data_SCT_write(fdOut,newdata32 ,address+baseShift+offset);
-        result[offset/4] = newdata32;
-      }
-      fclose(fp);
+    int (*decode_offset)(int,int) = 0;
+    if (sensor == "MIMOTEL") {
+      decode_offset = decode_offset_mimotel;
+    } else if (sensor == "MIMOSA18") {
+      decode_offset = decode_offset_mimosa18;
     } else {
-      EUDAQ_ERROR(std::string("Unable top open pedestal file ") + filename);
+      EUDAQ_THROW("I don't know how to decode " + sensor + " pedestal files");
     }
-    // now black out the dummy pixels
-    printf("\tMasking dummy pixels!\n");
-    newdata32=0x1f+(1<<11); // mask dummy pixels as good as you can (high thresh and very low ped)
-    for (int subm=0;subm<4;subm++) {
-      for (int y=0;y<256;y++) {
-        for (int x=0;x<2;x++) {
-          offset=(x+(y<<7)+(subm<<18))<<2;
-//              if ((y<3 || y>252) && (x<2))
-//                printf("\tsubm=%2d,y=%3d,x=%3d,address=0x%8lx,data=0x%lx\n",subm,y,x,address,newdata32);
-//              vme_A32_D32_User_Data_SCT_write(fdOut,newdata32 ,address+baseShift+offset);
+    std::ifstream file(filename.c_str());
+    if (file.is_open()) {
+      //printf("Opened file %s\n",filename.c_str());
+      std::string line;
+      while (std::getline(file, line)) {
+        line = eudaq::trim(line);
+        if (line == "") {
+          continue;
+        } else if (line[0] == '#') {
+          std::cout << line << std::endl;
+          continue;
         }
+        int board,x,y,flag=0;
+        float ped, thresh;
+        if (sscanf(line.c_str(),"%d %d %d %f %f %d\n",&board,&x,&y,&ped,&thresh,&flag) < 5) {
+          EUDAQ_THROW("Error in pedestal file");
+        }
+        unsigned long offset = decode_offset(x, y);
+        int thresh2bit = (int) (thresh*sigma);
+        int ped2bit = (int)ped & 0x1f;
+        if (thresh2bit > 31) thresh2bit = 31;
+        if (thresh2bit < -32) thresh2bit = -32;
+        if (ped2bit > 31) ped2bit = 31;
+        if (ped2bit < -32) ped2bit = -32;
+        unsigned long newdata32 = (thresh2bit & 0x3f) | ((ped2bit & 0x3f) << 6);
+
+        if (flag) newdata32 = badpix; // mask bad pixels as good as you can (high thresh and very low ped)
+
+        result[offset] = newdata32;
       }
+    } else {
+      EUDAQ_THROW("Unable top open pedestal file " + filename);
     }
-    printf("\tdone!\n");
+    //printf("\tdone!\n");
     return result;
   }
 
@@ -520,7 +494,6 @@ public:
     unsigned long int i = 0, readdata32 = 0; //, olddata = 0;
     for (eudaq::Timer timer; timer.Seconds() < 1.0; /**/) {
       ++i;
-      ///vme_A32_D32_User_Data_SCT_read(fdOut,&readdata32,address);
       readdata32 = brd.vmes->Read(0x00400004);
       if (readdata32 & 0x80000000) {
         return readdata32 & 0xfffff;
@@ -542,30 +515,22 @@ public:
     // here we put in the uploading of pedestals:
     // VME is master of SRAM
     printf("Become Master of SRAM\n");
-    ///vme_A32_D32_User_Data_SCT_read(fdOut,&readdata32,board.BaseAddress);
     readdata32 = board.vmes->Read(0);
     newdata32=readdata32|0x200;
-    ///vme_A32_D32_User_Data_SCT_write(fdOut,newdata32 ,board.BaseAddress);
     board.vmes->Write(0, newdata32);
     for (size_t i = 0; i < peds.size(); ++i) {
-      ///vme_A32_D32_User_Data_SCT_write(fdOut, peds[i], board.BaseAddress + 0x800000 + i*4);
       board.vmes->Write(0x800000 + i*4, peds[i]);
     }
     // Release master of SRAM
     printf("\tRelease Master of SRAM\n");
-    ///vme_A32_D32_User_Data_SCT_read(fdOut,&readdata32,board.BaseAddress);
     readdata32 = board.vmes->Read(0);
     newdata32=readdata32 & ~0x200;
-    ///vme_A32_D32_User_Data_SCT_write(fdOut,newdata32 ,board.BaseAddress);
     board.vmes->Write(0, newdata32);
     // reset once more to be sure
     /* read address first and only set the reset bit */
-    ///vme_A32_D32_User_Data_SCT_read(fdOut,&readdata32,board.BaseAddress);
     readdata32 = board.vmes->Read(0);
     newdata32=readdata32 | 0x40;
-    ///vme_A32_D32_User_Data_SCT_write(fdOut,newdata32 ,board.BaseAddress);
     board.vmes->Write(0, newdata32);
-    ///vme_A32_D32_User_Data_SCT_write(fdOut,readdata32,board.BaseAddress);
     board.vmes->Write(0, readdata32);
     //EUDAQ_INFO("Board " + to_string(n_eudrb) + " done!");
   }
