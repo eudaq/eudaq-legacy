@@ -38,6 +38,10 @@ public:
      */
     virtual std::string const & GetEventType() const {return m_eventtype;}
 
+    /** The empty destructor. Need to add it to make it virtual.
+     */
+    virtual ~DataConverterPlugin(){}
+
 protected:
     /** The string storing the event type this plugin can convert to lcio.
      *  This string has to be set in the constructor of the actual implementations 

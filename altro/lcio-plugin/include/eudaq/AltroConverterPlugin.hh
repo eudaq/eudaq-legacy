@@ -86,6 +86,10 @@ public:
         BadDataBlockException(std::string const & text) : lcio::Exception(text) {}
     };
 
+    /** The empty destructor. Need to add it to make it virtual.
+     */
+    virtual ~AltroConverterPlugin(){}
+
 protected:
     /** The private constructor. The only time it is called is when the
      *  one single instance is created, which lives within the object.

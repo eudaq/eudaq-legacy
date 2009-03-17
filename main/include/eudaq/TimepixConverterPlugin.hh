@@ -32,6 +32,10 @@ public:
      */
     virtual StandardEvent * GetStandardEvent( eudaq::Event const * ee ) const;
 
+    /** The empty destructor. Need to add it to make it virtual.
+     */
+    virtual ~TimepixConverterPlugin(){}
+
 private:
     /** The private constructor. The only time it is called is when the
      *  one single instance is created, which lives within the object.
