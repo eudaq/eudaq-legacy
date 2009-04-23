@@ -350,9 +350,16 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 
 		      while (index10bit > (altrotrailerposition*4) - static_cast<int>(n10bitwords + nfillwords) )
 		      {
+			  if ( (altrotrailerposition*4) - static_cast<int>(n10bitwords + nfillwords) < 0 )
+			  {
+			    throw BadDataBlockException("Trying to read backward to negative 10bit index.");
+			  }
+
 			  // check for endless loop
 			  if (index10bit == previous_index10bit)
 			  {
+			    std::cout << "trying to read 10bit index " << index10bit << " twice"<<std::endl;
+			    std::cout << std::hex << "altrotrailer " << altrotrailer << std::dec << std::endl;
 			    throw BadDataBlockException("Endless loop, reading same 10bit index twice.");
 			  }
 			  else
