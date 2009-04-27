@@ -33,15 +33,16 @@ uint32_t read32bitword(unsigned char const * const buffer)
 
 int main(int argc, char * argv[])
 {
-    if ( (argc != 2) && (argc != 3) )
+    if ( argc < 2 )
     {
-	std::cout << "usage: "<<argv[0]  << " infile.dat [outfile.slcio]" 
+	std::cout << "usage: "<<argv[0]  << " infile.dat [infile2.dat] [outfile.slcio]" 
 		  << std::endl;
 	return 2;
     }
 
     // open file for reading
-    std::FILE * infile = fopen( argv[1] , "r");
+    int infileIndex = 1;
+    std::FILE * infile = fopen( argv[infileIndex] , "r");
 
     // size of the memory buffer
     size_t buffersize = INITIAL_BUFFER_SIZE;
@@ -51,15 +52,25 @@ int main(int argc, char * argv[])
     unsigned int dataformat = 0;
     unsigned int runnumber  = 0;
 
-    bool continue_reading = true;
+    enum ReadState {START_FIRST_FILE, NEXT_EVENT, NEXT_FILE, RUN_FINISHED, ERROR};
+    ReadState state = START_FIRST_FILE;
 
-    // open an lcio file
-    // generate outfile name
-    std::string outFileName;
-    if (argc==3) // take outfile name from command line if given
-	outFileName=argv[2];
-    else // generate it from the infile name
+    // These two are only used if the input file is changed
+    unsigned int fileNumber = 0;
+    unsigned int lastEventNumber = 0;
+
+    // generate outfile name, assume it's the last argument
+    std::string outFileName( argv[argc-1] );
+
+    // the maximum allowed 
+    int maxInfileIndex = argc-1;
+
+    // check if last argument is the slcio file name
+    size_t posOfExtension = outFileName.rfind(".slcio");
+    if ( ( posOfExtension == std::string::npos ) // .slcio was not found
+	 ||  ( (outFileName.length() - posOfExtension) != 6 ) )// or file name does not with .slcio
     {
+        // generate the name from the first input file name
 	outFileName=argv[1];
 	// find last dot
 	size_t lastdotposition = outFileName.find_last_of(".");
@@ -69,6 +80,11 @@ int main(int argc, char * argv[])
 	outFileName.append(".slcio");
 	std::cout << "using oufile name "<<outFileName<< std::endl;
     }
+    else
+    {
+        // The last option is the outfile, decrease the max index for the infile
+        maxInfileIndex--;
+    }
 
     // create sio writer and open the file
     lcio::LCWriter* lciowriter = lcio::LCFactory::getInstance()->createLCWriter() ;
@@ -77,7 +93,7 @@ int main(int argc, char * argv[])
     // read continuoutsly from infile.
     // Loop will exit when end of file is reached
     // or an error occurs
-    while (continue_reading)
+    while ( (state != RUN_FINISHED) && (state != ERROR) )
     {
 	// read one 4 byte word from the file,
 	// it contains the length of the next blockINITIAL_BUFFER_SIZE
@@ -130,6 +146,13 @@ int main(int argc, char * argv[])
 	switch (blockid)
 	{	
 	    case 0x11111111: // start of run block
+	        if (state != START_FIRST_FILE)
+		{
+		  std::cerr << "Error: found start of run block where not exprected" <<std::endl;
+		  state=ERROR;
+		  break;
+		}
+		
 		dataformat = read32bitword(inputbuffer + 12);
 		runnumber  = read32bitword(inputbuffer + 16);
 
@@ -150,9 +173,17 @@ int main(int argc, char * argv[])
 		    lciowriter->writeRunHeader( runheader ) ;
 		    delete runheader;
 		}
-
+		state = NEXT_EVENT;
+		
 		break;
 	    case 0x22222222: // rawdata event
+	        if (state != NEXT_EVENT)
+		{
+		  std::cerr << "Error: found event when not exprected" <<std::endl;
+		  state=ERROR;
+		  break;
+		}
+
 		// genereate eudaq event, convert to lcio and add lcevent to file
 //		std::cout << "DEBUG: Reading event with "<<(blocklength+1) *4 << std::endl;
 	        {
@@ -191,7 +222,7 @@ int main(int argc, char * argv[])
 		
 		// genereate eudaq event, convert to lcio and add lcevent to file
 		std::cout << "Ending run number "<< runnumber << std::endl;
-		continue_reading = false;
+		state = RUN_FINISHED;
 		break;
 	    case 0x11112222: // pause of run
 		std::cout << "DEBUG: pausing run"<< std::endl;
@@ -201,13 +232,70 @@ int main(int argc, char * argv[])
 		std::cout << "DEBUG: resuming run"<< std::endl;
 		break;
 	    case 0x44444444: // begin of file which continues data from another file
-	    case 0x55555555: // end of file, in continued in another file
-		std::cout << "Warning: splitting of file not supported yet! Exiting" << std::endl;
-		continue_reading = false;
+	        if (state != NEXT_FILE)
+		{
+		  std::cerr << "Error: found begin of file block when previous file was not endet" <<std::endl;
+		  state=ERROR;
+		  break;
+		}
+		
+		// check if the next file matches
+		if ( dataformat != read32bitword(inputbuffer + 12 ) )
+		{
+		  std::cerr << "Error: file " << argv[infileIndex] 
+			    << " does not habe correct data format verision!" << std::endl;
+		  state = ERROR;
+		  break;
+		}
+		if ( runnumber != read32bitword(inputbuffer + 16 ) )
+		{
+		  std::cerr << "Error: file " << argv[infileIndex] 
+			    << " does not continue with correct run number!" << std::endl;
+		  state = ERROR;
+		  break;
+		}
+		if ( fileNumber != read32bitword(inputbuffer + 28 ) )
+		{
+		  std::cerr << "Error: file " << argv[infileIndex] 
+			    << " does not have correct file number!" << std::endl;
+		  state = ERROR;
+		  break;
+		}
+		if ( lastEventNumber != read32bitword(inputbuffer + 32 ) )
+		{
+		  std::cerr << "Error: file " << argv[infileIndex] 
+			    << " does not continue with correct event number!" << std::endl;
+		  state = ERROR;
+		  break;
+		}
+		std::cout << " Continuing run " << runnumber << std::endl;
+
+		// file is ok, 
+		state = NEXT_EVENT;
+		break;
+	    case 0x55555555: // end of file, is continued in another file
+	        // read information to check next file
+	        lastEventNumber = read32bitword(inputbuffer + 12 );
+		fileNumber      = read32bitword(inputbuffer + 24 );
+
+		std::cout << "Closing file " << argv[infileIndex] << " after event " << lastEventNumber << std::endl;
+
+		// close the input file 
+		fclose(infile);
+
+		// check if there is another file in the argument list
+		if ( ++infileIndex <= maxInfileIndex )
+		{
+		  infile = fopen( argv[infileIndex] , "r");
+		}
+		std::cout << "File " << argv[infileIndex] << " opened." << std::endl;
+		// now the next file is open, continue the loop
+		state = NEXT_FILE;		
 		break;
 	    default:
-		std::cerr << "Error: Unknown block ID " <<std::hex << blockid << std::endl;
-		
+	        std::cerr << "Error: Unknown block ID " 
+			  <<std::hex << blockid << std::dec << std::endl;
+		state = ERROR;
 	}
     }
 
