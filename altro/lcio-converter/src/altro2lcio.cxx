@@ -254,7 +254,7 @@ int main(int argc, char * argv[])
 		  state = ERROR;
 		  break;
 		}
-		if ( fileNumber != read32bitword(inputbuffer + 28 ) )
+		if ( fileNumber+1 != read32bitword(inputbuffer + 28 ) )
 		{
 		  std::cerr << "Error: file " << argv[infileIndex] 
 			    << " does not have correct file number!" << std::endl;
