@@ -20,6 +20,7 @@
 using eudaq::mSleep;
 using eudaq::hexdec;
 using eudaq::to_string;
+using eudaq::ucase;
 
 #define PCA955_HW_ADDR 4
 #define AD5316_HW_ADDR 3
@@ -33,6 +34,15 @@ using eudaq::to_string;
 #define PCA955_CONFIG1_REGISTER 7
 
 namespace tlu {
+
+  void TLU_LEDs::print(std::ostream & os) const {
+    os << (left ? 'L' : '.')
+       << (right ? 'R' : '.')
+       << '-'
+       << ((trig & 3) == 3 ? 'Y' : (trig & 2) ? 'R' : (trig & 1) ? 'G' : '.')
+       << (busy ? 'B' : '.')
+       << (rst ? 'R' : '.');
+  }
 
   static const unsigned long long NOTIMESTAMP = (unsigned long long)-1;
 
@@ -127,7 +137,6 @@ namespace tlu {
     m_inhibit(true),
     m_vetostatus(0),
     m_fsmstatus(0),
-    m_ledstatus(0),
     m_triggernum(0),
     m_timestamp(0),
     m_oldbuf(0),
@@ -234,7 +243,7 @@ namespace tlu {
 
     WriteRegister(m_addr->TLU_INTERNAL_TRIGGER_INTERVAL, m_triggerint);
 
-    SetDUTMask(m_mask);
+    SetDUTMask(m_mask, false);
 
     WritePCA955(m_addr->TLU_I2C_BUS_MOTHERBOARD,
                 m_addr->TLU_I2C_BUS_MOTHERBOARD_TRIGGER__ENABLE_IPSEL_IO, 0xff00); // turn mb and lemo trigger outputs on
@@ -249,10 +258,10 @@ namespace tlu {
 
   void TLUController::Configure() {
     if (m_version == 0) {
-      if (m_serial < FIRSTV2SERIAL) {
-        m_version = 1;
-      } else {
+      if (m_serial >= FIRSTV2SERIAL || m_serial == 260) { // DEST TLU v0.2 has serial 260
         m_version = 2;
+      } else {
+        m_version = 1;
       }
     }
     if (m_version == 1) {
@@ -300,12 +309,12 @@ namespace tlu {
   }
 
   void TLUController::ResetScalers() {
-#ifdef TRIGGER_SCALERS_RESET_BIT
+//#ifdef TRIGGER_SCALERS_RESET_BIT
     WriteRegister(m_addr->TLU_RESET_REGISTER_ADDRESS, 1 << m_addr->TLU_TRIGGER_SCALERS_RESET_BIT);
     WriteRegister(m_addr->TLU_RESET_REGISTER_ADDRESS, 0);
-#else
-    EUDAQ_THROW("Not implemented");
-#endif
+//#else
+//    EUDAQ_THROW("Not implemented");
+//#endif
   }
 
   void TLUController::ResetUSB() {
@@ -324,10 +333,10 @@ namespace tlu {
     m_version = version;
   }
 
-  void TLUController::SetDUTMask(unsigned char mask) {
+  void TLUController::SetDUTMask(unsigned char mask, bool updateleds) {
     m_mask = mask;
     if (m_addr) WriteRegister(m_addr->TLU_DUT_MASK_ADDRESS, m_mask);
-    UpdateLEDs();
+    if (updateleds) UpdateLEDs();
   }
 
   void TLUController::SetVetoMask(unsigned char mask) {
@@ -362,7 +371,21 @@ namespace tlu {
     return ReadRegister8(m_addr->TLU_BEAM_TRIGGER_VMASK_ADDRESS);
   }
 
-  void TLUController::SelectDUT(int input, unsigned mask) {
+  int TLUController::DUTnum(const std::string & name) {
+    if (ucase(name) == "RJ45") return IN_RJ45;
+    if (ucase(name) == "LEMO") return IN_LEMO;
+    if (ucase(name) == "HDMI") return IN_HDMI;
+    if (name.find_first_not_of("0123456789") == std::string::npos) {
+      return eudaq::from_string(name, 0);
+    }
+    EUDAQ_THROW("Bad DUT input name");
+  }
+
+  void TLUController::SelectDUT(const std::string & name, unsigned mask, bool updateleds) {
+    SelectDUT(DUTnum(name), mask, updateleds);
+  }
+
+  void TLUController::SelectDUT(int input, unsigned mask, bool updateleds) {
     for (int i = 0; i < 4; ++i) {
       if ((mask >> i) & 1) {
         m_ipsel &= ~(3 << (2*i));
@@ -371,7 +394,7 @@ namespace tlu {
     }
     if (m_addr) WritePCA955(m_addr->TLU_I2C_BUS_MOTHERBOARD,
                             m_addr->TLU_I2C_BUS_MOTHERBOARD_FRONT_PANEL_IO, m_ipsel);
-    UpdateLEDs();
+    if (updateleds) UpdateLEDs();
   }
 
   void TLUController::Update(bool timestamps) {
@@ -623,52 +646,89 @@ namespace tlu {
     return m_particles;
   }
 
-  void TLUController::UpdateLEDs() {
-    int right = m_mask & 0x30, lemo = 0;
-    for (int i = 0; i < 4; ++i) {
-      lemo |= 5 << (3*i);
-      if (m_mask & (1 << i)) {
-        int ipsel = (m_ipsel >> (2*i)) & 3;
-        switch (ipsel) {
-        case IN_RJ45: right |= 1 << i; break;
-        case IN_LEMO: lemo |= 2 << (3*i); break;
-        }
-      }
-    }
-    SetLEDs(m_mask, right, lemo);
+  unsigned TLUController::GetScaler(unsigned i) const {
+    if (i >= (unsigned)TLU_TRIGGER_INPUTS) EUDAQ_THROW("Scaler number out of range");
+    return m_scalers[i];
   }
 
-  void TLUController::SetLEDs(int left, int right, int lemo) {
-    for (int i = 0; i < 8; ++i) {
-      unsigned bitr = 1 << 2*i, bitl = bitr << 1;
-      if (right >= 0) {
-        if ((right >> i) & 1) {
-          m_ledstatus |= bitr;
-        } else {
-          m_ledstatus &= ~bitr;
-        }
+  void TLUController::UpdateLEDs() {
+    std::vector<TLU_LEDs> leds(TLU_DUTS);
+    //std::cout << "mask: " << hexdec(m_mask) << ", ipsel: " << hexdec(m_ipsel) << std::endl;
+    for (int i = 0; i < TLU_DUTS; ++i) {
+      int bit = 1 << i;
+      if (m_mask & bit) leds[i].left = 1;
+      if (i >= TLU_LEMO_DUTS) {
+	leds[i].right = leds[i].left;
+	continue;
       }
-      if (left >= 0) {
-        if ((left >> i) & 1) {
-          m_ledstatus |= bitl;
-        } else {
-          m_ledstatus &= ~bitl;
-        }
+      int ipsel = (m_ipsel >> (2*i)) & 3;
+      switch (ipsel) {
+      case IN_RJ45:
+	leds[i].right = leds[i].left;
+	leds[i].trig = 1;
+	break;
+      case IN_LEMO:
+	leds[i].busy = leds[i].left;
+	leds[i].trig = 1;
+	break;
+      case IN_HDMI:
+	leds[i].trig = 2;
+	break;
       }
     }
-    if (m_addr) {
-      if (m_version == 1) {
-        WriteRegister(m_addr->TLU_DUT_LED_ADDRESS, left);
-      } else {
-        // Swap the two LSBs, to work around routing bug on TLU
-        unsigned data = (m_ledstatus & ~2) | ((m_ledstatus & 1) << 1) | ((m_ledstatus >> 1) & 1);
-        // And invert, because 1 means off
-        data = ~data & 0xffff;
-        WritePCA955(m_addr->TLU_I2C_BUS_MOTHERBOARD, m_addr->TLU_I2C_BUS_MOTHERBOARD_LED_IO, data);
-        if (m_version >= 3) {
-          // Versions before 3 (v0.2c) didn't have LEMO LEDs
-          WritePCA955(m_addr->TLU_I2C_BUS_LEMO, m_addr->TLU_I2C_BUS_LEMO_LED_IO, lemo);
-        }
+    //std::cout << "LEDS: " << to_string(leds) << std::endl;
+    SetLEDs(leds);
+  }
+
+  void TLUController::SetLEDs(int left, int right) {
+    std::vector<TLU_LEDs> leds(TLU_DUTS);
+    for (int i = 0; i < TLU_DUTS; ++i) {
+      int bit = 1 << i;
+      if (left & bit) leds[i].left = 1;
+      if (right & bit) leds[i].right = 1;
+    }
+    SetLEDs(leds);
+  }
+
+  void TLUController::SetLEDs(const std::vector<TLU_LEDs> & leds) {
+    if (!m_addr) EUDAQ_THROW("Cannot set LEDs on unconfigured TLU");
+    if (m_version == 1) {
+      int ledval = 0;
+      for (int i = 0; i < TLU_DUTS; ++i) {
+	if (leds[i].left) ledval |= 1 << i;
+      }
+      WriteRegister(m_addr->TLU_DUT_LED_ADDRESS, ledval);
+    } else {
+      int dutled = 0, lemoled = 0;
+      //std::cout << "LED:";
+      for (int i = 0; i < TLU_DUTS; ++i) {
+	//std::cout << ' ' << leds[i];
+	if (leds[i].left) dutled |= 1 << (2*i+1);
+	if (leds[i].right) dutled |= 1 << (2*i);
+	if (leds[i].rst) lemoled |= 1 << (2*i);
+	if (leds[i].busy) lemoled |= 1 << (2*i+1);
+	int swap = ((leds[i].trig >> 1) & 1) | ((leds[i].trig & 1) << 1);
+	lemoled |= swap << (2*i+8);
+      }
+      //std::cout << "\n  dut=" << hexdec(dutled) << ", lemo=" << hexdec(lemoled) << std::endl;
+      // Swap the two LSBs, to work around routing bug on TLU
+      dutled = (dutled & ~3) | ((dutled & 1) << 1) | ((dutled >> 1) & 1);
+      // And invert, because 1 means off
+      dutled ^= 0xffff;
+      // Invert lowest 8 bits (LEMO reset/busy LEDs)
+      lemoled ^= 0xff;
+      //std::cout << "  dut=" << hexdec(dutled) << ", lemo=" << hexdec(lemoled) << std::endl;
+      try {
+	WritePCA955(m_addr->TLU_I2C_BUS_MOTHERBOARD, m_addr->TLU_I2C_BUS_MOTHERBOARD_LED_IO, dutled);
+      } catch (const eudaq::Exception & e) {
+	std::cerr << "Error writing DUT LEDs: " << e.what() << std::endl;
+      }
+      unsigned long addr = m_addr->TLU_I2C_BUS_LEMO_LED_IO;
+      if (m_version < 3) addr = m_addr->TLU_I2C_BUS_LEMO_LED_IO_VB;
+      try {
+	WritePCA955(m_addr->TLU_I2C_BUS_LEMO, addr, lemoled);
+      } catch (const eudaq::Exception & e) {
+	std::cerr << "Error writing LEMO LEDs: " << e.what() << std::endl;
       }
     }
   }
@@ -736,7 +796,7 @@ namespace tlu {
     WriteI2Clines(0, 1);
     I2Cdelay();
     if (WriteI2Clines(1, 1)) {
-      EUDAQ_THROW("I2C device failed to acknowledge");
+      throw eudaq::Exception("I2C device failed to acknowledge");
     }
   }
 

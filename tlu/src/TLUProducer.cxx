@@ -33,9 +33,6 @@ public:
       lasttime(0),
       m_tlu(0)
     {}
-  void Event(unsigned tlu_evntno, const long long int & tlu_timestamp) {
-    SendEvent(TLUEvent(m_run, tlu_evntno, tlu_timestamp)); // not the right event number!!
-  }
   void MainLoop() {
     do {
       usleep(100);
@@ -64,7 +61,14 @@ public:
                     << ", freq=" << freq
                     << std::endl;
           lasttime = t;
-          Event(m_ev,t);
+          TLUEvent ev(m_run, m_ev, t);
+          if (i == m_tlu->NumEntries()-1) {
+            ev.SetTag("PARTICLES", to_string(m_tlu->GetParticles()));
+            for (int i = 0; i < TLU_TRIGGER_INPUTS; ++i) {
+              ev.SetTag("SCALER" + to_string(i), to_string(m_tlu->GetScaler(i)));
+            }
+          }
+          SendEvent(ev);
         }
         if (m_tlu->NumEntries()) {
           std::cout << "========" << std::endl;
@@ -81,7 +85,7 @@ public:
   virtual void OnConfigure(const eudaq::Configuration & param) {
     SetStatus(eudaq::Status::LVL_OK, "Wait");
     try {
-      std::cout << "Configuring." << std::endl;
+      std::cout << "Configuring (" << param.Name() << ")..." << std::endl;
       if (m_tlu) m_tlu = 0;
       int errorhandler = param.Get("ErrorHandler", 2);
       m_tlu = counted_ptr<TLUController>(new TLUController(errorhandler));
@@ -97,6 +101,9 @@ public:
       m_tlu->SetFirmware(param.Get("BitFile", ""));
       m_tlu->SetVersion(param.Get("Version", 0));
       m_tlu->Configure();
+      for (int i = 0; i < tlu::TLU_LEMO_DUTS; ++i) {
+        m_tlu->SelectDUT(param.Get("DUTInput", "DUTInput" + to_string(i), "RJ45"), 1 << i, false);
+      }
       m_tlu->SetTriggerInterval(trigger_interval);
       m_tlu->SetDUTMask(dut_mask);
       m_tlu->SetVetoMask(veto_mask);
@@ -122,7 +129,6 @@ public:
     try {
       m_run = param;
       m_ev = 0;
-      m_tlu->ResetTriggerCounter();
       std::cout << "Start Run: " << param << std::endl;
       TLUEvent ev(TLUEvent::BORE(m_run));
       ev.SetTag("FirmwareID",  to_string(m_tlu->GetFirmwareID()));
@@ -135,6 +141,8 @@ public:
       //      SendEvent(TLUEvent::BORE(m_run).SetTag("Interval",trigger_interval).SetTag("DUT",dut_mask));
       SendEvent(ev);
       sleep(5);
+      m_tlu->ResetTriggerCounter();
+      m_tlu->ResetScalers();
       m_tlu->Start();
       TLUStarted=true;
       SetStatus(eudaq::Status::LVL_OK, "Started");
@@ -184,10 +192,15 @@ public:
     }
   }
   virtual void OnStatus() {
-    m_status.SetTag("TRIG", eudaq::to_string(m_ev));
-    m_status.SetTag("TIMESTAMP", eudaq::to_string(Timestamp2Seconds(m_tlu ? m_tlu->GetTimestamp() : 0)));
-    m_status.SetTag("LASTTIME", eudaq::to_string(Timestamp2Seconds(lasttime)));
-    m_status.SetTag("PARTICLES", eudaq::to_string(m_tlu ? m_tlu->GetParticles() : 0));
+    m_status.SetTag("TRIG", to_string(m_ev));
+    if (m_tlu) {
+      m_status.SetTag("TIMESTAMP", to_string(Timestamp2Seconds(m_tlu->GetTimestamp())));
+      m_status.SetTag("LASTTIME", to_string(Timestamp2Seconds(lasttime)));
+      m_status.SetTag("PARTICLES", to_string(m_tlu->GetParticles()));
+      for (int i = 0; i < 4; ++i) {
+        m_status.SetTag("SCALER" + to_string(i), to_string(m_tlu->GetScaler(i)));
+      }
+    }
     //std::cout << "Status " << m_status << std::endl;
   }
   virtual void OnUnrecognised(const std::string & cmd, const std::string & param) {
