@@ -4,8 +4,12 @@
 #include "eudaq/debugtools.hh"
 #include "eudaq/Event.hh"
 
-#include <EVENT/LCEvent.h>
-#include <lcio.h>
+#if USE_LCIO
+#  include <EVENT/LCEvent.h>
+#  include <lcio.h>
+#else
+namespace lcio { typedef void LCEvent; }
+#endif
 
 #include <string>
 
@@ -28,7 +32,7 @@ class DataConverterPlugin
 public:
     /** Returns the LCIO version of the event.
      */
-    virtual lcio::LCEvent * GetLCIOEvent( eudaq::Event const * ee ) const = 0;
+    virtual lcio::LCEvent * GetLCIOEvent( eudaq::Event const * ) const { return 0; }
 
     /** Returns the StandardEvent version of the event.
      */
@@ -40,7 +44,7 @@ public:
 
     /** The empty destructor. Need to add it to make it virtual.
      */
-    virtual ~DataConverterPlugin(){}
+    virtual ~DataConverterPlugin() {}
 
 protected:
     /** The string storing the event type this plugin can convert to lcio.
