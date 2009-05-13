@@ -9,6 +9,7 @@
 #include "EVENT/LCIO.h"
 #include "IMPL/LCRunHeaderImpl.h" 
 #include "IMPL/LCTOOLS.h"
+#include <UTIL/LCSplitWriter.h>
 
 // the standard c++ stuff
 #include <iostream>
@@ -87,8 +88,8 @@ int main(int argc, char * argv[])
     }
 
     // create sio writer and open the file
-    lcio::LCWriter* lciowriter = lcio::LCFactory::getInstance()->createLCWriter() ;
-    lciowriter->open( outFileName, lcio::LCIO::WRITE_NEW ) ;
+    lcio::LCWriter* lciowriter = new UTIL::LCSplitWriter( lcio::LCFactory::getInstance()->createLCWriter() , 2040109465 ) ;
+    lciowriter->open( outFileName ) ;
 
     // read continuoutsly from infile.
     // Loop will exit when end of file is reached
@@ -304,6 +305,7 @@ int main(int argc, char * argv[])
 
     // close the outfile
     lciowriter->close() ;
+    delete lciowriter;
 
     // release the memory of the inputbuffer
     delete[] inputbuffer;
