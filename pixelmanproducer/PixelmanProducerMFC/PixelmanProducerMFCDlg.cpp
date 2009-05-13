@@ -92,6 +92,7 @@ void CPixelmanProducerMFCDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CHIPSELECT, m_chipSelect);
 	DDX_Control(pDX, IDC_WRITEASCIIMASKS, m_writeMask);
 	DDX_Control(pDX, IDC_EDIT2, m_parPortAddress);
+	DDX_Control(pDX, IDC_COMMANDS, m_commHistRunCtrl);
 }
 
 
@@ -125,12 +126,13 @@ BOOL CPixelmanProducerMFCDlg::OnInitDialog()
 	//OnPaint;
 	char buffer[255];
 	
-	m_hostname.SetWindowText("localhost");	
+	m_hostname.SetWindowText("mortimer.physik.uni-freiburg.de");	
 	
 	m_AcqCount.SetWindowText("0");
 	m_AcqTime.SetWindowText("0");
 	m_SpinAcqCount.SetRange(0, 10000);
 	m_SpinAcqCount.SetBuddy(&m_AcqCount);
+	m_commHistRunCtrl.AddString("Producer Started");
 
 	
 	for (int i = 0; i<mpxCount; i++)
@@ -213,6 +215,7 @@ UINT TimePixProducerThread(LPVOID pParam)
     EUDAQ_LOG_LEVEL(level.Value());
     TimepixProducer producer(name.Value(), rctrl.Value(), pMainWnd);
 	producer.SetDone(false);
+	pMainWnd->m_commHistRunCtrl.AddString(_T("Connected"));
 
 		do 
 		{
@@ -228,8 +231,8 @@ UINT TimePixProducerThread(LPVOID pParam)
 	{
 		char buffer[255];
 
-		sprintf_s(buffer,sizeof(buffer),"%i",op.HandleMainException());
-		MessageBox(NULL,buffer, "Caught Exception", NULL);
+		sprintf_s(buffer,sizeof(buffer),"Error %i",op.HandleMainException());
+		pMainWnd->m_commHistRunCtrl.AddString(_T(buffer));
 	}
 	
 	//MessageBox("Goodbye", "HaveFun", NULL);

@@ -24,6 +24,8 @@ public:
 	CPixelmanProducerMFCDlg(CWnd* pParent = NULL);	// standard constructor
 	virtual ~CPixelmanProducerMFCDlg();
 	void (*DialogBoxDelete)(CWnd*);
+	
+	//exported MpxpluginMgrFunctions
 	int (*mpxCtrlLoadPixelsCfgAscii) (DEVID devID, const char *maskBitFile,
 						   const char *testBitFile, const char *thlFile,
 						   const char *thhOrModeFile, BOOL loadDacs);
@@ -33,11 +35,17 @@ public:
 	int (*mpxCtrlGetFrame16)(DEVID devId, i16 *buffer, u32 size,
 							 u32 frameNumber);
 	int (*mpxCtrlTriggerType)(DEVID devId, int trigger);
+	int (*mpxCtrlReconnectMpx)(DEVID devId);
+	int (*mpxCtrlInitMpxDevice)(DEVID devId);
+	int (*mpxCtrlReviveMpxDevice)(DEVID devId);
+	int (*mpxCtrlAbortOperation)(DEVID devId);
 
+	
 	int mpxCtrlPerformFrameAcqTimePixProd();
 	int mpxCtrlPerformTriggeredFrameAcqTimePixProd();
 	int mpxCtrlGetFrame32TimePixProd();
 	int mpxWaitForTrigger();
+	
 
 		
 	CSpinButtonCtrl m_SpinAcqCount;
@@ -45,19 +53,17 @@ public:
 	CEditExtended m_AcqTime;
 	CEditExtended m_hostname;
 	CHexEdit m_parPortAddress;
+	CComboBox m_chipSelect;
+	CButton m_AsciiThlAdjFile;
+	CListBox m_commHistRunCtrl;
+	
 	int _threadRetVal;
 	
-	CComboBox m_chipSelect;
-	
-	CButton m_AsciiThlAdjFile;
-
-	TimePixDAQStatus timePixDaqStatus;
-	
-
 	int mpxCount;//needed to now how long medipixChipId is
 	int mpxCurrSel;
 	medipixChipId* mpxDevId;
 	double infDouble;
+	TimePixDAQStatus timePixDaqStatus;
 
 // Dialog Data
 	enum { IDD = IDD_PIXELMANPRODUCERMFC_DIALOG };
@@ -108,4 +114,5 @@ public:
 	afx_msg void OnBnClickedButton1();
 	
 	afx_msg void OnEnChangeParPortAddr();
+	
 };

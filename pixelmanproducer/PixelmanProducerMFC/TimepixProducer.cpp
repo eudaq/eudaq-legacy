@@ -136,14 +136,16 @@ void TimepixProducer::BlobEvent()
 
 void TimepixProducer::OnConfigure(const eudaq::Configuration & param) 
 {
-    std::cout << "Configuring." << std::endl;
-//    eventsize = param.Get("EventSize", 1);
+	DEVID devId = pixelmanCtrl->mpxDevId[pixelmanCtrl->mpxCurrSel].deviceId;
+	pixelmanCtrl->mpxCtrlInitMpxDevice(devId);
     EUDAQ_INFO("Configured (" + param.Name() + ")");
     SetStatus(eudaq::Status::LVL_OK, "Configured (" + param.Name() + ")");
+
 }
 
 void TimepixProducer::OnStartRun(unsigned param) 
 {	
+	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Start Of Run."));
 	pthread_mutex_lock( &m_stopRun_mutex );
        m_stopRun = false;
 	   static bool stopRun = m_stopRun;
@@ -175,6 +177,7 @@ void TimepixProducer::OnStartRun(unsigned param)
 
 void TimepixProducer::OnStopRun()
 {
+	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("End Of Run."));
 	pthread_mutex_lock( &m_stopRun_mutex );
        m_stopRun = false;
 	   static bool stopRun = m_stopRun;
@@ -196,8 +199,10 @@ void TimepixProducer::OnStopRun()
 }
  
 void TimepixProducer::OnTerminate()
-{
-    MessageBox(NULL, "Connection Terminated", "Message from Runcontrol",NULL);
+{	
+	DEVID devId = pixelmanCtrl->mpxDevId[pixelmanCtrl->mpxCurrSel].deviceId;
+	pixelmanCtrl->mpxCtrlAbortOperation(devId);
+	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Terminated (I'll be back)"));
 	//std::cout << "Terminate (press enter)" << std::endl;
     SetDone( true );
 	
@@ -205,19 +210,21 @@ void TimepixProducer::OnTerminate()
  
 void TimepixProducer::OnReset()
 {
-	
-    //std::cout << "Reset" << std::endl;
+	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Reset."));
+	//std::cout << "Reset" << std::endl;
     //SetStatus(eudaq::Status::LVL_OK);
 }
 
 void TimepixProducer::OnStatus()
 {
+	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("OnStatus Not Implemented."));
 	//std::cout << "Status - " << m_status << std::endl;
     //SetStatus(eudaq::Status::WARNING, "Only joking");
 }
 
 void TimepixProducer::OnUnrecognised(const std::string & cmd, const std::string & param) 
 {
+	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Unrecognised Command."));
     std::cout << "Unrecognised: (" << cmd.length() << ") " << cmd;
     if (param.length() > 0) std::cout << " (" << param << ")";
     std::cout << std::endl;

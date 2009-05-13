@@ -29,7 +29,10 @@ int mpxCtrlPerformFrameAcq(DEVID devId, int numberOfFrames,
 int mpxCtrlGetFrame16(DEVID devId, i16 *buffer, u32 size,
 							 u32 frameNumber);
 int mpxCtrlTriggerType(DEVID devId, int trigger);
-
+int mpxCtrlReconnectMpx(DEVID devId);
+int mpxCtrlInitMpxDevice(DEVID devId);
+int mpxCtrlReviveMpxDevice(DEVID devId);
+int mpxCtrlAbortOperation(DEVID devId);
 
 
 
@@ -97,6 +100,10 @@ void DialogBoxInit(unsigned int par)
 	pMainWnd->mpxCtrlPerformFrameAcq = &mpxCtrlPerformFrameAcq;
 	pMainWnd->mpxCtrlGetFrame16 = &mpxCtrlGetFrame16;
 	pMainWnd->mpxCtrlTriggerType = &mpxCtrlTriggerType;
+	pMainWnd->mpxCtrlReconnectMpx = &mpxCtrlReconnectMpx;
+	pMainWnd->mpxCtrlInitMpxDevice = &mpxCtrlInitMpxDevice;
+	pMainWnd->mpxCtrlReviveMpxDevice = &mpxCtrlReviveMpxDevice;
+	pMainWnd->mpxCtrlAbortOperation = &mpxCtrlAbortOperation;
 	ret = pMainWnd->Create(IDD_PIXELMANPRODUCERMFC_DIALOG, CWnd::GetDesktopWindow());
 	pMainWnd->SetWindowText("Pixelman Eudaq-Producer");
 	pMainWnd->ShowWindow(SW_SHOW);
@@ -144,4 +151,24 @@ int mpxCtrlGetFrame16(DEVID devId, i16 *buffer, u32 size,
 int mpxCtrlTriggerType(DEVID devId, int trigger)
 {
 	return mgr->mpxCtrlTrigger(devId, trigger);
+}
+
+int mpxCtrlReconnectMpx(DEVID devId)
+{
+	return mgr->mpxCtrlReconnectMpx(devId);
+}
+
+int mpxCtrlInitMpxDevice(DEVID devId)
+{
+	return mgr->mpxCtrlInitMpxDevice(devId, NULL);
+}
+
+int mpxCtrlReviveMpxDevice(DEVID devId)
+{
+	return mgr->mpxCtrlReviveMpxDevice(devId);
+}
+
+int mpxCtrlAbortOperation(DEVID devId)
+{
+	return mgr->mpxCtrlAbortOperation(devId);
 }

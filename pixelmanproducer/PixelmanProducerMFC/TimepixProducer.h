@@ -65,7 +65,9 @@ protected:
     unsigned m_ev;		pthread_mutex_t m_ev_mutex;
 	bool m_stopRun;		pthread_mutex_t m_stopRun_mutex;
 	bool m_runFinished; pthread_mutex_t m_runFinished_mutex;
+	pthread_mutexattr_t m_mutexattr;
+	
+private:
 	CPixelmanProducerMFCDlg* pixelmanCtrl;
-    
-    pthread_mutexattr_t m_mutexattr;
+
 };
