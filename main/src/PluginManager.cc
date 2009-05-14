@@ -23,17 +23,17 @@ void PluginManager::RegisterPlugin(DataConverterPlugin const * plugin)
 
 DataConverterPlugin const * PluginManager::GetPlugin(std::string eventtype)
 {
-    std::map<std::string, DataConverterPlugin const *>::iterator pluginiter 
-	= m_pluginmap.find(eventtype);
+    std::map<std::string, DataConverterPlugin const *>::iterator pluginiter
+      = m_pluginmap.find(eventtype);
 
     if (pluginiter != m_pluginmap.end())
     {
-	return pluginiter->second;
+      return pluginiter->second;
     }
-    else 
+    else
     {
-	EUDAQ_THROW("PluginManager::GetPlugin(): Unkown event type "+eventtype);
-	return 0;
+      EUDAQ_THROW("PluginManager::GetPlugin(): Unkown event type "+eventtype);
+      return 0;
     }
     
 }

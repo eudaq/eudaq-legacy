@@ -17,8 +17,7 @@ namespace eudaq
   EUDRBConverterPlugin const EUDRBConverterPlugin::m_eudrbconverterplugininstance;
 
   StandardEvent * EUDRBConverterPlugin::GetStandardEvent(eudaq::Event const * ee) const {
-    StandardEvent * se = new StandardEvent;
-    se->b = ee->GetEventNumber();
+    StandardEvent * se = new StandardEvent(ee->GetEventNumber());
     return se;
   }
 

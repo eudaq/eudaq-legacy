@@ -2,6 +2,7 @@
 #define EUDAQ_INCLUDED_DataConverterPlugin
 
 #include "eudaq/debugtools.hh"
+#include "eudaq/StandardEvent.hh"
 #include "eudaq/Event.hh"
 
 #if USE_LCIO

@@ -4,15 +4,19 @@
 namespace eudaq {
 
   FileReader::FileReader(const std::string & file, const std::string & filepattern)
-    : m_des(FileNamer(filepattern).Set('X', ".raw").SetReplace('R', file)),
+    : m_filename(FileNamer(filepattern).Set('X', ".raw").SetReplace('R', file)),
+      m_des(m_filename),
       m_ev(EventFactory::Create(m_des)) {
   }
 
-  bool FileReader::NextEvent() {
+  bool FileReader::NextEvent(size_t skip) {
     if (!m_des.HasData()) {
       return false;
     }
-    m_ev = eudaq::EventFactory::Create(m_des);
+    for (size_t i = 0; i <= skip; ++i) {
+      if (!m_des.HasData()) break;
+      m_ev = eudaq::EventFactory::Create(m_des);
+    }
     return true;
   }
 

@@ -1,6 +1,7 @@
 #include "eudaq/FileWriter.hh"
 #include "eudaq/FileNamer.hh"
 #include "eudaq/Exception.hh"
+#include "eudaq/FileWriterLCIO.hh"
 
 namespace eudaq {
 
@@ -15,6 +16,7 @@ namespace eudaq {
 
 
   void FileWriterFactory::do_register(const std::string & name, FileWriterFactory::factoryfunc func) {
+    std::cout << "DEBUG: Registering FileWriter: " << name<< std::endl;
     FileWriterMap()[name] = func;
   }
 

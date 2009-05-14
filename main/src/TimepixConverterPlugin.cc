@@ -69,12 +69,10 @@ namespace eudaq
   { return 0; }
 #endif
 
-  StandardEvent * TimepixConverterPlugin::GetStandardEvent( eudaq::Event const * ee ) const
+  StandardEvent * TimepixConverterPlugin::GetStandardEvent(eudaq::Event const *) const
   {
-    StandardEvent * se = new StandardEvent;
-    se->b = ee->GetEventNumber ();
-
-    return se;
+    //StandardEvent * se = new StandardEvent;
+    return 0;
   }
 
 } //namespace eudaq

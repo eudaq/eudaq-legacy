@@ -11,14 +11,6 @@ public:
     lcioevent() : a(0) {}
 };
 
-// A dummy version of the eudaq::StandardEvent.
-class StandardEvent
-{
-public:
-    int b;
-    StandardEvent() : b(2) {}
-};
-    
 }
 
 #endif// DEBUGTOOLS_H
