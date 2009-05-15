@@ -4,12 +4,9 @@
 #include "eudaq/FileWriter.hh"
 #include "eudaq/debugtools.hh"
 //#include "eudaq/FileSerializer.hh"
-#if USE_LCIO
-#  include <IO/LCWriter.h>
-#  include <lcio.h>
-#else
-namespace lcio { typedef void LCWriter; }
-#endif
+
+namespace IO { class LCWriter; }
+namespace lcio { using namespace IO; }
 
 namespace eudaq {
 

@@ -9,7 +9,9 @@
 #  include <IMPL/LCCollectionVec.h>
 #  include <EVENT/LCIO.h>
 #  include <Exceptions.h>
-#  include "IMPL/LCTOOLS.h"
+#  include <IMPL/LCTOOLS.h>
+#  include <IO/LCWriter.h>
+#  include <lcio.h>
 
 namespace eudaq {
 

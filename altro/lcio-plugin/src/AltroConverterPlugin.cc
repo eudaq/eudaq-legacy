@@ -458,12 +458,13 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
     return lcioevent;
 }
 
-StandardEvent * AltroConverterPlugin::GetStandardEvent( eudaq::Event const * eudaqevent ) const
+StandardEvent * AltroConverterPlugin::GetStandardEvent( eudaq::Event const * ) const
 {
-    StandardEvent * se = new StandardEvent;
-    se->b = eudaqevent->GetEventNumber ();
-
-    return se;
+//    StandardEvent * se = new StandardEvent;
+//    se->b = eudaqevent->GetEventNumber ();
+//
+//    return se;
+  return 0;
 }
 
 } //namespace eudaq

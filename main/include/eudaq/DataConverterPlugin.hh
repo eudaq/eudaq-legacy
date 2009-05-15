@@ -5,12 +5,8 @@
 #include "eudaq/StandardEvent.hh"
 #include "eudaq/Event.hh"
 
-#if USE_LCIO
-#  include <EVENT/LCEvent.h>
-#  include <lcio.h>
-#else
-namespace lcio { typedef void LCEvent; }
-#endif
+namespace EVENT { class LCEvent; }
+namespace lcio { using namespace EVENT; }
 
 #include <string>
 

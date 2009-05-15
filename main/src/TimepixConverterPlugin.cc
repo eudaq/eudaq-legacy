@@ -3,6 +3,7 @@
 #include "eudaq/RawDataEvent.hh"
 
 #if USE_LCIO
+#  include <lcio.h>
 #  include <IMPL/LCEventImpl.h>
 #  include <IMPL/TrackerRawDataImpl.h>
 #  include <IMPL/LCCollectionVec.h>
