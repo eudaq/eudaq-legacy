@@ -172,7 +172,7 @@ vpath %.h $(INC)
 vpath %.hh $(INC)
 vpath %.gch $(INC)
 
-.PHONY: default_target
+.PHONY: default_target objs
 default_target: default
 
 # On cygwin build static libraries, since there is a problem with exceptions in .dlls
@@ -187,6 +187,8 @@ endif
 ifneq ($(TARGET),)
   $(TARGET): $(OBJ_FILES)
 endif
+
+objs: $(OBJ_FILES) $(EXEOBJ_FILES)
 
 ifneq ($(NO_DEFAULT_RULES),1)
 clean:

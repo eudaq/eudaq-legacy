@@ -16,10 +16,12 @@ namespace eudaq {
     std::string FileName() const { return m_filename; }
     unsigned RunNumber() const;
     const DetectorEvent & Event() const;
+    //const StandardEvent & GetStandardEvent() const;
   private:
     std::string m_filename;
     FileDeserializer m_des;
     counted_ptr<eudaq::Event> m_ev;
+    //mutable counted_ptr<eudaq::StandardEvent> m_sev;
   };
 
 }

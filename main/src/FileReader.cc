@@ -1,5 +1,6 @@
 #include "eudaq/FileReader.hh"
 #include "eudaq/FileNamer.hh"
+#include "eudaq/PluginManager.hh"
 
 namespace eudaq {
 
@@ -27,5 +28,28 @@ namespace eudaq {
   const DetectorEvent & FileReader::Event() const {
     return dynamic_cast<const DetectorEvent &>(*m_ev);
   }
+
+//   const StandardEvent & FileReader::GetStandardEvent() const {
+//     if (!m_sev) {
+//       counted_ptr<StandardEvent> sevent(new StandardEvent);
+//       const DetectorEvent & dev = GetDetectorEvent();
+//       for (size_t i = 0; i < dev.NumEvents(); ++i) {
+//         const eudaq::Event * subevent = dev.GetEvent(i);
+
+//         try {
+//           const DataConverterPlugin * converterplugin = PluginManager::GetInstance().GetPlugin(subevent->GetType());
+//           converterplugin->GetStandardSubEvent(*sevent, *subevent);
+//           //std::fprintf(m_file, "Event %d %d\n", devent.GetEventNumber(), standardevent->m_x.size());
+//         } catch(eudaq::Exception & e) {
+//           //std::cout <<  e.what() << std::endl;
+//           std::cout <<  "FileWriterText::WriteEvent(): Ignoring event type "
+//                     <<  subevent->GetType() << std::endl;
+//           continue;
+//         }
+//       }
+//       m_sev = sevent;
+//     }
+//     return *m_sev;
+//   }
 
 }

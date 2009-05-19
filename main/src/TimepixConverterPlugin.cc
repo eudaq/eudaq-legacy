@@ -17,7 +17,7 @@ namespace eudaq
   TimepixConverterPlugin const TimepixConverterPlugin::m_timepixconverterplugininstance;
 
 #if USE_LCIO
-  lcio::LCEvent * TimepixConverterPlugin::GetLCIOEvent( eudaq::Event const * ee ) const
+  bool TimepixConverterPlugin::GetLCIOSubEvent(lcio::LCEvent & le, const eudaq::Event ee) const
   {
     //try to cast the eudaq event to RawDataEvent
     eudaq::RawDataEvent const *re = dynamic_cast<eudaq::RawDataEvent const *>(ee);
@@ -30,11 +30,17 @@ namespace eudaq
       EUDAQ_THROW(std::string("TimepixConverterPlugin::GetLCIOEvent: Error") +
                   " given event is not a TimepixEvent");
 
-    lcio::LCEventImpl * le = new lcio::LCEventImpl;
-    le->setEventNumber( ee->GetEventNumber () );
-    le->setRunNumber(    ee->GetRunNumber () );
-    le->setDetectorName( "Timepix");
-    le->setTimeStamp( ee->GetTimestamp() );
+    //lcio::LCEventImpl * le = new lcio::LCEventImpl; // no longer needed, it is apssed in as a parameter
+
+    // These should probably be set from the surrounding DetectorEvent, not from each subevent
+    //le.setEventNumber( ee->GetEventNumber () );
+    //le.setRunNumber(    ee->GetRunNumber () );
+
+    // This should probably be set from the TLU event
+    //le.setTimeStamp( ee->GetTimestamp() );
+
+    // There may be multiple different detectors in one data file, so this is a property of the added collection
+    //le.setDetectorName( "Timepix");
 
     // the vector for the timepix data, only needed one, so it's created before the loop
     std::vector<short> timepixdata;
@@ -60,20 +66,20 @@ namespace eudaq
         lcio::LCCollectionVec * timepixCollection = new lcio::LCCollectionVec(lcio::LCIO::TRACKERRAWDATA);
         timepixCollection->addElement(timepixlciodata);
 
-        le->addCollection(timepixCollection,"TimePixRawData");
+        le.addCollection(timepixCollection,"TimePixRawData");
       }// for (block)
 
-    return le;
+    return true;
   }
 #else
-  lcio::LCEvent * TimepixConverterPlugin::GetLCIOEvent( eudaq::Event const *) const
-  { return 0; }
+  bool TimepixConverterPlugin::GetLCIOSubEvent(lcio::LCEvent &, const eudaq::Event &) const
+  { return false; }
 #endif
 
-  StandardEvent * TimepixConverterPlugin::GetStandardEvent(eudaq::Event const *) const
+  bool TimepixConverterPlugin::GetStandardSubEvent(StandardEvent &, const eudaq::Event &) const
   {
     //StandardEvent * se = new StandardEvent;
-    return 0;
+    return false;
   }
 
 } //namespace eudaq

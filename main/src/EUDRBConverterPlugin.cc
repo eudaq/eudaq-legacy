@@ -16,9 +16,10 @@ namespace eudaq
 
   EUDRBConverterPlugin const EUDRBConverterPlugin::m_eudrbconverterplugininstance;
 
-  StandardEvent * EUDRBConverterPlugin::GetStandardEvent(eudaq::Event const * ee) const {
-    StandardEvent * se = new StandardEvent(ee->GetEventNumber());
-    return se;
+  bool EUDRBConverterPlugin::GetStandardSubEvent(StandardEvent & result, const eudaq::Event & source) const {
+    StandardPlane plane;
+    result.AddPlane(plane);
+    return true;
   }
 
 } //namespace eudaq

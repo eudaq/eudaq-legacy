@@ -71,7 +71,7 @@ namespace eudaq {
     unsigned GetFlags(unsigned f = FLAG_ALL) const { return m_flags & f; }
     void SetFlags(unsigned f) { m_flags |= f; }
     void ClearFlags(unsigned f = FLAG_ALL) { m_flags &= ~f; }
-  private:
+  protected:
     virtual unsigned get_id() const = 0;
     typedef std::map<std::string, std::string> map_t;
 

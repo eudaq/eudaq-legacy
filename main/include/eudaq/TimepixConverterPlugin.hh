@@ -16,19 +16,19 @@ namespace eudaq{
  *  inherited constructor of the DataConverterPlugin.
  */
 
-class TimepixConverterPlugin : public DataConverterPlugin
-{
+  class TimepixConverterPlugin : public DataConverterPlugin
+  {
     
-public:
+  public:
     /** Returns the event converted to. This is the working horse and the 
      *  main part of this plugin.
      */
-    virtual lcio::LCEvent * GetLCIOEvent( eudaq::Event const * ee ) const;
+    virtual bool GetLCIOSubEvent(lcio::LCEvent &, const eudaq::Event & source) const;
 
     /** Returns the event converted to. This is the working horse and the 
      *  main part of this plugin.
      */
-    virtual StandardEvent * GetStandardEvent( eudaq::Event const * ee ) const;
+    virtual bool GetStandardSubEvent(eudaq::StandardEvent & result, const eudaq::Event & source) const;
 
     /** The empty destructor. Need to add it to make it virtual.
      */

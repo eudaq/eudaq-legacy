@@ -23,21 +23,19 @@ namespace eudaq{
  *  The plugin implementations have to register with the plugin manager.
  */
 
-class DataConverterPlugin
-{
-    
-public:
+  class DataConverterPlugin {
+  public:
     /** Returns the LCIO version of the event.
      */
-    virtual lcio::LCEvent * GetLCIOEvent( eudaq::Event const * ) const { return 0; }
+    virtual bool GetLCIOSubEvent(lcio::LCEvent & /*result*/, eudaq::Event const & /*source*/) const { return 0; }
 
     /** Returns the StandardEvent version of the event.
      */
-    virtual StandardEvent * GetStandardEvent( eudaq::Event const * ee ) const = 0;
+    virtual bool GetStandardSubEvent(StandardEvent & result, eudaq::Event const & source) const = 0;
 
     /** Returns the type of event this plugin can convert to lcio as a string.
      */
-    virtual std::string const & GetEventType() const {return m_eventtype;}
+    virtual std::string const & GetEventType() const { return m_eventtype; }
 
     /** The empty destructor. Need to add it to make it virtual.
      */

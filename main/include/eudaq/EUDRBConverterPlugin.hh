@@ -25,7 +25,7 @@ namespace eudaq {
     /** Returns the event converted to. This is the working horse and the 
      *  main part of this plugin.
      */
-    virtual StandardEvent * GetStandardEvent( eudaq::Event const * ee ) const;
+    virtual bool GetStandardSubEvent(StandardEvent &, const eudaq::Event & source) const;
 
     /** The empty destructor. Need to add it to make it virtual.
      */
