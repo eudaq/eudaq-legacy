@@ -1,4 +1,4 @@
-// PixelmanProducerMFCDlg.cpp : implementation file
+ // PixelmanProducerMFCDlg.cpp : implementation file
 //
 
 #include "stdafx.h"
@@ -20,6 +20,7 @@
 
 short _stdcall Inp32(short PortAddress);
 void _stdcall Out32(short PortAddress, short data);
+TimepixProducer* producer;
 
 
 //char* sThlMaskFilePath;
@@ -76,6 +77,11 @@ CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 
 CPixelmanProducerMFCDlg::~CPixelmanProducerMFCDlg()	
 {
+	//pixelmanProducerCreated = false;
+	if(producerStarted==true)
+		producer->SetDone(true);
+	//delete producer;
+	
 	//this->DialogBoxDelete(this);
 }
 
@@ -133,6 +139,7 @@ BOOL CPixelmanProducerMFCDlg::OnInitDialog()
 	m_SpinAcqCount.SetRange(0, 10000);
 	m_SpinAcqCount.SetBuddy(&m_AcqCount);
 	m_commHistRunCtrl.AddString("Producer Started");
+	producerStarted = false;
 
 	
 	for (int i = 0; i<mpxCount; i++)
@@ -213,15 +220,16 @@ UINT TimePixProducerThread(LPVOID pParam)
 	{
     //op.Parse(argv);
     EUDAQ_LOG_LEVEL(level.Value());
-    TimepixProducer producer(name.Value(), rctrl.Value(), pMainWnd);
-	producer.SetDone(false);
+    producer = new TimepixProducer(name.Value(), rctrl.Value(), pMainWnd);
+	producer->SetDone(false);
+	pMainWnd->producerStarted = true;
 	pMainWnd->m_commHistRunCtrl.AddString(_T("Connected"));
 
 		do 
 		{
 		
 		}
-		while (!producer.GetDone());
+		while (!producer->GetDone());
 		
 
 	//
@@ -249,12 +257,16 @@ void CPixelmanProducerMFCDlg::OnBnClickedOk()
 
 void CPixelmanProducerMFCDlg::OnBnClickedCancel()
 {
-	DialogBoxDelete(this);
+	//delete timePixDaqStatus;
+	
+	//producer->SetDone(true);
+	DialogBoxDelete(this);	
 }
 
 void CPixelmanProducerMFCDlg::OnBnClickedQuit()
 {
-	this->DialogBoxDelete(this);
+	//producer->SetDone(true);
+	DialogBoxDelete(this);
 }
 
 

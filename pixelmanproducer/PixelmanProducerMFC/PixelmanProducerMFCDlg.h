@@ -11,6 +11,7 @@
 #include "mpxpluginmgrapi.h"
 #include "medipixChipId.h"
 #include "hexedit.h"
+//#include "TimepixProducer.h"
 #include "TimePixDAQStatus.h"
 
 
@@ -24,6 +25,7 @@ public:
 	CPixelmanProducerMFCDlg(CWnd* pParent = NULL);	// standard constructor
 	virtual ~CPixelmanProducerMFCDlg();
 	void (*DialogBoxDelete)(CWnd*);
+	//BOOL *pixelmanProducerCreated;
 	
 	//exported MpxpluginMgrFunctions
 	int (*mpxCtrlLoadPixelsCfgAscii) (DEVID devID, const char *maskBitFile,
@@ -56,6 +58,7 @@ public:
 	CComboBox m_chipSelect;
 	CButton m_AsciiThlAdjFile;
 	CListBox m_commHistRunCtrl;
+	BOOL producerStarted;
 	
 	int _threadRetVal;
 	
@@ -68,16 +71,12 @@ public:
 // Dialog Data
 	enum { IDD = IDD_PIXELMANPRODUCERMFC_DIALOG };
 
+	
+// Implementation
+	//DECLARE_MESSAGE_MAP()
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
-
-
-// Implementation
-	protected:
 	HICON m_hIcon;
-
-	//DECLARE_MESSAGE_MAP()
-protected:
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
@@ -107,12 +106,10 @@ public:
 	afx_msg void OnBnClickedQuit();
 	afx_msg void OnBnClickedThlAsciiMask();
 	afx_msg void OnBnClickedWriteMasks();
-		
 	afx_msg void OnCbnSelchangeChipselect();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	CButton m_writeMask;
 	afx_msg void OnBnClickedButton1();
-	
 	afx_msg void OnEnChangeParPortAddr();
 	
 };

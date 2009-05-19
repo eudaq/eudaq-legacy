@@ -14,6 +14,8 @@
 DEVID devId;	
 int mpxCount;
 medipixChipId* mpxDevId;
+CPixelmanProducerMFCDlg* pMainWnd;
+BOOL pixelmanProducerCreated = false;
 
 
 //Prototypen für Funktionen
@@ -38,7 +40,7 @@ int mpxCtrlAbortOperation(DEVID devId);
 
 PLUGIN_INIT
 {	
-	//mgr->registerCallback(MPXMGR_NAME, MPXMGR_CB_EXIT, MgrDeleteCallback);    
+	mgr->registerCallback(MPXMGR_NAME, MPXMGR_CB_EXIT, MgrDeleteCallback);    
 
 	//char buffer[200];
 	
@@ -72,7 +74,6 @@ PLUGIN_INIT
 			mpxDevId[chipNo].sizeOfDataBuffer = chipSize;//(mpxDevId[chipNo].deviceInfo.rowLen)*(mpxDevId[chipNo].deviceInfo.rowLen);		
 			
 		}
-
 		return mgr->addMenuItem(PLUGIN_NAME,"TimePixProducer","TimePixProducer", DialogBoxInit, 0, 0, 0);
 	}
 	else
@@ -88,25 +89,32 @@ void DialogBoxInit(unsigned int par)
 {
 	//MessageBox(NULL, "Hallo´", "Test", NULL);
 	
-
-	AFX_MANAGE_STATE(AfxGetStaticModuleState( ));
-	BOOL ret = FALSE;
-	
-	CPixelmanProducerMFCDlg* pMainWnd = new CPixelmanProducerMFCDlg(NULL);
-	pMainWnd->DialogBoxDelete=&DialogBoxDelete;
-	pMainWnd->mpxCount = mpxCount;
-	pMainWnd->mpxDevId = mpxDevId;
-	pMainWnd->mpxCtrlLoadPixelsCfgAscii = &mpxCtrlLoadPixelsCfgAscii;
-	pMainWnd->mpxCtrlPerformFrameAcq = &mpxCtrlPerformFrameAcq;
-	pMainWnd->mpxCtrlGetFrame16 = &mpxCtrlGetFrame16;
-	pMainWnd->mpxCtrlTriggerType = &mpxCtrlTriggerType;
-	pMainWnd->mpxCtrlReconnectMpx = &mpxCtrlReconnectMpx;
-	pMainWnd->mpxCtrlInitMpxDevice = &mpxCtrlInitMpxDevice;
-	pMainWnd->mpxCtrlReviveMpxDevice = &mpxCtrlReviveMpxDevice;
-	pMainWnd->mpxCtrlAbortOperation = &mpxCtrlAbortOperation;
-	ret = pMainWnd->Create(IDD_PIXELMANPRODUCERMFC_DIALOG, CWnd::GetDesktopWindow());
-	pMainWnd->SetWindowText("Pixelman Eudaq-Producer");
-	pMainWnd->ShowWindow(SW_SHOW);
+	if (pixelmanProducerCreated == false)
+	{
+		BOOL ret = false;
+		AFX_MANAGE_STATE(AfxGetStaticModuleState( ));
+		pMainWnd = new CPixelmanProducerMFCDlg(NULL);
+		pixelmanProducerCreated = true;
+	//	pixelmanProducerCreated = true;
+	//	pMainWnd->pixelmanProducerCreated = &pixelmanProducerCreated;
+		pMainWnd->DialogBoxDelete=&DialogBoxDelete;
+		pMainWnd->mpxCount = mpxCount;
+		pMainWnd->mpxDevId = mpxDevId;
+		pMainWnd->mpxCtrlLoadPixelsCfgAscii = &mpxCtrlLoadPixelsCfgAscii;
+		pMainWnd->mpxCtrlPerformFrameAcq = &mpxCtrlPerformFrameAcq;
+		pMainWnd->mpxCtrlGetFrame16 = &mpxCtrlGetFrame16;
+		pMainWnd->mpxCtrlTriggerType = &mpxCtrlTriggerType;
+		pMainWnd->mpxCtrlReconnectMpx = &mpxCtrlReconnectMpx;
+		pMainWnd->mpxCtrlInitMpxDevice = &mpxCtrlInitMpxDevice;
+		pMainWnd->mpxCtrlReviveMpxDevice = &mpxCtrlReviveMpxDevice;
+		pMainWnd->mpxCtrlAbortOperation = &mpxCtrlAbortOperation;
+		ret = pMainWnd->Create(IDD_PIXELMANPRODUCERMFC_DIALOG, CWnd::GetDesktopWindow());
+		pMainWnd->SetWindowText("Pixelman Eudaq-Producer");
+		pMainWnd->ShowWindow(SW_SHOW);
+		
+	}
+	else
+		pMainWnd->ShowWindow(SW_SHOWNORMAL);
 
 }
 
@@ -119,6 +127,7 @@ void DialogBoxDelete(CWnd* sender)//,int * n_inited3)
 	MessageBox(NULL, buffer, "Test",0);
 	*/
 	delete sender;
+	pixelmanProducerCreated = false;
 }
 
 int mpxCtrlLoadPixelsCfgAscii(DEVID devId, const char *maskBitFile,
@@ -135,12 +144,12 @@ int mpxCtrlPerformFrameAcq(DEVID devId, int numberOfFrames,
 	return mgr->mpxCtrlPerformFrameAcq(devId, numberOfFrames, timeOfEachAcq, fileFlags, fileName);
 }
 
-/*void MgrDeleteCallback(CBPARAM par)
+void MgrDeleteCallback(CBPARAM par)
 {
-	//pMainWnd->DialogBoxDelete(pMainWnd);
-	//delete *pMainWnd;
+	delete *pMainWnd;
+	pixelmanProducerCreated = false;
 }
-*/
+
 
 int mpxCtrlGetFrame16(DEVID devId, i16 *buffer, u32 size,
 							 u32 frameNumber)
