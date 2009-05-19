@@ -18,9 +18,8 @@ namespace eudaq {
     virtual unsigned long long FileBytes() const;
     virtual ~FileWriterLCIO();
   private:
-
-      lcio::LCWriter *m_lcwriter; /// The lcio writer
-      bool m_fileopened; /// We have to keep track whether a file is open ourselves
+    lcio::LCWriter *m_lcwriter; /// The lcio writer
+    bool m_fileopened; /// We have to keep track whether a file is open ourselves
   };
 
 }
