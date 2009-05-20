@@ -34,7 +34,9 @@ namespace eudaq{
   TLUConverterPlugin const TLUConverterPlugin::m_tluconverterplugininstance;
 
 #if USE_LCIO
-  bool TLUConverterPlugin::GetLCIOSubEvent(lcio::LCEvent & le, const eudaq::Event ee) const {
+  bool TLUConverterPlugin::GetLCIOSubEvent(lcio::LCEvent & result, const eudaq::Event & source) const {
+    lcio::LCEventImpl & le = dynamic_cast<lcio::LCEventImpl &>(result);
+    le.setTimeStamp(source.GetTimestamp());
     return true;
   }
 #else

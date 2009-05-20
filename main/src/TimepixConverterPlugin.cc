@@ -17,16 +17,16 @@ namespace eudaq
   TimepixConverterPlugin const TimepixConverterPlugin::m_timepixconverterplugininstance;
 
 #if USE_LCIO
-  bool TimepixConverterPlugin::GetLCIOSubEvent(lcio::LCEvent & le, const eudaq::Event ee) const
+  bool TimepixConverterPlugin::GetLCIOSubEvent(lcio::LCEvent & le, const eudaq::Event & ee) const
   {
     //try to cast the eudaq event to RawDataEvent
-    eudaq::RawDataEvent const *re = dynamic_cast<eudaq::RawDataEvent const *>(ee);
-    if (re == 0) //cast failed, throw an exception
-      EUDAQ_THROW(std::string("TimepixConverterPlugin::GetLCIOEvent: Error") +
-                  " given event is not a eudaq::RawDataEvent");
+    eudaq::RawDataEvent const & re = dynamic_cast<eudaq::RawDataEvent const &>(ee);
+    //if (re == 0) //cast failed, throw an exception
+    //  EUDAQ_THROW(std::string("TimepixConverterPlugin::GetLCIOEvent: Error") +
+    //              " given event is not a eudaq::RawDataEvent");
 
     //check type of RawDataEvent
-    if (re->GetType() != "TimepixEvent")
+    if (re.GetType() != "TimepixEvent")
       EUDAQ_THROW(std::string("TimepixConverterPlugin::GetLCIOEvent: Error") +
                   " given event is not a TimepixEvent");
 
@@ -47,9 +47,9 @@ namespace eudaq
     timepixdata.resize(65536);
 
     // loop all data blocks
-    for (size_t block = 0 ; block < re->NumBlocks(); block++)
+    for (size_t block = 0 ; block < re.NumBlocks(); block++)
       {
-        std::vector<unsigned char> bytedata = re->GetBlockUChar(block);
+        std::vector<unsigned char> bytedata = re.GetBlockUChar(block);
 
         // convert the byte sequence to lcio data
         for (unsigned int i=0; i < 65536 ; i++)

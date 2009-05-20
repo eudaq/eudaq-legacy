@@ -2,8 +2,6 @@
 #define EUDAQ_INCLUDED_FileWriterLCIO
 
 #include "eudaq/FileWriter.hh"
-#include "eudaq/debugtools.hh"
-//#include "eudaq/FileSerializer.hh"
 
 namespace IO { class LCWriter; }
 namespace lcio { using namespace IO; }

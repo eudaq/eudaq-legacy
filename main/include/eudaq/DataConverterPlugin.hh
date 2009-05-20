@@ -1,9 +1,7 @@
 #ifndef EUDAQ_INCLUDED_DataConverterPlugin
 #define EUDAQ_INCLUDED_DataConverterPlugin
 
-#include "eudaq/debugtools.hh"
 #include "eudaq/StandardEvent.hh"
-#include "eudaq/Event.hh"
 
 namespace EVENT { class LCEvent; }
 namespace lcio { using namespace EVENT; }
@@ -27,11 +25,11 @@ namespace eudaq{
   public:
     /** Returns the LCIO version of the event.
      */
-    virtual bool GetLCIOSubEvent(lcio::LCEvent & /*result*/, eudaq::Event const & /*source*/) const { return 0; }
+    virtual bool GetLCIOSubEvent(lcio::LCEvent & /*result*/, eudaq::Event const & /*source*/) const { return false; }
 
     /** Returns the StandardEvent version of the event.
      */
-    virtual bool GetStandardSubEvent(StandardEvent & result, eudaq::Event const & source) const = 0;
+    virtual bool GetStandardSubEvent(StandardEvent & /*result*/, eudaq::Event const & /*source*/) const { return false; };
 
     /** Returns the type of event this plugin can convert to lcio as a string.
      */
