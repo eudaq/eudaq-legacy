@@ -1,3 +1,4 @@
+// Container class to store MPX related data
 #pragma once
 
 #include "mpxpluginmgrapi.h"

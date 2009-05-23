@@ -419,12 +419,12 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 	
 	//if((pMainWnd->strRepsFilePath).IsEmpty())
 	//no data written to disk
-	/*pMainWnd->m_AsciiThlAdjFile.EnableWindow(false);
+	pMainWnd->m_AsciiThlAdjFile.EnableWindow(false);
 	pMainWnd->m_writeMask.EnableWindow(false);
 	pMainWnd->m_chipSelect.EnableWindow(false);
 	pMainWnd->m_AcqCount.EnableWindow(false);
 	pMainWnd->m_AcqTime.EnableWindow(false);
-	pMainWnd->m_SpinAcqCount.EnableWindow(false);*/
+	pMainWnd->m_SpinAcqCount.EnableWindow(false);
 	
 	DEVID devId = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceId;
 	i16 *  databuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].databuffer;            
@@ -432,12 +432,12 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 	retval = pMainWnd->mpxCtrlPerformFrameAcq(devId, 1, pMainWnd->infDouble, NULL, NULL);
 	retval2 = pMainWnd->mpxCtrlGetFrame16(devId, databuffer, sizeOfDataBuffer, 0);
 	
-	/*pMainWnd->m_AsciiThlAdjFile.EnableWindow(true);
+	pMainWnd->m_AsciiThlAdjFile.EnableWindow(true);
 	pMainWnd->m_writeMask.EnableWindow(true);
 	pMainWnd->m_chipSelect.EnableWindow(true);
 	pMainWnd->m_AcqCount.EnableWindow(true);
 	pMainWnd->m_AcqTime.EnableWindow(true);
-	pMainWnd->m_SpinAcqCount.EnableWindow(true);*/
+	pMainWnd->m_SpinAcqCount.EnableWindow(true);
 	
 	if (retval <= retval2)
 		pMainWnd->_threadRetVal = retval;
@@ -480,7 +480,7 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 			CWinThread* pThread = AfxBeginThread(mpxCtrlPerformTriggeredFrameAcqThread,this);
 			numberOfLoops++;
 		}
-		Sleep(1);
+		Sleep(1);//for preventing a acq. start while shutter is on (ideally wait one shutter length)
 		waitForTrigger = mpxWaitForTrigger();
 	}
 	

@@ -12,11 +12,11 @@ public:
 	virtual ~TimePixDAQStatus();
 
 	int parPortAddress;
-	int parPortStatusReg;
+	int parPortStautsReg;
 	int parPortControlReg;
 	
-	void parPortSetBusyLineHigh();
-	void parPortSetBusyLineLow();
+	void parPortSetBusyLineHigh();//ParPort Pin 1 (Strobe) is busy line (active low)
+	void parPortSetBusyLineLow();//Par Port Pin 13 (Busy) is trigger input
 	int parPortCheckBusyLine();
 
 	void parPortUpdateAddress(parPort port);

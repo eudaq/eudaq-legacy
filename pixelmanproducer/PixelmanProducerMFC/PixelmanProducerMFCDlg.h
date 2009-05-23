@@ -2,7 +2,6 @@
 //
 
 #pragma once
-//#define WINVER 0x0500
 #include "resource.h"
 #include "eudaq/DummyProducer.hh"
 #include "ceditextended.h"
@@ -19,7 +18,9 @@
 // CPixelmanProducerMFCDlg dialog
 class CPixelmanProducerMFCDlg : public CDialog
 {
-	DECLARE_DYNAMIC(CPixelmanProducerMFCDlg)
+	DECLARE_DYNAMIC(CPixelmanProducerMFCDlg)//Adds the ability to access run-time
+											//information about an object's class
+											//when deriving a class from CObject.
 // Construction
 public:
 	CPixelmanProducerMFCDlg(CWnd* pParent = NULL);	// standard constructor
@@ -42,14 +43,14 @@ public:
 	int (*mpxCtrlReviveMpxDevice)(DEVID devId);
 	int (*mpxCtrlAbortOperation)(DEVID devId);
 
-	
+	//functions to be remotely called from runcontrol
 	int mpxCtrlPerformFrameAcqTimePixProd();
 	int mpxCtrlPerformTriggeredFrameAcqTimePixProd();
 	int mpxCtrlGetFrame32TimePixProd();
-	int mpxWaitForTrigger();
+	
 	
 
-		
+	//Acq. Related controls	
 	CSpinButtonCtrl m_SpinAcqCount;
 	CEditExtended m_AcqCount;
 	CEditExtended m_AcqTime;
@@ -63,38 +64,36 @@ public:
 	int _threadRetVal;
 	
 	int mpxCount;//needed to now how long medipixChipId is
-	int mpxCurrSel;
+	int mpxCurrSel;//needed to have information on the currently selected chip
 	medipixChipId* mpxDevId;
 	double infDouble;
-	TimePixDAQStatus timePixDaqStatus;
-
+	
 // Dialog Data
 	enum { IDD = IDD_PIXELMANPRODUCERMFC_DIALOG };
 
 	
-// Implementation
+
 	//DECLARE_MESSAGE_MAP()
-	protected:
+	
+	
+
+	
+
+protected:
+// Implementation
+	DECLARE_MESSAGE_MAP()//Declares that the class defines a message map
+	/*afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
+	*/
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 	HICON m_hIcon;
-	// Generated message map functions
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	
-	
-	
-
-
-	DECLARE_MESSAGE_MAP()
-	/*afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
-	*/
-public:
-	afx_msg void OnBnClickedOk();
-	afx_msg void OnBnClickedCancel();
-	
-	
-protected:
+	//protected member variables functions
+	int mpxWaitForTrigger();
+	//a PixelmanProducer has a TimePixDAQStatus
+	TimePixDAQStatus timePixDaqStatus;
 	CStatic m_ThlMaskLabel;
 	CString m_csThlFilePath;
 	CString m_csMaskFilePath;
@@ -111,5 +110,7 @@ public:
 	CButton m_writeMask;
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnEnChangeParPortAddr();
+	afx_msg void OnBnClickedOk();
+	afx_msg void OnBnClickedCancel();
 	
 };
