@@ -78,7 +78,7 @@ CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 CPixelmanProducerMFCDlg::~CPixelmanProducerMFCDlg()	
 {
 	//pixelmanProducerCreated = false;
-	if(producerStarted==true)
+	if(producerStarted==TRUE)
 		producer->SetDone(true);
 	//delete producer;
 	

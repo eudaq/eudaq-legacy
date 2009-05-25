@@ -4,6 +4,7 @@
 #define LOW 0
 typedef int parPort;
 
+//#include "targetver.h"
 
 class TimePixDAQStatus
 {
@@ -12,7 +13,7 @@ public:
 	virtual ~TimePixDAQStatus();
 
 	int parPortAddress;
-	int parPortStautsReg;
+	int parPortStatusReg;
 	int parPortControlReg;
 	
 	void parPortSetBusyLineHigh();//ParPort Pin 1 (Strobe) is busy line (active low)

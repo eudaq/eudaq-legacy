@@ -1,5 +1,11 @@
+#include "stdafx.h"
 #include "afxwin.h"
 #include "TimePixDAQStatus.h"
+
+#ifndef WINVER
+#define WINVER = 0x0501
+#endif
+
 
 short _stdcall Inp32(short PortAddress);
 void _stdcall Out32(short PortAddress, short data);

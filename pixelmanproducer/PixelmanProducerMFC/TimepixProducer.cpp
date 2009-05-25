@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "eudaq/Producer.hh"
 #include "TimepixProducer.h"
 #include "eudaq/Logger.hh"
@@ -8,6 +9,9 @@
 #include <ostream>
 #include <cctype> 
 
+#ifndef WINVER
+#define WINVER = 0x0501
+#endif
 
 
 TimepixProducer::TimepixProducer(const std::string & name,

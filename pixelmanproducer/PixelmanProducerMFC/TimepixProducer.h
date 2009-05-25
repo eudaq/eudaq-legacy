@@ -2,6 +2,8 @@
 #include "eudaq/Producer.hh"
 #include <pthread.h>
 #include "PixelmanProducerMFCDlg.h"
+//#include "targetver.h"
+
 
 
 class TimepixProducer : public eudaq::Producer
