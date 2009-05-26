@@ -31,42 +31,32 @@ namespace eudaq {
     }
 
     /** Get the data block number i as vector of \c{unsigned char}, which is the byte sequence which
-      *  which has been serialised. This is the recommended way to retrieve your
-      *  data from the RawDataEvent since the other GetBlock functions might
-      *  give different results depending on the endiannes of your mashine.
-      */
-    std::vector<unsigned char> GetBlockUChar(unsigned int i) const
-    {
-	if (i >= m_data.size())
-	{
-	    std::stringstream message;
-	    message << "RawDataEvent::GetBlockUChar("<<i<<"): Error :"
-		    << "Only "<< m_data.size() << " data blocks available!";
-	    EUDAQ_THROW(message.str());
-	}
-	return m_data[i];
-    }
+     *  which has been serialised. This is the recommended way to retrieve your
+     *  data from the RawDataEvent since the other GetBlock functions might
+     *  give different results depending on the endiannes of your mashine.
+     */
+    const data_t & GetBlock(size_t i) const;
 
     /// Return the number of data blocks in the RawDataEvent
-    size_t NumBlocks() const { return m_data.size(); }    
+    size_t NumBlocks() const { return m_data.size(); }
 
     virtual void Print(std::ostream &) const;
     static RawDataEvent BORE(std::string type, unsigned run) {
-	return RawDataEvent(type, run, 0, Event::FLAG_BORE);
+      return RawDataEvent(type, run, 0, Event::FLAG_BORE);
     }
     static RawDataEvent EORE(std::string type, unsigned run, unsigned event) {
-	return RawDataEvent(type, run, event, Event::FLAG_EORE);
+      return RawDataEvent(type, run, event, Event::FLAG_EORE);
     }
     virtual void Serialize(Serializer &) const;
 
     /// Return the type string.
-    virtual std::string GetType() const {return m_type;}
+    virtual std::string GetSubType() const { return m_type; }
 
   private:
-      // private constructor to create BORE and EORE
-      // make sure that event number is 0 for BORE
-      RawDataEvent(std::string type, unsigned run, unsigned event, Event::Flags flag)
-	  : Event(run, event, NOTIMESTAMP, flag) ,  m_type(type)
+    // private constructor to create BORE and EORE
+    // make sure that event number is 0 for BORE
+    RawDataEvent(std::string type, unsigned run, unsigned event, Event::Flags flag)
+      : Event(run, event, NOTIMESTAMP, flag) ,  m_type(type)
       {}
 
     template <typename T>

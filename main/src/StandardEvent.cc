@@ -4,7 +4,13 @@ namespace eudaq {
 
   EUDAQ_DEFINE_EVENT(StandardEvent, str2id("_STD"));
 
+  StandardPlane::StandardPlane(const std::string & type, const std::string & sensor)
+    : m_type(type), m_sensor(sensor)
+  {}
+
   StandardPlane::StandardPlane(Deserializer & ds) {
+    ds.read(m_type);
+    ds.read(m_sensor);
     ds.read(m_xsize);
     ds.read(m_ysize);
     ds.read(m_x);
@@ -14,6 +20,9 @@ namespace eudaq {
   }
 
   void StandardPlane::Serialize(Serializer & ser) const {
+    EUDAQ_THROW("StandardPlane serialization not yet implemented (wait until implementation has stabilised)");
+    ser.write(m_type);
+    ser.write(m_sensor);
     ser.write(m_xsize);
     ser.write(m_ysize);
     ser.write(m_x);
@@ -28,8 +37,8 @@ namespace eudaq {
     //
   }
 
-  StandardEvent::StandardEvent(unsigned run, unsigned evnum)
-    : Event(run, evnum)
+  StandardEvent::StandardEvent(unsigned run, unsigned evnum, unsigned long long timestamp)
+    : Event(run, evnum, timestamp)
   {
   }
 
@@ -40,6 +49,7 @@ namespace eudaq {
   }
 
   void StandardEvent::Serialize(Serializer & ser) const {
+    EUDAQ_THROW("StandardEvent serialization not yet implemented (wait until implementation has stabilised)");
     Event::Serialize(ser);
     ser.write(m_planes);
   }

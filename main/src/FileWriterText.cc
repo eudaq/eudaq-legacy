@@ -34,21 +34,7 @@ namespace eudaq {
               <<  devent.GetRunNumber() <<"." << devent.GetEventNumber() << std::endl;
 
     //disentangle the detector event
-    StandardEvent sevent;
-    for (size_t i = 0; i < devent.NumEvents(); i++) {
-      const eudaq::Event * subevent = devent.GetEvent(i);
-
-      try {
-        const DataConverterPlugin * converterplugin = PluginManager::GetInstance().GetPlugin(subevent->GetType());
-        converterplugin->GetStandardSubEvent(sevent, *subevent);
-        //std::fprintf(m_file, "Event %d %d\n", devent.GetEventNumber(), standardevent->m_x.size());
-      } catch(eudaq::Exception & e) {
-        //std::cout <<  e.what() << std::endl;
-        std::cout <<  "FileWriterText::WriteEvent(): Ignoring event type "
-                  <<  subevent->GetType() << std::endl;
-        continue;
-      }
-    }
+    StandardEvent sevent(PluginManager::ConvertToStandard(devent));
     std::cout << "Event: " << sevent << std::endl;
   }
 

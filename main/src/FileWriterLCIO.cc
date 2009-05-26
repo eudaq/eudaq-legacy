@@ -4,14 +4,14 @@
 #include <iostream>
 
 #if USE_LCIO
-#  include <IO/ILCFactory.h>
-#  include <IMPL/LCEventImpl.h>
-#  include <IMPL/LCCollectionVec.h>
-#  include <EVENT/LCIO.h>
-#  include <Exceptions.h>
-#  include <IMPL/LCTOOLS.h>
-#  include <IO/LCWriter.h>
-#  include <lcio.h>
+#  include "IO/ILCFactory.h"
+#  include "IMPL/LCEventImpl.h"
+#  include "IMPL/LCCollectionVec.h"
+#  include "EVENT/LCIO.h"
+#  include "Exceptions.h"
+#  include "IMPL/LCTOOLS.h"
+#  include "IO/LCWriter.h"
+#  include "lcio.h"
 
 namespace eudaq {
 
@@ -48,32 +48,15 @@ namespace eudaq {
     std::cout << "EUDAQ_DEBUG: FileWriterLCIO::WriteEvent() processing event "
               <<  devent.GetRunNumber () <<"." << devent.GetEventNumber () << std::endl;
 
-    lcio::LCEventImpl lcevent;
-
-    lcevent.setEventNumber(devent.GetEventNumber());
-    lcevent.setRunNumber(  devent.GetRunNumber());
-    lcevent.setTimeStamp(  devent.GetTimestamp());
-
-    //disentangle the detector event
-    for (size_t i = 0; i < devent.NumEvents(); i++) {
-      Event const * subevent = devent.GetEvent(i);
-
-      try {
-        DataConverterPlugin const * converterplugin = PluginManager::GetInstance().GetPlugin(subevent->GetType());
-        converterplugin->GetLCIOSubEvent(lcevent, *subevent);
-      } catch(eudaq::Exception & e) {
-        //std::cout <<  e.what() << std::endl;
-        std::cout <<  "FileWriterLCIO::WriteEvent(): Ignoring event type "
-                  <<  subevent->GetType() << std::endl;
-      }
-    }
+    lcio::LCEvent * lcevent = PluginManager::ConvertToLCIO(devent);
 
     // only write non-empty events
-    if (!lcevent.getCollectionNames()->empty()) {
+    if (!lcevent->getCollectionNames()->empty()) {
       // std::cout << " FileWriterLCIO::WriteEvent() : doing the actual writing : " <<std::flush;
-      m_lcwriter->writeEvent(&lcevent);
+      m_lcwriter->writeEvent(lcevent);
       // std::cout << " done" <<std::endl;
     }
+    delete lcevent;
   }
 
   FileWriterLCIO::~FileWriterLCIO() {

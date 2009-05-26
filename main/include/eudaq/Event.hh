@@ -50,7 +50,7 @@ namespace eudaq {
     /** Returns the type string of the event implementation.
      *  Used by the plugin mechanism to identfy the event type.
      */
-    virtual std::string GetType() const = 0;
+    virtual std::string GetSubType() const { return ""; }
 
     virtual void Print(std::ostream & os) const = 0;
 
@@ -71,8 +71,8 @@ namespace eudaq {
     unsigned GetFlags(unsigned f = FLAG_ALL) const { return m_flags & f; }
     void SetFlags(unsigned f) { m_flags |= f; }
     void ClearFlags(unsigned f = FLAG_ALL) { m_flags &= ~f; }
-  protected:
     virtual unsigned get_id() const = 0;
+  protected:
     typedef std::map<std::string, std::string> map_t;
 
     unsigned m_flags, m_runnumber, m_eventnumber;

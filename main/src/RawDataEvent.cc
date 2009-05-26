@@ -19,6 +19,14 @@ namespace eudaq {
     ds.read(m_data);
   }
 
+  const RawDataEvent::data_t & RawDataEvent::GetBlock(size_t i) const {
+    if (i >= m_data.size()) {
+      EUDAQ_THROW("RawDataEvent::GetBlock("+to_string(i)+"): Error :"
+                  "Only "+to_string(m_data.size())+" data blocks available!");
+    }
+    return m_data[i];
+  }
+
   void RawDataEvent::Print(std::ostream & os) const {
     Event::Print(os);
     os << ", " << m_data.size() << " blocks";

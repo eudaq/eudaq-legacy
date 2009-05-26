@@ -3,10 +3,10 @@
 #include "eudaq/RawDataEvent.hh"
 
 #if USE_LCIO
-#  include <lcio.h>
-#  include <IMPL/LCEventImpl.h>
-#  include <IMPL/TrackerRawDataImpl.h>
-#  include <IMPL/LCCollectionVec.h>
+#  include "lcio.h"
+#  include "IMPL/LCEventImpl.h"
+#  include "IMPL/TrackerRawDataImpl.h"
+#  include "IMPL/LCCollectionVec.h"
 #endif
 
 #include <iostream>
@@ -26,9 +26,9 @@ namespace eudaq
     //              " given event is not a eudaq::RawDataEvent");
 
     //check type of RawDataEvent
-    if (re.GetType() != "TimepixEvent")
-      EUDAQ_THROW(std::string("TimepixConverterPlugin::GetLCIOEvent: Error") +
-                  " given event is not a TimepixEvent");
+    //if (re.GetSubType() != "Timepix") {
+    //  EUDAQ_THROW("TimepixConverterPlugin::GetLCIOEvent: Error given event is not a Timepix Event");
+    //}
 
     //lcio::LCEventImpl * le = new lcio::LCEventImpl; // no longer needed, it is apssed in as a parameter
 
@@ -43,31 +43,29 @@ namespace eudaq
     //le.setDetectorName( "Timepix");
 
     // the vector for the timepix data, only needed one, so it's created before the loop
-    std::vector<short> timepixdata;
-    timepixdata.resize(65536);
+    static const size_t NUMPIX = 65536;
+    std::vector<short> timepixdata(NUMPIX);
 
     // loop all data blocks
-    for (size_t block = 0 ; block < re.NumBlocks(); block++)
-      {
-        std::vector<unsigned char> bytedata = re.GetBlockUChar(block);
+    for (size_t block = 0 ; block < re.NumBlocks(); block++) {
+      std::vector<unsigned char> bytedata = re.GetBlock(block);
 
-        // convert the byte sequence to lcio data
-        for (unsigned int i=0; i < 65536 ; i++)
-          {
-            // the byte sequence is little endian
-            timepixdata[i]= ( (bytedata[2*i]& 0xFF) << 8) |  (bytedata[2*i+1]& 0xFF);
-          }
+      // convert the byte sequence to lcio data
+      for (unsigned int i = 0; i < NUMPIX; i++) {
+        // the byte sequence is little endian
+        timepixdata[i]= (bytedata[2*i] << 8) | bytedata[2*i+1];
+      }
 
-        lcio::TrackerRawDataImpl *timepixlciodata=new lcio::TrackerRawDataImpl;
-        timepixlciodata->setCellID0(0);
-        timepixlciodata->setCellID1(block);
-        timepixlciodata->setADCValues(timepixdata);
+      lcio::TrackerRawDataImpl * timepixlciodata = new lcio::TrackerRawDataImpl;
+      timepixlciodata->setCellID0(0);
+      timepixlciodata->setCellID1(block);
+      timepixlciodata->setADCValues(timepixdata);
 
-        lcio::LCCollectionVec * timepixCollection = new lcio::LCCollectionVec(lcio::LCIO::TRACKERRAWDATA);
-        timepixCollection->addElement(timepixlciodata);
+      lcio::LCCollectionVec * timepixCollection = new lcio::LCCollectionVec(lcio::LCIO::TRACKERRAWDATA);
+      timepixCollection->addElement(timepixlciodata);
 
-        le.addCollection(timepixCollection,"TimePixRawData");
-      }// for (block)
+      le.addCollection(timepixCollection,"TimePixRawData");
+    }// for (block)
 
     return true;
   }

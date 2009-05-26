@@ -7,6 +7,7 @@ namespace EVENT { class LCEvent; }
 namespace lcio { using namespace EVENT; }
 
 #include <string>
+#include <algorithm>
 
 namespace eudaq{
 
@@ -23,6 +24,8 @@ namespace eudaq{
 
   class DataConverterPlugin {
   public:
+    typedef std::pair<unsigned, std::string> t_eventid;
+
     /** Returns the LCIO version of the event.
      */
     virtual bool GetLCIOSubEvent(lcio::LCEvent & /*result*/, eudaq::Event const & /*source*/) const { return false; }
@@ -31,9 +34,9 @@ namespace eudaq{
      */
     virtual bool GetStandardSubEvent(StandardEvent & /*result*/, eudaq::Event const & /*source*/) const { return false; };
 
-    /** Returns the type of event this plugin can convert to lcio as a string.
+    /** Returns the type of event this plugin can convert to lcio as a pair of Event type id and subtype string.
      */
-    virtual std::string const & GetEventType() const { return m_eventtype; }
+    virtual t_eventid const & GetEventType() const { return m_eventtype; }
 
     /** The empty destructor. Need to add it to make it virtual.
      */
@@ -41,23 +44,25 @@ namespace eudaq{
 
 protected:
     /** The string storing the event type this plugin can convert to lcio.
-     *  This string has to be set in the constructor of the actual implementations 
+     *  This string has to be set in the constructor of the actual implementations
      *  of the plugin.
      */
-    std::string m_eventtype;
+    t_eventid m_eventtype;
 
     /** The protected constructor which automatically registeres the plugin
      *  at the pluginManager.
      */
-    DataConverterPlugin(std::string eventtype);
+    DataConverterPlugin(std::string subtype);
+    DataConverterPlugin(unsigned type, std::string subtype);
 
 private:
-    /** The private copy constructor. It is not used anywhere, so there is not 
+    /** The private copy constructor and assignment operator. They are not used anywhere, so there is not
      *  even an implementation. Even if the childs default copy constructor is public
      *  the code will not compile if it is called, since it cannot acces this cc, which the
      *  the default cc does.
      */
     DataConverterPlugin(DataConverterPlugin &);
+    DataConverterPlugin & operator = (const DataConverterPlugin &);
 };
 
 }//namespace eudaq

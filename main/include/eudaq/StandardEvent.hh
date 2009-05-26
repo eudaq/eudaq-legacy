@@ -3,16 +3,19 @@
 
 #include "eudaq/Event.hh"
 #include <vector>
+#include <string>
 
 namespace eudaq {
 
   class StandardPlane : public Serializable {
   public:
+    StandardPlane(const std::string & type, const std::string & sensor);
     StandardPlane(Deserializer &);
     void Serialize(Serializer &) const;
     typedef double pixel_t;
     StandardPlane(size_t pixels = 0, size_t frames = 1);
 
+    std::string m_type, m_sensor;
     size_t m_xsize, m_ysize;
     std::vector<unsigned> m_x, m_y;
     std::vector<std::vector<pixel_t> > m_pix;
@@ -22,7 +25,7 @@ namespace eudaq {
   class StandardEvent : public Event {
     EUDAQ_DECLARE_EVENT(StandardEvent);
   public:
-    StandardEvent(unsigned run = 0, unsigned evnum = 0);
+    StandardEvent(unsigned run = 0, unsigned evnum = 0, unsigned long long timestamp = NOTIMESTAMP);
     StandardEvent(Deserializer &);
     void SetTimestamp(unsigned long long);
     void AddPlane(const StandardPlane &);
@@ -31,7 +34,6 @@ namespace eudaq {
     StandardPlane & GetPlane(size_t i);
     virtual void Serialize(Serializer &) const;
     virtual void Print(std::ostream &) const;
-    virtual std::string GetType() const { return "StandardEvent"; }
   private:
     std::vector<StandardPlane> m_planes;
   };

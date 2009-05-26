@@ -3,10 +3,11 @@
 
 #include "eudaq/DataConverterPlugin.hh"
 #include "eudaq/DetectorEvent.hh"
+
 #include <string>
 #include <map>
 
-namespace eudaq{
+namespace eudaq {
 
 /** The plugin manager has a map of all available plugins.
  *  On creating time every plugin automatically registeres at
@@ -19,6 +20,8 @@ namespace eudaq{
   class PluginManager {
 
   public:
+    typedef DataConverterPlugin::t_eventid t_eventid;
+
     /** Register a new plugin to the plugin manager.
      */
     void RegisterPlugin(DataConverterPlugin const * plugin);
@@ -28,21 +31,25 @@ namespace eudaq{
      */
     static PluginManager & GetInstance();
 
-    static eudaq::StandardEvent ConvertToStandard(const DetectorEvent &);
+    static StandardEvent ConvertToStandard(const DetectorEvent &);
     static lcio::LCEvent * ConvertToLCIO(const DetectorEvent &);
+
+    static void ConvertStandardSubEvent(StandardEvent &, const Event &);
+    static void ConvertLCIOSubEvent(lcio::LCEvent &, const Event &);
 
     /** Get the correct plugin implementation according to the event type.
      */
-    DataConverterPlugin const * GetPlugin(std::string eventtype);
+    DataConverterPlugin const & GetPlugin(const Event & event);
+    DataConverterPlugin const & GetPlugin(t_eventid eventtype);
 
   private:
     /** The map that correlates the event type with its converter plugin.
      */
-    std::map<std::string, DataConverterPlugin const *> m_pluginmap;
+    std::map<t_eventid, DataConverterPlugin const *> m_pluginmap;
 
   private:
-    PluginManager(){};
-    PluginManager( PluginManager const & ){};
+    PluginManager() {}
+    PluginManager(PluginManager const &) {}
   };
 
 }//namespace eudaq
