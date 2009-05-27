@@ -53,7 +53,7 @@ protected:
      *  at the pluginManager.
      */
     DataConverterPlugin(std::string subtype);
-    DataConverterPlugin(unsigned type, std::string subtype);
+    DataConverterPlugin(unsigned type, std::string subtype = "");
 
 private:
     /** The private copy constructor and assignment operator. They are not used anywhere, so there is not

@@ -13,11 +13,14 @@ namespace eudaq {
     StandardPlane(Deserializer &);
     void Serialize(Serializer &) const;
     typedef double pixel_t;
+    typedef double coord_t;
     StandardPlane(size_t pixels = 0, size_t frames = 1);
+    pixel_t GetPixel(size_t i) const;
 
     std::string m_type, m_sensor;
-    size_t m_xsize, m_ysize;
-    std::vector<unsigned> m_x, m_y;
+    unsigned m_tluevent;
+    unsigned m_xsize, m_ysize;
+    std::vector<coord_t> m_x, m_y;
     std::vector<std::vector<pixel_t> > m_pix;
     std::vector<bool> m_pivot;
   };

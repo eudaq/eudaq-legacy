@@ -5,12 +5,13 @@ namespace eudaq {
   EUDAQ_DEFINE_EVENT(StandardEvent, str2id("_STD"));
 
   StandardPlane::StandardPlane(const std::string & type, const std::string & sensor)
-    : m_type(type), m_sensor(sensor)
+    : m_type(type), m_sensor(sensor), m_tluevent(0), m_xsize(0), m_ysize(0)
   {}
 
   StandardPlane::StandardPlane(Deserializer & ds) {
     ds.read(m_type);
     ds.read(m_sensor);
+    ds.read(m_tluevent);
     ds.read(m_xsize);
     ds.read(m_ysize);
     ds.read(m_x);
@@ -23,6 +24,7 @@ namespace eudaq {
     EUDAQ_THROW("StandardPlane serialization not yet implemented (wait until implementation has stabilised)");
     ser.write(m_type);
     ser.write(m_sensor);
+    ser.write(m_tluevent);
     ser.write(m_xsize);
     ser.write(m_ysize);
     ser.write(m_x);
@@ -35,6 +37,21 @@ namespace eudaq {
     : m_x(pixels), m_y(pixels), m_pix(frames, std::vector<pixel_t>(pixels)), m_pivot(pixels)
   {
     //
+  }
+
+  StandardPlane::pixel_t StandardPlane::GetPixel(size_t i) const {
+    if (m_pix.size() < 1 || i >= m_pix[0].size()) {
+      EUDAQ_THROW("Index out of bounds (" + to_string(i) + ")");
+    } else if (m_pix.size() == 1) {
+      return m_pix[0][i];
+    } else if (m_pix.size() == 2) {
+      return m_pix[0][i] - m_pix[1][i];
+    } else if (m_pix.size() == 3) {
+      return m_pix[0][i] * (m_pivot[i])
+           + m_pix[1][i] * (1-2*m_pivot[i])
+           + m_pix[2][i] * (m_pivot[i]-1);
+    }
+    EUDAQ_THROW("Unrecognised number of frames (" + to_string(m_pix.size()) + ")");
   }
 
   StandardEvent::StandardEvent(unsigned run, unsigned evnum, unsigned long long timestamp)
@@ -60,6 +77,18 @@ namespace eudaq {
 
   void StandardEvent::Print(std::ostream & os) const {
     os << "Planes " << m_planes.size();
+  }
+
+  size_t StandardEvent::NumPlanes() const {
+    return m_planes.size();
+  }
+
+  StandardPlane & StandardEvent::GetPlane(size_t i) {
+    return m_planes[i];
+  }
+
+  const StandardPlane & StandardEvent::GetPlane(size_t i) const {
+    return m_planes[i];
   }
 
   void StandardEvent::AddPlane(const StandardPlane & plane) {

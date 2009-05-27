@@ -68,7 +68,7 @@ namespace eudaq {
   }
 
   std::string Event::id2str(unsigned id) {
-    std::cout << "id2str(" << std::hex << id << std::dec << ")" << std::flush;
+    //std::cout << "id2str(" << std::hex << id << std::dec << ")" << std::flush;
     std::string result(4, '\0');
     for (int i = 0; i < 4; ++i) {
       result[i] = (char)(id & 0xff);
@@ -80,7 +80,7 @@ namespace eudaq {
         break;
       }
     }
-    std::cout << " = " << result << std::endl;
+    //std::cout << " = " << result << std::endl;
     return result;
   }
 

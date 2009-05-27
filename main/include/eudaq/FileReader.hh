@@ -17,6 +17,7 @@ namespace eudaq {
     unsigned RunNumber() const;
     const DetectorEvent & Event() const;
     //const StandardEvent & GetStandardEvent() const;
+    void Interrupt() { m_des.Interrupt(); }
   private:
     std::string m_filename;
     FileDeserializer m_des;

@@ -14,7 +14,8 @@ namespace eudaq {
   class RawDataEvent : public Event {
     EUDAQ_DECLARE_EVENT(RawDataEvent);
   public:
-    typedef std::vector<unsigned char> data_t;
+    typedef unsigned char byte_t;
+    typedef std::vector<byte_t> data_t;
     RawDataEvent(std::string type, unsigned run, unsigned event);
     RawDataEvent(Deserializer &);
 
@@ -36,6 +37,7 @@ namespace eudaq {
      *  give different results depending on the endiannes of your mashine.
      */
     const data_t & GetBlock(size_t i) const;
+    byte_t GetByte(size_t block, size_t index) const;
 
     /// Return the number of data blocks in the RawDataEvent
     size_t NumBlocks() const { return m_data.size(); }
@@ -61,13 +63,13 @@ namespace eudaq {
 
     template <typename T>
     static data_t make_vector(const T * data, size_t bytes) {
-      const unsigned char * ptr = reinterpret_cast<const unsigned char *>(data);
+      const unsigned char * ptr = reinterpret_cast<const byte_t *>(data);
       return data_t(ptr, ptr + bytes);
     }
 
     template <typename T>
     static data_t make_vector(const std::vector<T> & data) {
-      const unsigned char * ptr = reinterpret_cast<const unsigned char *>(&data[0]);
+      const unsigned char * ptr = reinterpret_cast<const byte_t *>(&data[0]);
       return data_t(ptr, ptr + data.size() * sizeof(T));
     }
 
