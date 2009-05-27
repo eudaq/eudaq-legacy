@@ -47,9 +47,9 @@ int TimePixDAQStatus::parPortCheckBusyLine()
 	int controlRegister = _Inp32( parPortControlReg );
 
 	if (controlRegister & 0x01)
-		return 1;
+		return HIGH;
 	else
-		return 0;
+		return LOW;
 }
 
 int TimePixDAQStatus::parPortCheckTriggerLine()
@@ -57,8 +57,8 @@ int TimePixDAQStatus::parPortCheckTriggerLine()
 	int statusRegister = _Inp32( parPortStatusReg );
 	
 	if (statusRegister & 0x80)
-		return 1;
-	else return 0;
+		return HIGH;
+	else return LOW;
 	
 }
 
