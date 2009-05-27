@@ -21,7 +21,10 @@ BOOL pixelmanProducerCreated = false;
 //Prototypen für Funktionen
 void DialogBoxInit(unsigned int par);
 void DialogBoxDelete(CWnd* sender);
+//callback Funktionen
 void MgrDeleteCallback(CBPARAM par);
+void mpxCtrlAcqStarted(CBPARAM par);
+//mpxCtrlFunktion
 int mpxCtrlLoadPixelsCfgAscii(DEVID devId, const char *maskBitFile,
 						   const char *testBitFile, const char *thlFile,
 						   const char *thhOrModeFile, BOOL loadDacs);
@@ -38,9 +41,11 @@ int mpxCtrlAbortOperation(DEVID devId);
 
 
 
+
 PLUGIN_INIT
 {	
-	mgr->registerCallback(MPXMGR_NAME, MPXMGR_CB_EXIT, MgrDeleteCallback);    
+	mgr->registerCallback(MPXMGR_NAME, MPXMGR_CB_EXIT, MgrDeleteCallback);
+	mgr->registerCallback(MPXCTRL_NAME, MPXCTRL_CB_ACQSTART, mpxCtrlAcqStarted);
 
 	//char buffer[200];
 	
@@ -150,6 +155,10 @@ void MgrDeleteCallback(CBPARAM par)
 	pixelmanProducerCreated = false;
 }
 
+void mpxCtrlAcqStarted(CBPARAM par)
+{
+	pMainWnd->setAcquisitionActive();
+}
 
 int mpxCtrlGetFrame16(DEVID devId, i16 *buffer, u32 size,
 							 u32 frameNumber)

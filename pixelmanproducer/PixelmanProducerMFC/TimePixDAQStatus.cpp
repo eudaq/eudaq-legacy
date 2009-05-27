@@ -26,7 +26,7 @@ void TimePixDAQStatus::parPortSetBusyLineHigh()
 {
 	int controlRegister = _Inp32( parPortControlReg );
 	//int new_register = 0;
-	controlRegister |= 0x01;
+	controlRegister &= 0xFE;
 	
 	Out32(parPortControlReg, controlRegister);
 }
@@ -35,7 +35,9 @@ void TimePixDAQStatus::parPortSetBusyLineLow()
 {
 	int controlRegister = _Inp32( parPortControlReg );
 	//int new_register = 0;		
-	controlRegister &= 0xFE;
+	//controlRegister &= 0xFE;
+	controlRegister |= 0x01;
+
 	
 	Out32(parPortControlReg, controlRegister);
 	
@@ -47,9 +49,9 @@ int TimePixDAQStatus::parPortCheckBusyLine()
 	int controlRegister = _Inp32( parPortControlReg );
 
 	if (controlRegister & 0x01)
-		return HIGH;
-	else
 		return LOW;
+	else
+		return HIGH;
 }
 
 int TimePixDAQStatus::parPortCheckTriggerLine()
@@ -57,8 +59,9 @@ int TimePixDAQStatus::parPortCheckTriggerLine()
 	int statusRegister = _Inp32( parPortStatusReg );
 	
 	if (statusRegister & 0x80)
+		return LOW;
+	else 
 		return HIGH;
-	else return LOW;
 	
 }
 

@@ -12,6 +12,7 @@
 #include "hexedit.h"
 //#include "TimepixProducer.h"
 #include "TimePixDAQStatus.h"
+#include <pthread.h>
 
 
 
@@ -48,7 +49,8 @@ public:
 	int mpxCtrlPerformTriggeredFrameAcqTimePixProd();
 	int mpxCtrlGetFrame32TimePixProd();
 	
-	
+	void setAcquisitionActive();
+	bool getAcquisitionActive();
 
 	//Acq. Related controls	
 	CSpinButtonCtrl m_SpinAcqCount;
@@ -61,7 +63,6 @@ public:
 	CListBox m_commHistRunCtrl;
 	BOOL producerStarted;
 	
-	int _threadRetVal;
 	
 	int mpxCount;//needed to now how long medipixChipId is
 	int mpxCurrSel;//needed to have information on the currently selected chip
@@ -100,6 +101,8 @@ protected:
 	CString m_csTestBitMaskFilePath;
 	CString m_csThhorModeMaskFilePath;
 
+	void clearAcquisitionActive();
+
 
 public:
 	afx_msg void OnBnClickedQuit();
@@ -113,4 +116,8 @@ public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
 	
+private:
+	bool m_AcquisitionActive;
+	pthread_mutex_t m_AcquisitionActiveMutex;
+
 };

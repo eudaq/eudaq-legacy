@@ -16,7 +16,6 @@
 #define new DEBUG_NEW
 #endif
 
-#define RACECONDITION 0xFF
 
 short _stdcall Inp32(short PortAddress);
 void _stdcall Out32(short PortAddress, short data);
@@ -71,6 +70,9 @@ CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 	//m_lptPort.m_bHex = true;
 	mpxCurrSel = 0;
 	infDouble  = std::numeric_limits<double>::infinity();
+
+	// Inititalise the mutexes
+    pthread_mutex_init( &m_AcquisitionActiveMutex, 0 );
 }
 
 
@@ -83,6 +85,8 @@ CPixelmanProducerMFCDlg::~CPixelmanProducerMFCDlg()
 	//delete producer;
 	
 	//this->DialogBoxDelete(this);
+
+    pthread_mutex_destroy( &m_AcquisitionActiveMutex );	
 }
 
 
@@ -130,8 +134,7 @@ BOOL CPixelmanProducerMFCDlg::OnInitDialog()
 	SetTimer(1,1000,NULL);
 	CDialog::OnInitDialog();
 	//OnPaint;
-	char buffer[255];
-	
+
 	m_hostname.SetWindowText("mortimer.physik.uni-freiburg.de");	
 	
 	m_AcqCount.SetWindowText("0");
@@ -157,8 +160,8 @@ BOOL CPixelmanProducerMFCDlg::OnInitDialog()
 
 
 	
-	sprintf(buffer, "mpxCount %i deviceId %d chipNo. %d", this->mpxCount, this->mpxDevId[mpxCount-1].deviceId, this->mpxDevId[mpxCount-1].chipNo);
-	MessageBox(buffer,"Test der deviceId", 0);
+	//sprintf(buffer, "mpxCount %i deviceId %d chipNo. %d", this->mpxCount, this->mpxDevId[mpxCount-1].deviceId, this->mpxDevId[mpxCount-1].chipNo);
+	//MessageBox(buffer,"Test der deviceId", 0);
 
 	return true;
 	
@@ -341,7 +344,8 @@ void CPixelmanProducerMFCDlg::OnCbnSelchangeChipselect()
 UINT mpxCtrlPerformFrameAcqThread(LPVOID pParam)//thread der zur normalen Acq. gehört
 {
 	CPixelmanProducerMFCDlg* pMainWnd = (CPixelmanProducerMFCDlg*) pParam;
-	static int retval, retval2;
+	int threadRetVal = 0;
+	int retval, retval2;
 	//if((pMainWnd->strRepsFilePath).IsEmpty())
 	//no data written to disk
 	pMainWnd->m_AsciiThlAdjFile.EnableWindow(false);
@@ -375,9 +379,9 @@ UINT mpxCtrlPerformFrameAcqThread(LPVOID pParam)//thread der zur normalen Acq. g
 	pMainWnd->m_SpinAcqCount.EnableWindow(true);
 	
 	if (retval <= retval2)
-		pMainWnd->_threadRetVal = retval;
+		threadRetVal = retval;
 	else
-		pMainWnd->_threadRetVal = retval2;
+		threadRetVal = retval2;
 	
 	return 0;
 	
@@ -390,18 +394,19 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformFrameAcqTimePixProd()
 	static CString errorStr;
 	static int trigger;
 
-	_threadRetVal = 0;
+
 	
 	CWinThread* pThread = AfxBeginThread(mpxCtrlPerformFrameAcqThread,this);
 	
-	if (_threadRetVal != 0)
+	/*if (_threadRetVal != 0)
 		{
 			errorStr.Format("MpxMgrError: %i", retval);
 			AfxMessageBox(errorStr, MB_ICONERROR, 0);
 		}
 		
-	return _threadRetVal;
+	return _threadRetVal;*/
 	//return value of mpxCtrlPerformFrameAcqThread is per Defualt
+	return 0;
 }
 
 
@@ -409,11 +414,12 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformFrameAcqTimePixProd()
 
 
 UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
-{
-	static int retval, retval2;
+{	
+	int threadRetVal = 0;
+	int retval, retval2;
 	static CString errorStr;
 
-	MessageBox(NULL, "HERE WE ARE", "TriggeredFrameAcqThread", NULL);
+	//MessageBox(NULL, "HERE WE ARE", "TriggeredFrameAcqThread", NULL);
 
 	CPixelmanProducerMFCDlg* pMainWnd = (CPixelmanProducerMFCDlg*) pParam;
 	
@@ -439,22 +445,20 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 	pMainWnd->m_AcqTime.EnableWindow(true);
 	pMainWnd->m_SpinAcqCount.EnableWindow(true);
 	
+
+	//more negative Mpx-Error will be returned, zero is okay
 	if (retval <= retval2)
-		pMainWnd->_threadRetVal = retval;
+		threadRetVal = retval;
 	else
-		pMainWnd->_threadRetVal = retval2;
+		threadRetVal = retval2;
 	
-	if (pMainWnd->_threadRetVal<0)
+	if (threadRetVal<0)
 		{
 			errorStr.Format("MpxMgrError: %i", retval);
 			AfxMessageBox(errorStr, MB_ICONERROR, 0);
 		}
-
 	
 	return 0;
-
-
-
 }
 
 
@@ -465,38 +469,35 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 	static int retval, waitForTrigger, numberOfLoops;
 	static CString errorStr;
 	
-	MessageBox("PerformTriggeredFrameAcqTimePixProd", "PerformTriggeredFrameAcqTimePixProd", 0);
-	_threadRetVal = -1;
+	//MessageBox("PerformTriggeredFrameAcqTimePixProd", "PerformTriggeredFrameAcqTimePixProd", 0);
 	retval = -1;
 	waitForTrigger = -1;
 	numberOfLoops = 0;
 	
-	MessageBox("Hallo", "Starte Acq.", 0);
-	
+	CWinThread* pThread = AfxBeginThread(mpxCtrlPerformTriggeredFrameAcqThread,this);
+	while(getAcquisitionActive() == false)
+			{
+				Sleep(1);
+			}
+			timePixDaqStatus.parPortSetBusyLineLow();
+		
 	while (waitForTrigger == -1)
 	{
-		if (numberOfLoops == 0)
+		
+			
+		
 		{
-			CWinThread* pThread = AfxBeginThread(mpxCtrlPerformTriggeredFrameAcqThread,this);
+			
 			numberOfLoops++;
 		}
-		Sleep(1);//for preventing a acq. start while shutter is on (ideally wait one shutter length)
 		waitForTrigger = mpxWaitForTrigger();
 	}
 	
-	//catch possible racecondition of TLU and return empty frame
-	if (waitForTrigger == RACECONDITION)
-	{
-		i16 *  databuffer = this->mpxDevId[this->mpxCurrSel].databuffer;            
-		u32 sizeOfDataBuffer = this->mpxDevId[this->mpxCurrSel].sizeOfDataBuffer;
-		for(u32 i = 0; i<sizeOfDataBuffer; i++)
-		//if (databuffer[i]>0)
-			databuffer[i] = 0;
-	}
+		
 	
 
 	
-	//more negative Mpx-Error will be returned, zero is okay
+	
 	
 	
 	if (waitForTrigger<0)
@@ -504,8 +505,24 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 			errorStr.Format("MpxMgrError: %i", retval);
 			AfxMessageBox(errorStr, MB_ICONERROR, 0);
 		}
-		
+
+	// wait for the mpxCtrl thread to finish
+/*	DWORD dwRet;
+	do	
+	{
+		dwRet = WaitForSingleObject(pThread->m_hThread, 100);
+		if(dwRet == WAIT_FAILED)
+		{
+			errorStr.Format("Error waiting for mpxCtrl thread to finish: %li", dwRet);
+			AfxMessageBox(errorStr, MB_ICONERROR, 0);			
+		}
+	} while	((dwRet != WAIT_OBJECT_0) && (dwRet != WAIT_FAILED));
+	
+	// now data readout is finished, we can clear the AcquisitonActive flag and return
+	*/	
+	clearAcquisitionActive();
 	return retval;
+
 	
 
 	
@@ -521,15 +538,7 @@ int CPixelmanProducerMFCDlg::mpxWaitForTrigger()
 	if(timePixDaqStatus.parPortCheckTriggerLine() == HIGH)
 	{
 		timePixDaqStatus.parPortSetBusyLineHigh();
-		Sleep(1);//Dead Time to have TLU detecting the PC busy
-		if (timePixDaqStatus.parPortCheckTriggerLine() == LOW)
-		{
-			return mpxCtrlTriggerType(devId, TRIGGER_ACQSTOP);
-			//return mpxCtrlGetFrame16(devId, databuffer, sizeOfDataBuffer, 0);
-		}
-			
-		else
-			return RACECONDITION;
+		return mpxCtrlTriggerType(devId, TRIGGER_ACQSTOP);
 	}
 	else
 		return  -1;
@@ -589,4 +598,27 @@ void CPixelmanProducerMFCDlg::OnEnChangeParPortAddr()
 	static int hexBuffer;
 	hexBuffer = m_parPortAddress.GetValue();
 	timePixDaqStatus.parPortUpdateAddress(hexBuffer);
+}
+
+void  CPixelmanProducerMFCDlg::setAcquisitionActive()
+{
+	pthread_mutex_lock( &m_AcquisitionActiveMutex);
+		m_AcquisitionActive = true;
+	pthread_mutex_unlock( &m_AcquisitionActiveMutex);
+}
+
+void  CPixelmanProducerMFCDlg::clearAcquisitionActive()
+{
+	pthread_mutex_lock( &m_AcquisitionActiveMutex);
+		m_AcquisitionActive = false;
+	pthread_mutex_unlock( &m_AcquisitionActiveMutex);
+}
+
+bool  CPixelmanProducerMFCDlg::getAcquisitionActive()
+{	
+	bool retval;
+	pthread_mutex_lock( &m_AcquisitionActiveMutex);
+		retval = m_AcquisitionActive;
+	pthread_mutex_unlock( &m_AcquisitionActiveMutex);
+	return retval;
 }
