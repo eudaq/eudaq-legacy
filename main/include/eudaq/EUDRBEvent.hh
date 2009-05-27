@@ -27,6 +27,7 @@ namespace eudaq {
     unsigned GetID() const { return m_id; }
     size_t   DataSize() const;
     const unsigned char * GetData() const { return &m_data[8]; }
+    const vec_t & GetDataVector() const { return m_data; }
     void Print(std::ostream &) const;
   private:
     unsigned char GetByte(size_t i) const { return m_data[i]; }

@@ -9,7 +9,7 @@ namespace eudaq {
 
   class StandardPlane : public Serializable {
   public:
-    StandardPlane(const std::string & type, const std::string & sensor);
+    StandardPlane(unsigned id, const std::string & type, const std::string & sensor);
     StandardPlane(Deserializer &);
     void Serialize(Serializer &) const;
     typedef double pixel_t;
@@ -18,7 +18,7 @@ namespace eudaq {
     pixel_t GetPixel(size_t i) const;
 
     std::string m_type, m_sensor;
-    unsigned m_tluevent;
+    unsigned m_id, m_tluevent;
     unsigned m_xsize, m_ysize;
     std::vector<coord_t> m_x, m_y;
     std::vector<std::vector<pixel_t> > m_pix;

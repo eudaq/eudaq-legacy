@@ -16,21 +16,30 @@ namespace eudaq {
   public:
     typedef unsigned char byte_t;
     typedef std::vector<byte_t> data_t;
+    struct block_t : public Serializable {
+      block_t(unsigned id = -1, data_t data = data_t()) : id(id), data(data) {}
+      block_t(Deserializer &);
+      void Serialize(Serializer &) const;
+      unsigned id;
+      data_t data;
+    };
+
     RawDataEvent(std::string type, unsigned run, unsigned event);
     RawDataEvent(Deserializer &);
 
     /// Add a data block as std::vector
     template <typename T>
-    void AddBlock(const std::vector<T> & data) {
-      m_data.push_back(make_vector(data));
+    void AddBlock(unsigned id, const std::vector<T> & data) {
+      m_blocks.push_back(block_t(id, make_vector(data)));
     }
 
     /// Add a data block as array with given size
     template <typename T>
-    void AddBlock(const T * data, size_t bytes) {
-      m_data.push_back(make_vector(data, bytes));
+    void AddBlock(unsigned id, const T * data, size_t bytes) {
+      m_blocks.push_back(block_t(id, make_vector(data, bytes)));
     }
 
+    unsigned GetID(size_t i) const;
     /** Get the data block number i as vector of \c{unsigned char}, which is the byte sequence which
      *  which has been serialised. This is the recommended way to retrieve your
      *  data from the RawDataEvent since the other GetBlock functions might
@@ -40,7 +49,7 @@ namespace eudaq {
     byte_t GetByte(size_t block, size_t index) const;
 
     /// Return the number of data blocks in the RawDataEvent
-    size_t NumBlocks() const { return m_data.size(); }
+    size_t NumBlocks() const { return m_blocks.size(); }
 
     virtual void Print(std::ostream &) const;
     static RawDataEvent BORE(std::string type, unsigned run) {
@@ -74,7 +83,7 @@ namespace eudaq {
     }
 
     std::string m_type;
-    std::vector<data_t> m_data;
+    std::vector<block_t> m_blocks;
   };
 
 }
