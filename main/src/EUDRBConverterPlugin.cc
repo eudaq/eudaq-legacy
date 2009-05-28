@@ -17,38 +17,58 @@
 
 namespace eudaq {
 
+  void map_1x1(double & x, double & y, unsigned c, unsigned r, unsigned, unsigned, unsigned) {
+    x = c;
+    y = r;
+  }
+
+  void map_4x1(double & x, double & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned) {
+    unsigned mat = (m == 0 || m == 3) ? 3-m : m;
+    x = c + mat * nc;
+    y = r;
+  }
+
+  void map_2x2(double & x, double & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned nr) {
+    x = (m < 2) ? c : 2*nc - 1 - c;
+    y = (m == 0 || m == 3) ? r : 2*nr - 1 - r;
+  }
+
   struct SensorInfo {
-    SensorInfo(const std::string name, unsigned w, unsigned h)
-      : name(name), width(w), height(h)
+    typedef void (*mapfunc_t)(double & x, double & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned nr);
+    SensorInfo(const std::string name, unsigned c, unsigned r, unsigned m, unsigned w, unsigned h, mapfunc_t mfunc = 0)
+      : name(name), cols(c), rows(r), mats(m), width(w), height(h), mapfunc(mfunc)
       {}
     std::string name;
-    unsigned width, height;
+    unsigned cols, rows, mats, width, height;
+    mapfunc_t mapfunc;
   };
 
   static const SensorInfo g_sensors[] = {
-    SensorInfo("MIMOSTAR2", 0, 0),
-    SensorInfo("MIMOTEL", 264, 256),
-    SensorInfo("MIMOTEL", 264, 256),
-    SensorInfo("MIMOSA18", 512, 512),
-    SensorInfo("MIMOSA5", 0, 0),
-    SensorInfo("MIMOSA26", 0, 0)
+    SensorInfo("MIMOSTAR2",   0,   0, 0,  132,  128),
+    SensorInfo("MIMOTEL",    66, 256, 4,  264,  256, map_4x1),
+    SensorInfo("MIMOTEL",    66, 256, 4,  264,  256, map_4x1),
+    SensorInfo("MIMOSA18",  256, 256, 4,  512,  512, map_2x2),
+    SensorInfo("MIMOSA5",     0,   0, 0, 1024, 1024),
+    SensorInfo("MIMOSA26", 1152, 576, 1, 1152,  576, map_1x1)
   };
 
   struct BoardInfo {
-    enum E_DET  { DET_MIMOSTAR2, DET_MIMOTEL, DET_MIMOTEL_NEWORDER, DET_MIMOSA18, DET_MIMOSA5, DET_MIMOSA26 };
-    enum E_MODE { MODE_RAW3, MODE_RAW2, MODE_ZS };
+    enum E_DET  { DET_NONE = -1, DET_MIMOSTAR2, DET_MIMOTEL, DET_MIMOTEL_NEWORDER, DET_MIMOSA18, DET_MIMOSA5, DET_MIMOSA26 };
+    enum E_MODE { MODE_NONE = -1, MODE_ZS, MODE_RAW1, MODE_RAW2, MODE_RAW3 };
     BoardInfo() : m_version(0), m_det(DET_MIMOTEL), m_mode(MODE_RAW3) {}
     BoardInfo(const Event & ev, int brd)
-      : m_version(0), m_det(DET_MIMOTEL), m_mode(MODE_RAW3)
+      : m_version(0), m_det(DET_NONE), m_mode(MODE_NONE)
     {
       std::string det = ev.GetTag("DET" + to_string(brd));
       if (det == "") det = ev.GetTag("DET", "MIMOTEL");
 
-      if (det == "MIMOTEL") m_det = DET_MIMOTEL;
-      else if (det == "MIMOSTAR2") m_det = DET_MIMOSTAR2;
-      else if (det == "MIMOSA18") m_det = DET_MIMOSA18;
-      else if (det == "MIMOSA26") m_det = DET_MIMOSA26;
-      else EUDAQ_THROW("Unknown detector in EUDRBConverterPlugin: " + det);
+      for (size_t i = 0; i < sizeof g_sensors / sizeof *g_sensors; ++i) {
+        if (det == g_sensors[i].name) {
+          m_det = (E_DET)i;
+          break;
+        }
+      }
+      if (m_det == DET_NONE) EUDAQ_THROW("Unknown detector in EUDRBConverterPlugin: " + det);
 
       std::string mode = ev.GetTag("MODE" + to_string(brd));
       if (mode == "") mode = ev.GetTag("MODE", "RAW3");
@@ -68,6 +88,12 @@ namespace eudaq {
         EUDAQ_WARN("No EUDRB Version tag, guessing VERSION=" + to_string(m_version));
       }
     }
+    const SensorInfo & Sensor() const {
+      return g_sensors[m_det];
+    }
+    unsigned Frames() const {
+      return m_mode > 0 ? m_mode : 1;
+    }
     int m_version;
     E_DET m_det;
     E_MODE m_mode;
@@ -77,6 +103,7 @@ namespace eudaq {
   public:
     void FillInfo(const Event & bore) const {
       unsigned nboards = from_string(bore.GetTag("BOARDS"), 0);
+      std::cout << "FillInfo " << nboards << std::endl;
       for (unsigned i = 0; i < nboards; ++i) {
         unsigned id = from_string(bore.GetTag("ID" + to_string(i)), i);
         if (m_info.size() <= id) m_info.resize(id+1);
@@ -84,16 +111,99 @@ namespace eudaq {
       }
     }
     const BoardInfo & GetInfo(unsigned id) const {
-      if (id >= m_info.size() || m_info[id].m_version < 1) EUDAQ_THROW("Unrecognised ID converting EUDRB event");
+      if (id >= m_info.size() || m_info[id].m_version < 1) EUDAQ_THROW("Unrecognised ID ("+to_string(id)+", num="+to_string(m_info.size())+") converting EUDRB event");
       return m_info[id];
     }
     StandardPlane ConvertPlane(const std::vector<unsigned char> & data, unsigned id) const {
       const BoardInfo & info = GetInfo(id);
-      StandardPlane plane(id, "EUDRB", g_sensors[info.m_det].name);
+      StandardPlane plane(id, "EUDRB", info.Sensor().name);
       plane.m_tluevent = (data[data.size()-7] << 8) | data[data.size()-6];
-      plane.m_xsize = g_sensors[info.m_det].width;
-      plane.m_ysize = g_sensors[info.m_det].height;
+      plane.m_xsize = info.Sensor().width;
+      plane.m_ysize = info.Sensor().height;
+      if (info.m_mode == BoardInfo::MODE_ZS) {
+        ConvertZS(plane, data, info);
+      } else {
+        ConvertRaw(plane, data, info);
+      }
       return plane;
+    }
+    static void ConvertZS(StandardPlane & plane, const std::vector<unsigned char> & data, const BoardInfo & info) {
+      unsigned headersize = 8, trailersize = 8;
+      if (info.m_version > 2) {
+        headersize += 8;
+        EUDAQ_THROW("EUDRB V3 decoding not yet implemented");
+      }
+      bool padding = (data[data.size()-trailersize-4] == 0);
+      unsigned npixels = (data.size() - headersize - trailersize - 4*padding) / 4;
+      plane.m_x.resize(npixels);
+      plane.m_y.resize(npixels);
+      plane.m_pix.resize(1);
+      plane.m_pix[0].resize(npixels);
+      for (unsigned i = 0; i < npixels; ++i) {
+        int mat = (data[4*i] >> 6), col = 0, row = 0;
+        if (info.m_version < 2) {
+          row = ((data[4*i] & 0x7) << 5) | (data[4*i+1] >> 3);
+          col = ((data[4*i+1] & 0x7) << 4) | (data[4*i+2] >> 4);
+        } else {
+          row = ((data[4*i] & 0x3F) << 3) |  (data[4*i+1] >> 5);
+          col = ((data[4*i+1] & 0x1F) << 4) | (data[4*i+2] >> 4);
+        }
+        info.Sensor().mapfunc(plane.m_x[i], plane.m_y[i], col, row, mat, info.Sensor().cols, info.Sensor().rows);
+        plane.m_pix[0][i] = ((data[4*i+2] & 0x0F) << 8) | (data[4*i+3]);
+      }
+    }
+    static void ConvertRaw(StandardPlane & plane, const std::vector<unsigned char> & data, const BoardInfo & info) {
+      unsigned headersize = 8, trailersize = 8;
+      if (info.m_version > 2) {
+        headersize += 8;
+        EUDAQ_THROW("EUDRB V3 decoding not yet implemented");
+      }
+      unsigned possible1 = 2 *  info.Sensor().cols * info.Sensor().rows      * info.Sensor().mats * info.Frames();
+      unsigned possible2 = 2 * (info.Sensor().cols * info.Sensor().rows - 1) * info.Sensor().mats * info.Frames();
+      bool missingpixel = false;
+      if (data.size() - headersize - trailersize == possible1) {
+        // OK
+      } else if (data.size() - headersize - trailersize == possible2) {
+        missingpixel = true;
+      } else {
+        EUDAQ_THROW("Bad raw data size (" + to_string(data.size() - headersize - trailersize)+") expecting "
+                    + to_string(possible1) + " or " + to_string(possible2));
+      }
+      unsigned npixels = info.Sensor().cols * info.Sensor().rows * info.Sensor().mats;
+      plane.m_x.resize(npixels);
+      plane.m_y.resize(npixels);
+      plane.m_pix.resize(info.Frames());
+      for (size_t i = 0; i < plane.m_pix.size(); ++i) {
+        plane.m_pix[i].resize(npixels);
+      }
+      plane.m_pivot.resize(npixels);
+      unsigned pivot = ((data[5] & 0x3) << 16) | (data[6] << 8) | data[7];
+      const unsigned char * ptr = &data[headersize];
+      for (unsigned row = 0; row < info.Sensor().rows; ++row) {
+        for (unsigned col = 0; col < info.Sensor().cols; ++col) {
+          if (missingpixel && row == info.Sensor().rows-1 && col == info.Sensor().cols-1) break; // last pixel is not transferred
+          for (size_t frame = 0; frame < info.Frames(); ++frame) {
+            for (size_t mat = 0; mat < info.Sensor().mats; ++mat) {
+              double x = 0, y = 0;
+              info.Sensor().mapfunc(x, y, col, row, mat, info.Sensor().cols, info.Sensor().rows);
+              size_t i = x + y*info.Sensor().width;
+              if (frame == 0) {
+                plane.m_x[i] = x;
+                plane.m_y[i] = y;
+                if (info.m_version < 2) {
+                  plane.m_pivot[i] = (row << 7 | col) >= pivot;
+                } else {
+                  plane.m_pivot[i] = (row << 9 | col) >= pivot;
+                }
+              }
+              short pix = *ptr++ << 8;
+              pix |= *ptr++;
+              pix &= 0xfff;
+              plane.m_pix[frame][i] = pix;
+            }
+          }
+        }
+      }
     }
   protected:
     mutable std::vector<BoardInfo> m_info;
@@ -143,6 +253,7 @@ namespace eudaq {
   };
 
   bool LegacyEUDRBConverterPlugin::GetStandardSubEvent(StandardEvent & result, const eudaq::Event & source) const {
+    std::cout << "GetStandardSubEvent " << source.GetRunNumber() << ", " << source.GetEventNumber() << std::endl;
     if (source.IsBORE()) {
       FillInfo(source);
       // TODO: copy some info into StandardEvent?

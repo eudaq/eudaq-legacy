@@ -1825,8 +1825,12 @@ private:
     const size_t hitpixels = plane.m_pix[0].size();
     //std::cout << "Filling " << e.LocalEventNumber() << " board" << boardnumber
     //          << " frames " << m_decoder->NumFrames(e) << " pixels " << npixels << std::endl;
-    std::vector<double> cds(plane.m_pix[0]), ones(hitpixels, 1.0);
-    if (plane.m_pix.size() > 1) {
+    std::vector<double> cds(hitpixels, 0.0), ones(hitpixels, 1.0);
+    if (plane.m_pix.size() == 1) {
+      for (size_t i = 0; i < hitpixels; ++i) {
+        cds[i] = plane.m_pix[0][i];
+      }
+    } else {
       for (size_t i = 0; i < hitpixels; ++i) {
         cds[i] = plane.GetPixel(i);
       }
@@ -1866,7 +1870,7 @@ private:
     }
     b.m_histocdsval->FillN(hitpixels, &cds[0], &ones[0]);
     //b.m_histocdsval->SetNormFactor(b.m_histocdsval->Integral() / m_histoevents);
-    std::vector<double> newx(plane.m_x); // TODO: shouldn't need to recalculate this for each event
+    const std::vector<double> & newx = plane.m_x; // TODO: shouldn't need to recalculate this for each event
     //     for (int i = 0; i < cds.size(); ++i) {
     //       int mat = a.m_x[i] / 66, col = (int)a.m_x[i] % 66;
     //       if (col >= 2) {
