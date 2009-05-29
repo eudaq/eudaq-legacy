@@ -19,6 +19,7 @@ namespace eudaq {
     void SetSizeRaw(unsigned w, unsigned h, unsigned frames = 1, bool withpivot = false);
     void SetSizeRaw(unsigned w, unsigned h, bool withpivot) { SetSizeRaw(w, h, 1, withpivot); }
     void SetSizeZS(unsigned w, unsigned h, unsigned npix, unsigned frames = 1, bool withpivot = false);
+    void Print(std::ostream &) const;
 
     std::string m_type, m_sensor;
     unsigned m_id, m_tluevent;
@@ -43,6 +44,15 @@ namespace eudaq {
   private:
     std::vector<StandardPlane> m_planes;
   };
+
+  inline std::ostream & operator << (std::ostream & os, const StandardPlane & pl) {
+    pl.Print(os);
+    return os;
+  }
+  inline std::ostream & operator << (std::ostream & os, const StandardEvent & ev) {
+    ev.Print(os);
+    return os;
+  }
 
 }
 

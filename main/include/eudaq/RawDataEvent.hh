@@ -53,7 +53,7 @@ namespace eudaq {
 
     virtual void Print(std::ostream &) const;
     static RawDataEvent BORE(std::string type, unsigned run) {
-      return RawDataEvent(type, run, 0, Event::FLAG_BORE);
+      return RawDataEvent(type, run, (unsigned)-1, Event::FLAG_BORE);
     }
     static RawDataEvent EORE(std::string type, unsigned run, unsigned event) {
       return RawDataEvent(type, run, event, Event::FLAG_EORE);

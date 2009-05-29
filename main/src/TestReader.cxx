@@ -1,12 +1,13 @@
 #include "eudaq/FileReader.hh"
-#include "eudaq/EUDRBEvent.hh"
 #include "eudaq/OptionParser.hh"
+#include "eudaq/PluginManager.hh"
 #include "eudaq/Logger.hh"
 #include "eudaq/Utils.hh"
 
 #include <iostream>
 #include <fstream>
 
+using eudaq::StandardEvent;
 using eudaq::from_string;
 using eudaq::to_string;
 using eudaq::split;
@@ -36,45 +37,34 @@ std::vector<unsigned> parsenumbers(const std::string & s) {
   return result;
 }
 
-bool DoEvent(unsigned ndata, const eudaq::DetectorEvent * dev, bool do_process, bool do_display, bool do_zs, bool do_dump, eudaq::EUDRBDecoder * decoder) {
+bool DoEvent(unsigned ndata, const eudaq::DetectorEvent & dev, bool do_process, bool do_display, bool do_zs, bool do_dump) {
   if (!do_display) do_zs = false;
   if (do_zs) do_display = false;
   //std::cout << "DEBUG " << ndata << ", " << do_display << ", " << do_zs << std::endl;
   if (do_process || do_display || do_dump || do_zs) {
+    const StandardEvent & sev = eudaq::PluginManager::ConvertToStandard(dev);
     if (do_display) {
-      std::cout << *dev << std::endl;
+      std::cout << sev << std::endl;
     }
     unsigned boardnum = 0;
-    for (size_t i = 0; i < dev->NumEvents(); ++i) {
-      const eudaq::Event * subev = dev->GetEvent(i);
-      const eudaq::EUDRBEvent * eudev = dynamic_cast<const eudaq::EUDRBEvent*>(subev);
-      if (eudev) {
-        if (!decoder) EUDAQ_ERROR("Missing EUDRB BORE, cannot decode events");
-        if (do_display) std::cout << "EUDRB Event:" << std::endl;
-        for (size_t j = 0; j < eudev->NumBoards(); ++j) {
-          const eudaq::EUDRBBoard & brd = eudev->GetBoard(j);
-          if (do_display) std::cout << " Board " << j << ":\n" << brd;
-          //std::cout << "DEBUG: zs" << std::endl;
-          if ((do_process || do_zs) && decoder) {
-            try {
-              eudaq::EUDRBDecoder::arrays_t<short, short> data = decoder->GetArrays<short, short>(brd);
-              if (do_zs && data.m_adc.size() == 1) {
-                for (size_t p = 0; p < data.m_adc[0].size(); ++p) {
-                  static const char tab = '\t';
-                  std::cout << ndata << tab << boardnum << tab << data.m_x[p] << tab << data.m_y[p] << tab << data.m_adc[0][p] << std::endl;
-                }
-              }
-            } catch (const eudaq::Exception & e) {
-              std::cout << "Error in event " << ndata << ": " << e.what() << std::endl;
-            }
+    for (size_t i = 0; i < sev.NumPlanes(); ++i) {
+      if (do_display) std::cout << "Plane:" << std::endl;
+      const eudaq::StandardPlane & plane = sev.GetPlane(i);
+      if (do_display) std::cout << " Plane " << i << ":\n" << plane;
+      //std::cout << "DEBUG: zs" << std::endl;
+      if (do_process || do_zs) {
+        if (do_zs && plane.m_pix.size() == 1) {
+          for (size_t p = 0; p < plane.m_pix[0].size(); ++p) {
+            static const char tab = '\t';
+            std::cout << ndata << tab << boardnum << tab << plane.m_x[p] << tab << plane.m_y[p] << tab << plane.m_pix[0][p] << std::endl;
           }
-          if (do_dump) {
-            std::ofstream file(("board" + to_string(boardnum) + ".dat").c_str());
-            file.write(reinterpret_cast<const char*>(brd.GetData()-8), brd.DataSize()+16);
-          }
-          boardnum++;
         }
       }
+//       if (do_dump) {
+//         std::ofstream file(("board" + to_string(boardnum) + ".dat").c_str());
+//         file.write(reinterpret_cast<const char*>(brd.GetData()-8), brd.DataSize()+16);
+//       }
+      boardnum++;
     }
   }
   return do_display;
@@ -103,7 +93,6 @@ int main(int /*argc*/, char ** argv) {
       eudaq::FileReader reader(op.GetArg(i), ipat.Value());
       EUDAQ_INFO("Reading: " + reader.FileName());
       unsigned ndata = 0, ndatalast = 0, nnondet = 0, nbore = 0, neore = 0;
-      counted_ptr<eudaq::EUDRBDecoder> decoder;
       do {
         const eudaq::DetectorEvent & dev = reader.Event();
         if (dev.IsBORE()) {
@@ -112,7 +101,7 @@ int main(int /*argc*/, char ** argv) {
             EUDAQ_WARN("Multiple BOREs (" + to_string(nbore) + ")");
           }
           if (do_bore.IsSet()) std::cout << dev << std::endl;
-          decoder = new eudaq::EUDRBDecoder(dev);
+          eudaq::PluginManager::ConvertToStandard(dev);
         } else if (dev.IsEORE()) {
           neore++;
           if (neore > 1) {
@@ -125,7 +114,7 @@ int main(int /*argc*/, char ** argv) {
           bool show = std::find(displaynumbers.begin(), displaynumbers.end(), ndata) != displaynumbers.end();
           bool proc = do_pall.IsSet() || (show && do_proc.IsSet());
           bool dump = (do_dump.IsSet() && do_dump.Value() == ndata);
-          bool shown = DoEvent(ndata, &dev, proc, show, do_zs.IsSet(), dump, decoder.get());
+          bool shown = DoEvent(ndata, dev, proc, show, do_zs.IsSet(), dump);
           if (showlast) {
             if (shown) {
               lastevent = 0;
@@ -136,7 +125,7 @@ int main(int /*argc*/, char ** argv) {
           }
         }
       } while (reader.NextEvent());
-      if (lastevent.get()) DoEvent(ndatalast, dynamic_cast<eudaq::DetectorEvent*>(lastevent.get()), false, true, do_zs.IsSet(), false, decoder.get());
+      if (lastevent.get()) DoEvent(ndatalast, *lastevent.get(), false, true, do_zs.IsSet(), false);
       EUDAQ_INFO("Number of data events: " + to_string(ndata));
       if (nnondet) std::cout << "Warning: Non-DetectorEvents found: " << nnondet << std::endl;
       if (!nbore) {

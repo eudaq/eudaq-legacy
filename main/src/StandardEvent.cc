@@ -41,6 +41,10 @@ namespace eudaq {
     //
   }
 
+  void StandardPlane::Print(std::ostream & os) const {
+    os << m_id << ", " << m_type << ":" << m_sensor << ", " << m_xsize << "x" << m_ysize << ", " << m_x.size();
+  }
+
   void StandardPlane::SetSizeRaw(unsigned w, unsigned h, unsigned frames, bool withpivot) {
     SetSizeZS(w, h, w*h, frames, withpivot);
   }
@@ -94,7 +98,10 @@ namespace eudaq {
   }
 
   void StandardEvent::Print(std::ostream & os) const {
-    os << "Planes " << m_planes.size();
+    os << "Planes " << m_planes.size() << "\n";
+    for (size_t i = 0; i < m_planes.size(); ++i) {
+      os << "  " << m_planes[i] << "\n";
+    }
   }
 
   size_t StandardEvent::NumPlanes() const {

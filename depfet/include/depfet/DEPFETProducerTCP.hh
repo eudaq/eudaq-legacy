@@ -1,13 +1,13 @@
 #include "eudaq/Producer.hh"
 #include "eudaq/Utils.hh"
 #include "eudaq/Logger.hh"
-#include "eudaq/DEPFETEvent.hh"
+#include "eudaq/RawDataEvent.hh"
 #include "eudaq/Timer.hh"
 #include "depfet/rc_depfet.hh"
 #include "depfet/TCPclient.h"
 
 using eudaq::to_string;
-using eudaq::DEPFETEvent;
+using eudaq::RawDataEvent;
 
 namespace {
   static const int BUFSIZE = 128000;
@@ -54,7 +54,7 @@ public:
     m_evt = 0;
     cmd_send("CMD EVB SET RUNNUM " + to_string(m_run));
     eudaq::mSleep(100);
-    SendEvent(DEPFETEvent::BORE(m_run));
+    SendEvent(RawDataEvent::BORE("DEPFET", m_run));
     cmd_send("CMD START");
     firstevent = true;
     running = true;
@@ -84,7 +84,7 @@ public:
     int Nmod, Kmod;
     unsigned int itrg, itrg_old = -1;
     //eudaq::DEPFETEvent ev(m_run, m_evt+1);
-    counted_ptr<eudaq::DEPFETEvent> ev;
+    counted_ptr<eudaq::RawDataEvent> ev;
     do {   //--- modules of one event loop
       lenevent = BUFSIZE;
       Nmod = REQUEST;
@@ -112,7 +112,7 @@ public:
         return;
       } else if (itrg == EORE_TRIGGERID) {
         printf("Sending EORE \n");
-        SendEvent(DEPFETEvent::EORE(m_run, ++m_evt));
+        SendEvent(RawDataEvent::EORE("DEPFET", m_run, ++m_evt));
         return;
       }
 
@@ -121,9 +121,9 @@ public:
         continue;
       }
       if (!ev) {
-        ev = new eudaq::DEPFETEvent(m_run, itrg);
+        ev = new eudaq::RawDataEvent("DEPFET", m_run, itrg);
       }
-      ev->AddBoard(evtModID, buffer, lenevent*4);
+      ev->AddBlock(evtModID, buffer, lenevent*4);
 
     }  while (Kmod!=(Nmod-1));
     std::cout << "##DEBUG## Reading took " << timer.mSeconds() << "ms" << std::endl;
