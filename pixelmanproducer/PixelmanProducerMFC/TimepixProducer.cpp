@@ -14,6 +14,7 @@
 #endif
 
 
+
 TimepixProducer::TimepixProducer(const std::string & name,
 					   const std::string & runcontrol, CPixelmanProducerMFCDlg* pixelmanCtrl)
     : eudaq::Producer(name, runcontrol), m_done(false), m_run(0) , m_ev(0)
@@ -26,7 +27,8 @@ TimepixProducer::TimepixProducer(const std::string & name,
     pthread_mutex_init( &m_run_mutex, 0 );
     pthread_mutex_init( &m_ev_mutex, 0 );
 	pthread_mutex_init( &m_stopRun_mutex, 0 );
-	pthread_mutex_init( &m_runFinished_mutex, 0);
+	pthread_mutex_init( &m_status_mutex, 0);
+	pthread_mutex_init( &m_commandQueue_mutex, 0);
 
 	this->pixelmanCtrl = pixelmanCtrl;
 }
@@ -37,7 +39,8 @@ TimepixProducer::~TimepixProducer()
     pthread_mutex_destroy( &m_run_mutex );
     pthread_mutex_destroy( &m_ev_mutex );
 	pthread_mutex_destroy( &m_stopRun_mutex );
-	pthread_mutex_destroy( &m_runFinished_mutex );
+	pthread_mutex_destroy( &m_status_mutex );
+	pthread_mutex_destroy( &m_commandQueue_mutex );
 }
 
 bool TimepixProducer::GetDone()
@@ -48,6 +51,16 @@ bool TimepixProducer::GetDone()
     pthread_mutex_unlock( &m_done_mutex );    
     return retval;
 }
+
+bool TimepixProducer::GetStopRun()
+{	
+	bool retval;
+	pthread_mutex_lock( &m_stopRun_mutex );
+        retval = m_stopRun;
+    pthread_mutex_unlock( &m_stopRun_mutex );
+	return retval;
+}
+
 
 unsigned int TimepixProducer::GetRunNumber()
 {
@@ -83,6 +96,55 @@ void TimepixProducer::SetDone(bool done)
     pthread_mutex_unlock( &m_done_mutex );    
 }
 
+void TimepixProducer::SetStopRun(bool done)
+{
+	pthread_mutex_lock( &m_stopRun_mutex );
+       m_stopRun = done;
+    pthread_mutex_unlock( &m_stopRun_mutex );   
+
+}
+
+void TimepixProducer::SetRunStatusFlag(timepix_producer_status_t status)
+{
+	pthread_mutex_lock( &m_status_mutex );
+       m_status = status;
+    pthread_mutex_unlock( &m_status_mutex );   
+
+}
+
+TimepixProducer::timepix_producer_status_t TimepixProducer::GetRunStatusFlag()
+{
+    timepix_producer_status_t retval;
+    pthread_mutex_lock( &m_status_mutex );
+      retval = m_status;
+    pthread_mutex_unlock( &m_status_mutex );
+    return retval;
+}
+
+TimepixProducer::timepix_producer_command_t TimepixProducer::PopCommand()
+{
+	timepix_producer_command_t retval;
+	pthread_mutex_lock( &m_commandQueue_mutex );
+		if (m_commandQueue.empty())
+		{
+			retval=NONE;
+		}
+		else
+		{
+			retval = m_commandQueue.front();
+			m_commandQueue.pop();
+		}
+    pthread_mutex_unlock( &m_commandQueue_mutex );
+	return retval;
+}
+
+void TimepixProducer::PushCommand(timepix_producer_command_t command)
+{
+	pthread_mutex_lock( &m_commandQueue_mutex );
+		m_commandQueue.push(command);
+    pthread_mutex_unlock( &m_commandQueue_mutex );
+}
+
 void TimepixProducer::SetEventNumber(unsigned int eventnumber)
 {
     pthread_mutex_lock( &m_ev_mutex );
@@ -103,7 +165,7 @@ void TimepixProducer::Event(i16 *timepixdata, u32 size)
 
 	eudaq::RawDataEvent ev("TimepixEvent",GetRunNumber(), GetIncreaseEventNumber() );
 	
-    serialdatablock = new unsigned char[size];
+    serialdatablock = new unsigned char[2*size];
         
     for (unsigned i=0; i < size ; i ++)
     {
@@ -111,7 +173,7 @@ void TimepixProducer::Event(i16 *timepixdata, u32 size)
 		serialdatablock[2*i + 1] = timepixdata[i] & 0xFF ;
 	}
 
-    ev.AddBlock(serialdatablock , size*sizeof(char));
+    ev.AddBlock(serialdatablock , 2*size*sizeof(char));
 
     SendEvent(ev);
 }
@@ -140,66 +202,87 @@ void TimepixProducer::BlobEvent()
 
 void TimepixProducer::OnConfigure(const eudaq::Configuration & param) 
 {
-	DEVID devId = pixelmanCtrl->mpxDevId[pixelmanCtrl->mpxCurrSel].deviceId;
-	pixelmanCtrl->mpxCtrlInitMpxDevice(devId);
-    EUDAQ_INFO("Configured (" + param.Name() + ")");
-    SetStatus(eudaq::Status::LVL_OK, "Configured (" + param.Name() + ")");
+	if ( GetRunStatusFlag() == TimepixProducer::RUN_ACTIVE )
+	{
+		// give a warning to eudaq and do nothing
+	    EUDAQ_WARN("StartRun requested when run already active");
+		SetStatus(eudaq::Status::LVL_WARN, "StartRun requested when run already active");
+		return;
+	}
+	else
+	{ 
+		DEVID devId = pixelmanCtrl->mpxDevId[pixelmanCtrl->mpxCurrSel].deviceId;
+		pixelmanCtrl->mpxCtrlInitMpxDevice(devId);
 
+		EUDAQ_INFO("Configured (" + param.Name() + ")");
+		SetStatus(eudaq::Status::LVL_OK, "Configured (" + param.Name() + ")");
+	}
 }
 
 void TimepixProducer::OnStartRun(unsigned param) 
 {	
 	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Start Of Run."));
-	pthread_mutex_lock( &m_stopRun_mutex );
-       m_stopRun = false;
-	   static bool stopRun = m_stopRun;
-    pthread_mutex_unlock( &m_stopRun_mutex );
-	pthread_mutex_lock( &m_runFinished_mutex);
-		m_runFinished = false;
-	pthread_mutex_unlock( &m_runFinished_mutex);
-    
-	SetRunNumber( param );
-    SetEventNumber( 1 ); // has to be 1 because BORE is event 0 :-(
-    SendEvent(eudaq::RawDataEvent::BORE(_T("TimepixEvent"), param )); // send param instead of GetRunNumber
-    //std::cout << "Start Run: " << param << std::endl;
-	MessageBox(NULL, "Start of Run", "EudaqMessage", NULL);
-	while(stopRun==false)
-	{	
-		pixelmanCtrl->mpxCtrlPerformTriggeredFrameAcqTimePixProd();
-		Event(pixelmanCtrl->mpxDevId[pixelmanCtrl->mpxCurrSel].databuffer,
-				pixelmanCtrl->mpxDevId[pixelmanCtrl->mpxCurrSel].sizeOfDataBuffer);	
 
-		pthread_mutex_lock( &m_stopRun_mutex );
-			stopRun = m_stopRun;
-		pthread_mutex_unlock( &m_stopRun_mutex );
+	if ( GetRunStatusFlag() == TimepixProducer::RUN_ACTIVE )
+	{
+		// give a warning to eudaq and do nothing
+	    EUDAQ_WARN("StartRun requested when run already active");
+		SetStatus(eudaq::Status::LVL_WARN, "StartRun requested when run already active");
+		return;
 	}
-	pthread_mutex_lock( &m_runFinished_mutex);
-		m_runFinished = true;
-	pthread_mutex_unlock( &m_runFinished_mutex);
-	
+	else
+	{ 
+		SetRunNumber( param );
+		SetEventNumber( 1 ); // has to be 1 because BORE is event 0 :-(
+		SendEvent(eudaq::RawDataEvent::BORE(_T("TimepixEvent"), param )); // send param instead of GetRunNumber
+		//std::cout << "Start Run: " << param << std::endl;
+		//MessageBox(NULL, "Start of Run", "EudaqMessage", NULL);
+
+		// send START_RUN command to the daq thread
+		PushCommand( START_RUN );
+
+		//SetStatus(eudaq::Status::LVL_OK, "Run Started1");
+		// wait for the daq thread to raise the run active flag
+		while ( GetRunStatusFlag() != RUN_ACTIVE )
+		{
+			Sleep(1);
+		}
+
+		EUDAQ_INFO("Run Started");
+		SetStatus(eudaq::Status::LVL_OK, "Run Started");
+			//Sleep(1);
+
+	}
 }
 
 void TimepixProducer::OnStopRun()
 {
 	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("End Of Run."));
-	pthread_mutex_lock( &m_stopRun_mutex );
-       m_stopRun = false;
-	   static bool stopRun = m_stopRun;
-	pthread_mutex_unlock( &m_stopRun_mutex );
-	pthread_mutex_lock( &m_runFinished_mutex );
-		static bool runFinished = m_runFinished;
-	pthread_mutex_unlock( &m_runFinished_mutex );
-	
-	while (runFinished==false)
-	{
-		pthread_mutex_lock( &m_runFinished_mutex);
-				runFinished = m_runFinished;
-		pthread_mutex_unlock( &m_runFinished_mutex);
-	}
 
-    SendEvent(eudaq::RawDataEvent::EORE(_T("TimepixEvent"),GetRunNumber(), GetEventNumber()));
-    //std::cout << "Stop Run" << std::endl;
-	MessageBox(NULL, "End Of Run", "Message from Runcontrol",NULL);
+	if ( GetRunStatusFlag() == TimepixProducer::RUN_STOPPED )
+	{
+		// give a warning to eudaq and do nothing
+	    EUDAQ_WARN("StopRun requested when run not active");
+		SetStatus(eudaq::Status::LVL_WARN, "StopRun requested when run not active");
+	}
+	else
+	{
+		// send STOP_RUN command to the daq thread
+		PushCommand( STOP_RUN );
+
+		// wait for the daq thread to lower the run active flag
+		while ( GetRunStatusFlag() == RUN_ACTIVE )
+		{
+			Sleep(1);
+		}
+		
+		SendEvent(eudaq::RawDataEvent::EORE(_T("TimepixEvent"),GetRunNumber(), GetEventNumber()));
+		//std::cout << "Stop Run" << std::endl;
+		//MessageBox(NULL, "End Of Run", "Message from Runcontrol",NULL);
+		EUDAQ_INFO("Run Stopped");
+		SetStatus(eudaq::Status::LVL_OK, "Run Stopped");
+
+	}
 }
  
 void TimepixProducer::OnTerminate()
@@ -209,21 +292,24 @@ void TimepixProducer::OnTerminate()
 	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Terminated (I'll be back)"));
 	//std::cout << "Terminate (press enter)" << std::endl;
     SetDone( true );
+	PushCommand( TERMINATE );
 	
 }
  
 void TimepixProducer::OnReset()
 {
 	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Reset."));
+	PushCommand( RESET );
+	
 	//std::cout << "Reset" << std::endl;
     //SetStatus(eudaq::Status::LVL_OK);
 }
 
 void TimepixProducer::OnStatus()
 {
-	pixelmanCtrl->m_commHistRunCtrl.AddString(_T("OnStatus Not Implemented."));
+	//pixelmanCtrl->m_commHistRunCtrl.AddString(_T("OnStatus Not Implemented."));
 	//std::cout << "Status - " << m_status << std::endl;
-    //SetStatus(eudaq::Status::WARNING, "Only joking");
+    //SetStatus(eudaq::Status::LVL_OK, "Only joking");
 }
 
 void TimepixProducer::OnUnrecognised(const std::string & cmd, const std::string & param) 

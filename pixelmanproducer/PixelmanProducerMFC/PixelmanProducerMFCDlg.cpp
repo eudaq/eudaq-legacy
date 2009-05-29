@@ -19,7 +19,8 @@
 
 short _stdcall Inp32(short PortAddress);
 void _stdcall Out32(short PortAddress, short data);
-TimepixProducer* producer;
+//TimepixProducer* producer;
+
 
 
 //char* sThlMaskFilePath;
@@ -61,7 +62,8 @@ END_MESSAGE_MAP()
 IMPLEMENT_DYNAMIC(CPixelmanProducerMFCDlg, CDialog)
 
 CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
-	: CDialog(CPixelmanProducerMFCDlg::IDD, pParent), timePixDaqStatus(0x378)
+	: CDialog(CPixelmanProducerMFCDlg::IDD, pParent), timePixDaqStatus(0x378),
+		m_AcquisitionActive(false), m_producer(0)
 {
 	m_csThlFilePath.Empty();
 	m_csMaskFilePath.Empty();
@@ -73,6 +75,8 @@ CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 
 	// Inititalise the mutexes
     pthread_mutex_init( &m_AcquisitionActiveMutex, 0 );
+	pthread_mutex_init( &m_producer_mutex, 0);
+
 }
 
 
@@ -80,13 +84,14 @@ CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 CPixelmanProducerMFCDlg::~CPixelmanProducerMFCDlg()	
 {
 	//pixelmanProducerCreated = false;
-	if(producerStarted==TRUE)
-		producer->SetDone(true);
-	//delete producer;
+	//if(producerStarted==TRUE)
+	//	producer->SetDone(true);
+	delete m_producer;
 	
 	//this->DialogBoxDelete(this);
 
     pthread_mutex_destroy( &m_AcquisitionActiveMutex );	
+    pthread_mutex_destroy( &m_producer_mutex );	
 }
 
 
@@ -206,57 +211,82 @@ HCURSOR CPixelmanProducerMFCDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
-
-UINT TimePixProducerThread(LPVOID pParam)
+UINT mpxCtrlPerformAcqLoopThread(LPVOID pParam)
 {
 	CPixelmanProducerMFCDlg* pMainWnd = (CPixelmanProducerMFCDlg*) pParam;
 
+	bool executeMainLoop = true;
+	do
+	{
+		switch (pMainWnd->getProducer()->PopCommand())
+		{
+			case TimepixProducer::NONE :
+				break; // don't do anything
+			
+			case TimepixProducer::START_RUN :
+				pMainWnd->getProducer()->SetRunStatusFlag(TimepixProducer::RUN_ACTIVE);
+				break;
+
+			case TimepixProducer::STOP_RUN :
+				pMainWnd->getProducer()->SetRunStatusFlag(TimepixProducer::RUN_STOPPED);
+				break;
+			
+			case TimepixProducer::TERMINATE:
+				executeMainLoop = false;
+				break;
+			
+			case TimepixProducer::CONFIGURE:
+				// nothing to do here, is done in the communication thread
+				break;
+			
+			case TimepixProducer::RESET:	
+				// currently ignored
+				break;
+
+			default: 
+				AfxMessageBox("Invalid Command", MB_ICONERROR, 0);  // invalid command, this should not be possible
+
+		}
+
+		// if run is active read the next event
+		if (pMainWnd->getProducer()->GetRunStatusFlag() == TimepixProducer::RUN_ACTIVE )
+		{
+			pMainWnd->mpxCtrlPerformTriggeredFrameAcqTimePixProd();	
+		}
+	} while (executeMainLoop);
+	
+	return 0;
+}
+
+
+void CPixelmanProducerMFCDlg::OnBnClickedOk()
+{
 	eudaq::OptionParser op("TimePix Producer", "0.0", "The TimePix Producer");
-	eudaq::Option<std::string> rctrl(op, "r", "runcontrol", "tcp://"+pMainWnd->m_hostname.getStdStr()+":44000", "address",
+	eudaq::Option<std::string> rctrl(op, "r", "runcontrol", "tcp://"+m_hostname.getStdStr()+":44000", "address",
                                    "The address of the RunControl application");
 	eudaq::Option<std::string> level(op, "l", "log-level", "NONE", "level",
                                    "The minimum level for displaying log messages locally");
 	eudaq::Option<std::string> name (op, "n", "name", "TimePix", "string",
                                    "The name of this Producer");
-	try 
-	{
-    //op.Parse(argv);
+	//op.Parse(argv);
     EUDAQ_LOG_LEVEL(level.Value());
-    producer = new TimepixProducer(name.Value(), rctrl.Value(), pMainWnd);
-	producer->SetDone(false);
-	pMainWnd->producerStarted = true;
-	pMainWnd->m_commHistRunCtrl.AddString(_T("Connected"));
+	
+	pthread_mutex_lock( & m_producer_mutex );
+		m_producer = new TimepixProducer(name.Value(), rctrl.Value(), this);
+	pthread_mutex_unlock( & m_producer_mutex );
 
-		do 
-		{
-		
-		}
-		while (!producer->GetDone());
-		
-
-	//
-	//std::cout << "Quitting" << std::endl;
-	}		
-	catch (...) 
-	{
-		char buffer[255];
-
-		sprintf_s(buffer,sizeof(buffer),"Error %i",op.HandleMainException());
-		pMainWnd->m_commHistRunCtrl.AddString(_T(buffer));
-	}
+	CWinThread* pThread = AfxBeginThread(mpxCtrlPerformAcqLoopThread, this);
+	
+	producerStarted = true;
+	m_commHistRunCtrl.AddString(_T("Connected"));
 	
 	//MessageBox("Goodbye", "HaveFun", NULL);
 
-	return 0;
+
 }
 
 
 
-void CPixelmanProducerMFCDlg::OnBnClickedOk()
-{
-	CWinThread* pThread = AfxBeginThread(TimePixProducerThread,this);
-}
 
 void CPixelmanProducerMFCDlg::OnBnClickedCancel()
 {
@@ -344,18 +374,13 @@ void CPixelmanProducerMFCDlg::OnCbnSelchangeChipselect()
 UINT mpxCtrlPerformFrameAcqThread(LPVOID pParam)//thread der zur normalen Acq. gehört
 {
 	CPixelmanProducerMFCDlg* pMainWnd = (CPixelmanProducerMFCDlg*) pParam;
+	
 	int threadRetVal = 0;
 	int retval, retval2;
-	//if((pMainWnd->strRepsFilePath).IsEmpty())
-	//no data written to disk
-	pMainWnd->m_AsciiThlAdjFile.EnableWindow(false);
-	pMainWnd->m_writeMask.EnableWindow(false);
-	pMainWnd->m_chipSelect.EnableWindow(false);
-	pMainWnd->m_AcqCount.EnableWindow(false);
-	pMainWnd->m_AcqTime.EnableWindow(false);
-	pMainWnd->m_SpinAcqCount.EnableWindow(false);
-	//else
-	//	pMainWnd->mpxStartAcq(pMainWnd->chipID  , pMainWnd->nacqCount, pMainWnd->nacqTime, FSAVE_ASCII, pMainWnd->strRepsFilePath);
+	
+	pMainWnd->disablePixelManProdAcqControls();
+
+
 	DEVID devId = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceId;
 	
 	int numberOfFrames = pMainWnd->m_AcqCount.getInt();
@@ -371,12 +396,7 @@ UINT mpxCtrlPerformFrameAcqThread(LPVOID pParam)//thread der zur normalen Acq. g
 
 			
 	
-	pMainWnd->m_AsciiThlAdjFile.EnableWindow(true);
-	pMainWnd->m_writeMask.EnableWindow(true);
-	pMainWnd->m_chipSelect.EnableWindow(true);
-	pMainWnd->m_AcqCount.EnableWindow(true);
-	pMainWnd->m_AcqTime.EnableWindow(true);
-	pMainWnd->m_SpinAcqCount.EnableWindow(true);
+	pMainWnd->enablePixelManProdAcqControls();
 	
 	if (retval <= retval2)
 		threadRetVal = retval;
@@ -415,36 +435,22 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformFrameAcqTimePixProd()
 
 UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 {	
+	
+	CPixelmanProducerMFCDlg* pMainWnd = (CPixelmanProducerMFCDlg*) pParam;
+	
 	int threadRetVal = 0;
 	int retval, retval2;
 	static CString errorStr;
 
-	//MessageBox(NULL, "HERE WE ARE", "TriggeredFrameAcqThread", NULL);
+	pMainWnd->disablePixelManProdAcqControls();
 
-	CPixelmanProducerMFCDlg* pMainWnd = (CPixelmanProducerMFCDlg*) pParam;
-	
-	//if((pMainWnd->strRepsFilePath).IsEmpty())
-	//no data written to disk
-	pMainWnd->m_AsciiThlAdjFile.EnableWindow(false);
-	pMainWnd->m_writeMask.EnableWindow(false);
-	pMainWnd->m_chipSelect.EnableWindow(false);
-	pMainWnd->m_AcqCount.EnableWindow(false);
-	pMainWnd->m_AcqTime.EnableWindow(false);
-	pMainWnd->m_SpinAcqCount.EnableWindow(false);
-	
 	DEVID devId = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceId;
 	i16 *  databuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].databuffer;            
 	u32 sizeOfDataBuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].sizeOfDataBuffer;
 	retval = pMainWnd->mpxCtrlPerformFrameAcq(devId, 1, pMainWnd->infDouble, NULL, NULL);
 	retval2 = pMainWnd->mpxCtrlGetFrame16(devId, databuffer, sizeOfDataBuffer, 0);
 	
-	pMainWnd->m_AsciiThlAdjFile.EnableWindow(true);
-	pMainWnd->m_writeMask.EnableWindow(true);
-	pMainWnd->m_chipSelect.EnableWindow(true);
-	pMainWnd->m_AcqCount.EnableWindow(true);
-	pMainWnd->m_AcqTime.EnableWindow(true);
-	pMainWnd->m_SpinAcqCount.EnableWindow(true);
-	
+	/////////////
 
 	//more negative Mpx-Error will be returned, zero is okay
 	if (retval <= retval2)
@@ -454,9 +460,11 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 	
 	if (threadRetVal<0)
 		{
-			errorStr.Format("MpxMgrError: %i", retval);
+			errorStr.Format("MpxMgrError: %i", threadRetVal);
 			AfxMessageBox(errorStr, MB_ICONERROR, 0);
 		}
+
+	pMainWnd->enablePixelManProdAcqControls();
 	
 	return 0;
 }
@@ -475,11 +483,14 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 	numberOfLoops = 0;
 	
 	CWinThread* pThread = AfxBeginThread(mpxCtrlPerformTriggeredFrameAcqThread,this);
+	// wait until the acquisition realy is active before lowering the busy flag.
+    // (The flag is set via callback function and can be accessed with getAcquisitionActive())
 	while(getAcquisitionActive() == false)
 			{
 				Sleep(1);
 			}
-			timePixDaqStatus.parPortSetBusyLineLow();
+	// getProducer()->Event(mpxDevId[mpxCurrSel].databuffer, mpxDevId[mpxCurrSel].sizeOfDataBuffer);
+	timePixDaqStatus.parPortSetBusyLineLow();
 		
 	while (waitForTrigger == -1)
 	{
@@ -538,6 +549,9 @@ int CPixelmanProducerMFCDlg::mpxWaitForTrigger()
 	if(timePixDaqStatus.parPortCheckTriggerLine() == HIGH)
 	{
 		timePixDaqStatus.parPortSetBusyLineHigh();
+		// wait until the shutter has closed again
+		// (unfortunately 1 ms is the shortest we can get :-( )
+		Sleep(1);
 		return mpxCtrlTriggerType(devId, TRIGGER_ACQSTOP);
 	}
 	else
@@ -621,4 +635,34 @@ bool  CPixelmanProducerMFCDlg::getAcquisitionActive()
 		retval = m_AcquisitionActive;
 	pthread_mutex_unlock( &m_AcquisitionActiveMutex);
 	return retval;
+}
+
+void CPixelmanProducerMFCDlg::disablePixelManProdAcqControls()
+{
+	m_AsciiThlAdjFile.EnableWindow(false);
+	m_writeMask.EnableWindow(false);
+	m_chipSelect.EnableWindow(false);
+	m_AcqCount.EnableWindow(false);
+	m_AcqTime.EnableWindow(false);
+	m_SpinAcqCount.EnableWindow(false);
+}
+
+void CPixelmanProducerMFCDlg::enablePixelManProdAcqControls()
+{
+	m_AsciiThlAdjFile.EnableWindow(true);
+	m_writeMask.EnableWindow(true);
+	m_chipSelect.EnableWindow(true);
+	m_AcqCount.EnableWindow(true);
+	m_AcqTime.EnableWindow(true);
+	m_SpinAcqCount.EnableWindow(true);
+}
+
+TimepixProducer * CPixelmanProducerMFCDlg::getProducer()
+{
+	TimepixProducer * retval;
+	pthread_mutex_lock( & m_producer_mutex );
+		retval = m_producer;
+	pthread_mutex_unlock( & m_producer_mutex );
+	return retval;
+
 }

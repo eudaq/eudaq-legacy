@@ -14,7 +14,7 @@
 #include "TimePixDAQStatus.h"
 #include <pthread.h>
 
-
+class TimepixProducer;
 
 // CPixelmanProducerMFCDlg dialog
 class CPixelmanProducerMFCDlg : public CDialog
@@ -52,18 +52,23 @@ public:
 	void setAcquisitionActive();
 	bool getAcquisitionActive();
 
-	//Acq. Related controls	
-	CSpinButtonCtrl m_SpinAcqCount;
+	void disablePixelManProdAcqControls();
+	void enablePixelManProdAcqControls();
+	
+
 	CEditExtended m_AcqCount;
 	CEditExtended m_AcqTime;
+	
 	CEditExtended m_hostname;
 	CHexEdit m_parPortAddress;
-	CComboBox m_chipSelect;
-	CButton m_AsciiThlAdjFile;
+	
+	
+	
 	CListBox m_commHistRunCtrl;
 	BOOL producerStarted;
 	
 	
+
 	int mpxCount;//needed to now how long medipixChipId is
 	int mpxCurrSel;//needed to have information on the currently selected chip
 	medipixChipId* mpxDevId;
@@ -72,7 +77,8 @@ public:
 // Dialog Data
 	enum { IDD = IDD_PIXELMANPRODUCERMFC_DIALOG };
 
-	
+	/// Returns a pointer to the producer
+	TimepixProducer * getProducer();
 
 	//DECLARE_MESSAGE_MAP()
 	
@@ -80,7 +86,7 @@ public:
 
 	
 
-protected:
+protected://veerbte Klassen koennen drauf zugreifen
 // Implementation
 	DECLARE_MESSAGE_MAP()//Declares that the class defines a message map
 	/*afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -103,6 +109,9 @@ protected:
 
 	void clearAcquisitionActive();
 
+	TimepixProducer* m_producer;
+	pthread_mutex_t m_producer_mutex;
+
 
 public:
 	afx_msg void OnBnClickedQuit();
@@ -110,14 +119,21 @@ public:
 	afx_msg void OnBnClickedWriteMasks();
 	afx_msg void OnCbnSelchangeChipselect();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
-	CButton m_writeMask;
+	
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnEnChangeParPortAddr();
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
+
 	
-private:
+private://keiner kann drauf zu greifen
 	bool m_AcquisitionActive;
 	pthread_mutex_t m_AcquisitionActiveMutex;
+	//Acq. Related controls	
+	CSpinButtonCtrl m_SpinAcqCount;
+		CComboBox m_chipSelect;
+	CButton m_AsciiThlAdjFile;
+	CButton m_writeMask;
+	
 
 };

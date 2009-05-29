@@ -4,6 +4,7 @@
 #include "PixelmanProducerMFCDlg.h"
 //#include "targetver.h"
 
+#include <queue>
 
 
 class TimepixProducer : public eudaq::Producer
@@ -12,6 +13,9 @@ class TimepixProducer : public eudaq::Producer
     TimepixProducer(const std::string & name, const std::string & runcontrol,
 					CPixelmanProducerMFCDlg* pixelmanCtrl);
     virtual ~TimepixProducer();
+
+	enum timepix_producer_status_t  {RUN_STOPPED, RUN_ACTIVE};
+	enum timepix_producer_command_t {NONE, START_RUN, STOP_RUN, TERMINATE, CONFIGURE, RESET};
 
     void Event(i16 *timepixdata, u32 size);
     void SimpleEvent();
@@ -23,10 +27,20 @@ class TimepixProducer : public eudaq::Producer
 
     /** Threadsave version to get (a copy of) the m_done variable
      */
-    bool GetDone();
+	void SetStopRun(bool done);
+
+    /** Threadsave version to get (a copy of) the m_done variable
+     */
+
+	bool GetDone();
 
     /** Threadsave version to set the m_run variable
      */
+
+	bool GetStopRun();
+	/** Threadsave version to set the m_stopRun variable
+     */
+
     void SetRunNumber(unsigned int runnumber);
 
     /** Threadsave version to get (a copy of) the m_run variable
@@ -47,6 +61,18 @@ class TimepixProducer : public eudaq::Producer
      */
     unsigned int GetIncreaseEventNumber();
 
+	/** Threadsave way to get the status.
+	 */
+	timepix_producer_status_t GetRunStatusFlag();
+
+	/** Threadsave way to set the status.
+	 */
+	void SetRunStatusFlag(timepix_producer_status_t status);
+
+	/** Threadsave way to retreive the next commnad.
+	 */
+	timepix_producer_command_t PopCommand();
+
     /** The protected member functions live in the communication thread.
      *  Make sure they do not perfom computing intensive tasks and return as
      *  soon as possible.
@@ -66,10 +92,17 @@ protected:
     unsigned m_run;		pthread_mutex_t m_run_mutex;
     unsigned m_ev;		pthread_mutex_t m_ev_mutex;
 	bool m_stopRun;		pthread_mutex_t m_stopRun_mutex;
-	bool m_runFinished; pthread_mutex_t m_runFinished_mutex;
 	pthread_mutexattr_t m_mutexattr;
+
+	/** Threadsave way to push the next commnad into the queue.
+	 */
+	void PushCommand(timepix_producer_command_t);
 	
 private:
 	CPixelmanProducerMFCDlg* pixelmanCtrl;
+	timepix_producer_status_t m_status;
+	pthread_mutex_t m_status_mutex;
 
+	std::queue<timepix_producer_command_t> m_commandQueue;
+	pthread_mutex_t m_commandQueue_mutex;
 };

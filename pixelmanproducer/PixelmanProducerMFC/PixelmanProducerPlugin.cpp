@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "../Pixelman_2008_03_30/_other_/headers/MpxPluginMgrApi.h"
+#include "MpxPluginMgrApi.h"
 #include "medipixChipId.h"
 #include "PixelmanProducerMFCDlg.h"
 
