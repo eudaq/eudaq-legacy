@@ -465,7 +465,7 @@ namespace tlu {
     m_buffer.clear();
     int trig = m_triggernum - entries;
     for (unsigned i = 0; i < entries; ++i) {
-      m_buffer.push_back(TLUEntry(timestamp_buffer ? timestamp_buffer[i] : NOTIMESTAMP, ++trig));
+      m_buffer.push_back(TLUEntry(timestamp_buffer ? timestamp_buffer[i] : NOTIMESTAMP, trig++));
     }
 
     //mSleep(1);

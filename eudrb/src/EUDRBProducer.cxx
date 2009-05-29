@@ -82,7 +82,7 @@ public:
     Timer t_event;
     unsigned long total_bytes=0;
 
-    RawDataEvent ev("EUDRB", m_run, m_ev+1);
+    RawDataEvent ev("EUDRB", m_run, m_ev);
 
     for (size_t n_eudrb=0;n_eudrb<boards.size();n_eudrb++) {
 
@@ -380,7 +380,7 @@ public:
         eudaq::mSleep(100);
       }
       juststopped = false;
-      SendEvent(RawDataEvent::EORE("EUDRB", m_run, ++m_ev));
+      SendEvent(RawDataEvent::EORE("EUDRB", m_run, m_ev++));
       SetStatus(eudaq::Status::LVL_OK, "Stopped");
     } catch (const std::exception & e) {
       printf("Caught exception: %s\n", e.what());
