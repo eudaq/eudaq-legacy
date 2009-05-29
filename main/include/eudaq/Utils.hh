@@ -11,6 +11,7 @@
 #include <sstream>
 #include <iomanip>
 #include <stdexcept>
+#include <sys/types.h>
 
 namespace eudaq {
 
@@ -157,7 +158,7 @@ namespace eudaq {
   template <>
   inline std::ostream & operator << (std::ostream & os, const hexdec_t<char> & h) {
     return os << (int)(unsigned char)h.m_val
-	      << " (0x" << to_hex(h.m_val, h.m_dig) << ")";
+              << " (0x" << to_hex(h.m_val, h.m_dig) << ")";
   }
 
   template <typename T> unsigned char * uchar_cast(T * x) {
@@ -174,6 +175,35 @@ namespace eudaq {
 
   template <typename T> const unsigned char * constuchar_cast(const std::vector<T> & x) {
     return constuchar_cast(&x[0]);
+  }
+
+  template <typename T>
+  inline T getbigendian(const unsigned char * ptr) {
+#if (defined(       __BYTE_ORDER) &&        __BYTE_ORDER ==        __BIG_ENDIAN) || \
+    (defined(__DARWIN_BYTE_ORDER) && __DARWIN_BYTE_ORDER == __DARWIN_BIG_ENDIAN)
+    return *reinterpret_cast<const T *>(ptr);
+#else
+    T result = 0;
+    for (size_t i = 0; i < sizeof (T); ++i) {
+      result <<= 8;
+      result += *ptr++;
+    }
+    return result;
+#endif
+  }
+
+  template <typename T>
+  inline T getlittleendian(const unsigned char * ptr) {
+#if (defined(       __BYTE_ORDER) &&        __BYTE_ORDER ==        __LITTLE_ENDIAN) || \
+    (defined(__DARWIN_BYTE_ORDER) && __DARWIN_BYTE_ORDER == __DARWIN_LITTLE_ENDIAN)
+    return *reinterpret_cast<const T *>(ptr);
+#else
+    T result = 0;
+    for (size_t i = 0; i < sizeof (T); ++i) {
+      result += *ptr++ << (8*i);
+    }
+    return result;
+#endif
   }
 
 }

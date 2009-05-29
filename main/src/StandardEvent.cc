@@ -41,6 +41,22 @@ namespace eudaq {
     //
   }
 
+  void StandardPlane::SetSizeRaw(unsigned w, unsigned h, unsigned frames, bool withpivot) {
+    SetSizeZS(w, h, w*h, frames, withpivot);
+  }
+
+  void StandardPlane::SetSizeZS(unsigned w, unsigned h, unsigned npix, unsigned frames, bool withpivot) {
+    m_xsize = w;
+    m_ysize = h;
+    m_x.resize(npix);
+    m_y.resize(npix);
+    m_pivot.resize(npix*withpivot);
+    m_pix.resize(frames);
+    for (size_t i = 0; i < frames; ++i) {
+      m_pix[i].resize(npix);
+    }
+  }
+
   StandardPlane::pixel_t StandardPlane::GetPixel(size_t i) const {
     if (m_pix.size() < 1 || i >= m_pix[0].size()) {
       EUDAQ_THROW("Index out of bounds (" + to_string(i) + ")");

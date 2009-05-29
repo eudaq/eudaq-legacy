@@ -135,10 +135,7 @@ namespace eudaq {
       }
       bool padding = (data[data.size()-trailersize-4] == 0);
       unsigned npixels = (data.size() - headersize - trailersize - 4*padding) / 4;
-      plane.m_x.resize(npixels);
-      plane.m_y.resize(npixels);
-      plane.m_pix.resize(1);
-      plane.m_pix[0].resize(npixels);
+      plane.SetSizeZS(info.Sensor().width, info.Sensor().height, npixels);
       for (unsigned i = 0; i < npixels; ++i) {
         int mat = (data[4*i] >> 6), col = 0, row = 0;
         if (info.m_version < 2) {
@@ -169,14 +166,8 @@ namespace eudaq {
         EUDAQ_THROW("Bad raw data size (" + to_string(data.size() - headersize - trailersize)+") expecting "
                     + to_string(possible1) + " or " + to_string(possible2));
       }
-      unsigned npixels = info.Sensor().cols * info.Sensor().rows * info.Sensor().mats;
-      plane.m_x.resize(npixels);
-      plane.m_y.resize(npixels);
-      plane.m_pix.resize(info.Frames());
-      for (size_t i = 0; i < plane.m_pix.size(); ++i) {
-        plane.m_pix[i].resize(npixels);
-      }
-      plane.m_pivot.resize(npixels);
+      //unsigned npixels = info.Sensor().cols * info.Sensor().rows * info.Sensor().mats;
+      plane.SetSizeRaw(info.Sensor().width, info.Sensor().height, info.Frames(), true);
       unsigned pivot = ((data[5] & 0x3) << 16) | (data[6] << 8) | data[7];
       const unsigned char * ptr = &data[headersize];
       for (unsigned row = 0; row < info.Sensor().rows; ++row) {

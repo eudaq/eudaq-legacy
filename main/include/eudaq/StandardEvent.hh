@@ -16,6 +16,9 @@ namespace eudaq {
     typedef double coord_t;
     StandardPlane(size_t pixels = 0, size_t frames = 1);
     pixel_t GetPixel(size_t i) const;
+    void SetSizeRaw(unsigned w, unsigned h, unsigned frames = 1, bool withpivot = false);
+    void SetSizeRaw(unsigned w, unsigned h, bool withpivot) { SetSizeRaw(w, h, 1, withpivot); }
+    void SetSizeZS(unsigned w, unsigned h, unsigned npix, unsigned frames = 1, bool withpivot = false);
 
     std::string m_type, m_sensor;
     unsigned m_id, m_tluevent;
