@@ -1,5 +1,5 @@
 #include "eudaq/Producer.hh"
-#include "eudaq/EUDRBEvent.hh"
+#include "eudaq/RawDataEvent.hh"
 #include "eudaq/Utils.hh"
 #include "eudaq/Logger.hh"
 #include "eudaq/OptionParser.hh"
@@ -26,7 +26,7 @@
 
 #define DMABUFFERSIZE   0x100000   //MBLT Buffer Dimension
 
-using eudaq::EUDRBEvent;
+using eudaq::RawDataEvent;
 using eudaq::to_string;
 using eudaq::Timer;
 
@@ -82,7 +82,7 @@ public:
     Timer t_event;
     unsigned long total_bytes=0;
 
-    EUDRBEvent ev(m_run, m_ev+1);
+    RawDataEvent ev("EUDRB", m_run, m_ev+1);
 
     for (size_t n_eudrb=0;n_eudrb<boards.size();n_eudrb++) {
 
@@ -142,7 +142,7 @@ public:
         }
       }
       Timer t_add;
-      ev.AddBoard(n_eudrb,&buffer[0], number_of_bytes);
+      ev.AddBlock(m_idoffset+n_eudrb, &buffer[0], number_of_bytes);
       t_add.Stop();
       total_bytes+=(number_of_bytes+7)&~7;
       if (m_ev % 100 == 0) {
@@ -334,7 +334,7 @@ public:
       m_ev = 0;
       std::cout << "Start Run: " << param << std::endl;
       // EUDRB startup (activation of triggers etc)
-      EUDRBEvent ev(EUDRBEvent::BORE(m_run));
+      RawDataEvent ev(RawDataEvent::BORE("EUDRB", m_run));
       std::string det = boards[0].det;
       for (size_t i = 1; i < boards.size(); ++i) {
         if (boards[i].det != det) det = "Mixed";
@@ -380,7 +380,7 @@ public:
         eudaq::mSleep(100);
       }
       juststopped = false;
-      SendEvent(EUDRBEvent::EORE(m_run, ++m_ev));
+      SendEvent(RawDataEvent::EORE("EUDRB", m_run, ++m_ev));
       SetStatus(eudaq::Status::LVL_OK, "Stopped");
     } catch (const std::exception & e) {
       printf("Caught exception: %s\n", e.what());
