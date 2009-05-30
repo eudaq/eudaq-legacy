@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="PixelmanProducerMFC"
 	ProjectGUID="{C3C0D164-0D42-44FD-90B6-5FD6E4AEFBA8}"
 	RootNamespace="PixelmanProducerMFC"
@@ -130,13 +130,13 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="D:\eudaqDev\main\include;d:\Pixelman_2008_03_30\_other_\headers;..\..\main\include;&quot;..\..\extern\pthread-win32\include&quot;"
+				AdditionalIncludeDirectories="..\..\main\include;..\Pixelman_2008_03_30\_other_\headers;..\..\main\include;&quot;..\..\extern\pthread-win32\include&quot;"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
 				MinimalRebuild="false"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
-				WarningLevel="3"
+				WarningLevel="1"
 				DebugInformationFormat="3"
 			/>
 			<Tool

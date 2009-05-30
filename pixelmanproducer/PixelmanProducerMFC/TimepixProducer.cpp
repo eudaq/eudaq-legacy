@@ -173,7 +173,7 @@ void TimepixProducer::Event(i16 *timepixdata, u32 size)
 		serialdatablock[2*i + 1] = timepixdata[i] & 0xFF ;
 	}
 
-    ev.AddBlock(serialdatablock , 2*size*sizeof(char));
+    ev.AddBlock( -1 , serialdatablock , 2*size*sizeof(char));
 
     SendEvent(ev);
 }
