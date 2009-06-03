@@ -24,7 +24,7 @@ namespace eudaq {
     bool ProcessEvent();
     virtual void OnIdle();
 
-    virtual void OnEvent(const StandardEvent & ev) = 0;
+    virtual void OnEvent(const StandardEvent & /*ev*/ ) {};
     virtual void OnBadEvent(counted_ptr<Event> /*ev*/) {}
     virtual void OnStartRun(unsigned param);
     virtual void OnStopRun();

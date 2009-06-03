@@ -101,7 +101,7 @@ void TimepixDummyProducer::Event(unsigned short *timepixdata)
 	serialdatablock[2*i + 1] = timepixdata[i] & 0xFF ;
     }
 
-    ev.AddBlock(serialdatablock , 131072);
+    ev.AddBlock(0, serialdatablock , 131072);
 
     SendEvent(ev);
 }
