@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="d:\Pixelman_2008_03_30\_other_\headers;..\..\main\include;&quot;..\..\extern\pthread-win32\include&quot;"
+				AdditionalIncludeDirectories="..\Pixelman_2008_03_30\_other_\headers;..\..\main\include;&quot;..\..\extern\pthread-win32\include&quot;"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

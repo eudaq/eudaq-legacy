@@ -442,7 +442,7 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 	int retval, retval2;
 	static CString errorStr;
 
-	pMainWnd->disablePixelManProdAcqControls();
+	//pMainWnd->disablePixelManProdAcqControls();
 
 	DEVID devId = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceId;
 	i16 *  databuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].databuffer;            
