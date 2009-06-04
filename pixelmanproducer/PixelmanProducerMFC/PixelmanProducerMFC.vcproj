@@ -71,7 +71,7 @@
 				AdditionalOptions="/NODEFAULTLIB:mfc90ud.lib&#x0D;&#x0A;/NODEFAULTLIB:mfcs90ud.lib&#x0D;&#x0A;"
 				AdditionalDependencies="libeudaq.lib pthreadVC2.lib inpout32.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;C:\Documents and Settings\renz\Desktop\EuDAQ\extern\pthread-win32\lib&quot;;..\Libeudaq\Debug;&quot;..\..\extern\pthread-win32\lib&quot;"
+				AdditionalLibraryDirectories="..\Libeudaq\Debug;&quot;..\..\extern\pthread-win32\lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
