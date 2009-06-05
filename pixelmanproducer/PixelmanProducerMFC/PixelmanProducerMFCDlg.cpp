@@ -106,8 +106,10 @@ void CPixelmanProducerMFCDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_THLASCIIMASK, m_AsciiThlAdjFile);
 	DDX_Control(pDX, IDC_CHIPSELECT, m_chipSelect);
 	DDX_Control(pDX, IDC_WRITEASCIIMASKS, m_writeMask);
+	DDX_Control(pDX, IDC_CONNECT, m_connect);
 	DDX_Control(pDX, IDC_EDIT2, m_parPortAddress);
 	DDX_Control(pDX, IDC_COMMANDS, m_commHistRunCtrl);
+	
 }
 
 
@@ -116,7 +118,6 @@ BEGIN_MESSAGE_MAP(CPixelmanProducerMFCDlg, CDialog)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP*/
-	ON_BN_CLICKED(IDOK, &CPixelmanProducerMFCDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &CPixelmanProducerMFCDlg::OnBnClickedCancel)
 	ON_BN_CLICKED(IDC_QUIT, &CPixelmanProducerMFCDlg::OnBnClickedQuit)
 
@@ -128,6 +129,7 @@ BEGIN_MESSAGE_MAP(CPixelmanProducerMFCDlg, CDialog)
 
 	ON_BN_CLICKED(IDC_BUTTON1, &CPixelmanProducerMFCDlg::OnBnClickedButton1)
 	//ON_EN_CHANGE(IDC_EDIT2, &CPixelmanProducerMFCDlg::OnEnChangeParPortAddr)
+	ON_BN_CLICKED(ID_CONNECT, &CPixelmanProducerMFCDlg::OnBnClickedConnect)
 END_MESSAGE_MAP()
 
 
@@ -254,13 +256,16 @@ UINT mpxCtrlPerformAcqLoopThread(LPVOID pParam)
 			pMainWnd->mpxCtrlPerformTriggeredFrameAcqTimePixProd();	
 		}
 	} while (executeMainLoop);
+	pMainWnd->enablePixelManProdAcqControls();
 	
 	return 0;
 }
 
 
-void CPixelmanProducerMFCDlg::OnBnClickedOk()
+void CPixelmanProducerMFCDlg::OnBnClickedConnect()
 {
+	disablePixelManProdAcqControls();
+		
 	eudaq::OptionParser op("TimePix Producer", "0.0", "The TimePix Producer");
 	eudaq::Option<std::string> rctrl(op, "r", "runcontrol", "tcp://"+m_hostname.getStdStr()+":44000", "address",
                                    "The address of the RunControl application");
@@ -293,7 +298,7 @@ void CPixelmanProducerMFCDlg::OnBnClickedCancel()
 	//delete timePixDaqStatus;
 	
 	//producer->SetDone(true);
-	DialogBoxDelete(this);	
+	//delete getProducer();	
 }
 
 void CPixelmanProducerMFCDlg::OnBnClickedQuit()
@@ -639,6 +644,7 @@ bool  CPixelmanProducerMFCDlg::getAcquisitionActive()
 
 void CPixelmanProducerMFCDlg::disablePixelManProdAcqControls()
 {
+	m_connect.EnableWindow(false);
 	m_AsciiThlAdjFile.EnableWindow(false);
 	m_writeMask.EnableWindow(false);
 	m_chipSelect.EnableWindow(false);
@@ -648,7 +654,8 @@ void CPixelmanProducerMFCDlg::disablePixelManProdAcqControls()
 }
 
 void CPixelmanProducerMFCDlg::enablePixelManProdAcqControls()
-{
+{	
+	m_connect.EnableWindow(true);
 	m_AsciiThlAdjFile.EnableWindow(true);
 	m_writeMask.EnableWindow(true);
 	m_chipSelect.EnableWindow(true);
@@ -665,4 +672,11 @@ TimepixProducer * CPixelmanProducerMFCDlg::getProducer()
 	pthread_mutex_unlock( & m_producer_mutex );
 	return retval;
 
+}
+
+void CPixelmanProducerMFCDlg::deleteProducer()
+{
+	pthread_mutex_lock( & m_producer_mutex );
+		delete m_producer;
+	pthread_mutex_unlock( & m_producer_mutex );
 }

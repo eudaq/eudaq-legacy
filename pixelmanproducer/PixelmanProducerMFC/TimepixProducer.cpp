@@ -26,7 +26,6 @@ TimepixProducer::TimepixProducer(const std::string & name,
     pthread_mutex_init( &m_done_mutex, 0 );
     pthread_mutex_init( &m_run_mutex, 0 );
     pthread_mutex_init( &m_ev_mutex, 0 );
-	pthread_mutex_init( &m_stopRun_mutex, 0 );
 	pthread_mutex_init( &m_status_mutex, 0);
 	pthread_mutex_init( &m_commandQueue_mutex, 0);
 
@@ -35,10 +34,10 @@ TimepixProducer::TimepixProducer(const std::string & name,
 
 TimepixProducer::~TimepixProducer()
 {
+	//PushCommand(TERMINATE);
     pthread_mutex_destroy( &m_done_mutex );
     pthread_mutex_destroy( &m_run_mutex );
     pthread_mutex_destroy( &m_ev_mutex );
-	pthread_mutex_destroy( &m_stopRun_mutex );
 	pthread_mutex_destroy( &m_status_mutex );
 	pthread_mutex_destroy( &m_commandQueue_mutex );
 }
@@ -50,15 +49,6 @@ bool TimepixProducer::GetDone()
       retval = m_done;
     pthread_mutex_unlock( &m_done_mutex );    
     return retval;
-}
-
-bool TimepixProducer::GetStopRun()
-{	
-	bool retval;
-	pthread_mutex_lock( &m_stopRun_mutex );
-        retval = m_stopRun;
-    pthread_mutex_unlock( &m_stopRun_mutex );
-	return retval;
 }
 
 
@@ -96,13 +86,7 @@ void TimepixProducer::SetDone(bool done)
     pthread_mutex_unlock( &m_done_mutex );    
 }
 
-void TimepixProducer::SetStopRun(bool done)
-{
-	pthread_mutex_lock( &m_stopRun_mutex );
-       m_stopRun = done;
-    pthread_mutex_unlock( &m_stopRun_mutex );   
 
-}
 
 void TimepixProducer::SetRunStatusFlag(timepix_producer_status_t status)
 {
@@ -205,7 +189,8 @@ void TimepixProducer::OnConfigure(const eudaq::Configuration & param)
 	if ( GetRunStatusFlag() == TimepixProducer::RUN_ACTIVE )
 	{
 		// give a warning to eudaq and do nothing
-	    EUDAQ_WARN("StartRun requested when run already active");
+	    pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Run already active"));
+		EUDAQ_WARN("StartRun requested when run already active");
 		SetStatus(eudaq::Status::LVL_WARN, "StartRun requested when run already active");
 		return;
 	}
@@ -213,8 +198,9 @@ void TimepixProducer::OnConfigure(const eudaq::Configuration & param)
 	{ 
 		DEVID devId = pixelmanCtrl->mpxDevId[pixelmanCtrl->mpxCurrSel].deviceId;
 		pixelmanCtrl->mpxCtrlInitMpxDevice(devId);
-
+		pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Configuring"));
 		EUDAQ_INFO("Configured (" + param.Name() + ")");
+		
 		SetStatus(eudaq::Status::LVL_OK, "Configured (" + param.Name() + ")");
 	}
 }

@@ -27,7 +27,6 @@ class TimepixProducer : public eudaq::Producer
 
     /** Threadsave version to get (a copy of) the m_done variable
      */
-	void SetStopRun(bool done);
 
     /** Threadsave version to get (a copy of) the m_done variable
      */
@@ -91,12 +90,11 @@ protected:
     bool m_done;		pthread_mutex_t m_done_mutex;
     unsigned m_run;		pthread_mutex_t m_run_mutex;
     unsigned m_ev;		pthread_mutex_t m_ev_mutex;
-	bool m_stopRun;		pthread_mutex_t m_stopRun_mutex;
 	pthread_mutexattr_t m_mutexattr;
 
 	/** Threadsave way to push the next commnad into the queue.
 	 */
-	void PushCommand(timepix_producer_command_t);
+	void PushCommand(timepix_producer_command_t command);
 	
 private:
 	CPixelmanProducerMFCDlg* pixelmanCtrl;

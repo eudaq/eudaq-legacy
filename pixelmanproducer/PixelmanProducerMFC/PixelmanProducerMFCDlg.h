@@ -79,6 +79,7 @@ public:
 
 	/// Returns a pointer to the producer
 	TimepixProducer * getProducer();
+	void deleteProducer();//Threadsace delete
 
 	//DECLARE_MESSAGE_MAP()
 	
@@ -107,6 +108,7 @@ protected://veerbte Klassen koennen drauf zugreifen
 	CString m_csTestBitMaskFilePath;
 	CString m_csThhorModeMaskFilePath;
 
+
 	void clearAcquisitionActive();
 
 	TimepixProducer* m_producer;
@@ -122,7 +124,7 @@ public:
 	
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnEnChangeParPortAddr();
-	afx_msg void OnBnClickedOk();
+	afx_msg void OnBnClickedConnect();
 	afx_msg void OnBnClickedCancel();
 
 	
@@ -134,6 +136,7 @@ private://keiner kann drauf zu greifen
 		CComboBox m_chipSelect;
 	CButton m_AsciiThlAdjFile;
 	CButton m_writeMask;
+	CButton m_connect;
 	
 
 };
