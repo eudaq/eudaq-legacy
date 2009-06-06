@@ -469,7 +469,7 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 			AfxMessageBox(errorStr, MB_ICONERROR, 0);
 		}
 
-	pMainWnd->enablePixelManProdAcqControls();
+//	pMainWnd->enablePixelManProdAcqControls();
 	
 	return 0;
 }
@@ -510,22 +510,12 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 			AfxMessageBox(errorStr, MB_ICONERROR, 0);
 		}
 
-	// wait for the mpxCtrl thread to finish
-	/*DWORD dwRet;
-	do	
-	{
-		dwRet = WaitForSingleObject(pThread->m_hThread, 100);
-		if(dwRet == WAIT_FAILED)
-		{
-			errorStr.Format("Error waiting for mpxCtrl thread to finish: %li", dwRet);
-			AfxMessageBox(errorStr, MB_ICONERROR, 0);			
-		}
-	} while	((dwRet != WAIT_OBJECT_0) && (dwRet != WAIT_FAILED));*/
+	// wait for the data acquisition thread (readout of the chip) to finish
 	WaitForSingleObject(pThread->m_hThread, INFINITE);
 
 	// now the chip is read out
 	// send the data to eudaq
-	Sleep(100);
+	Sleep(50);
 	getProducer()->Event(mpxDevId[mpxCurrSel].databuffer, mpxDevId[mpxCurrSel].sizeOfDataBuffer);
 
 	// data readout is finished, we can clear the AcquisitonActive flag and return

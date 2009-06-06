@@ -147,7 +147,7 @@ void TimepixProducer::Event(i16 *timepixdata, u32 size)
 {
     //static unsigned char *serialdatablock;
 
-	eudaq::RawDataEvent ev("TimepixEvent",GetRunNumber(), GetIncreaseEventNumber() );
+	eudaq::RawDataEvent ev("Timepix",GetRunNumber(), GetIncreaseEventNumber() );
 	
     unsigned char *serialdatablock = new unsigned char[2*size];
         
@@ -225,7 +225,7 @@ void TimepixProducer::OnStartRun(unsigned param)
 	{ 
 		SetRunNumber( param );
 		SetEventNumber( 1 ); // has to be 1 because BORE is event 0 :-(
-		SendEvent(eudaq::RawDataEvent::BORE(_T("TimepixEvent"), param )); // send param instead of GetRunNumber
+		SendEvent(eudaq::RawDataEvent::BORE(_T("Timepix"), param )); // send param instead of GetRunNumber
 		//std::cout << "Start Run: " << param << std::endl;
 		//MessageBox(NULL, "Start of Run", "EudaqMessage", NULL);
 
@@ -267,7 +267,7 @@ void TimepixProducer::OnStopRun()
 			Sleep(1);
 		}
 		
-		SendEvent(eudaq::RawDataEvent::EORE(_T("TimepixEvent"),GetRunNumber(), GetEventNumber()));
+		SendEvent(eudaq::RawDataEvent::EORE(_T("Timepix"),GetRunNumber(), GetEventNumber()));
 		//std::cout << "Stop Run" << std::endl;
 		//MessageBox(NULL, "End Of Run", "Message from Runcontrol",NULL);
 		EUDAQ_INFO("Run Stopped");
