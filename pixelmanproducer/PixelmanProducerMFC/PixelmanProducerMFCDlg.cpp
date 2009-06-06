@@ -401,7 +401,7 @@ UINT mpxCtrlPerformFrameAcqThread(LPVOID pParam)//thread der zur normalen Acq. g
 
 			
 	
-	pMainWnd->enablePixelManProdAcqControls();
+	//pMainWnd->enablePixelManProdAcqControls();
 	
 	if (retval <= retval2)
 		threadRetVal = retval;
@@ -511,7 +511,7 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 		}
 
 	// wait for the mpxCtrl thread to finish
-	DWORD dwRet;
+	/*DWORD dwRet;
 	do	
 	{
 		dwRet = WaitForSingleObject(pThread->m_hThread, 100);
@@ -520,7 +520,8 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 			errorStr.Format("Error waiting for mpxCtrl thread to finish: %li", dwRet);
 			AfxMessageBox(errorStr, MB_ICONERROR, 0);			
 		}
-	} while	((dwRet != WAIT_OBJECT_0) && (dwRet != WAIT_FAILED));
+	} while	((dwRet != WAIT_OBJECT_0) && (dwRet != WAIT_FAILED));*/
+	WaitForSingleObject(pThread->m_hThread, INFINITE);
 
 	// now the chip is read out
 	// send the data to eudaq
