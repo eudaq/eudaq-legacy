@@ -145,11 +145,11 @@ void TimepixProducer::SetRunNumber(unsigned int runnumber)
 
 void TimepixProducer::Event(i16 *timepixdata, u32 size)
 {
-    static unsigned char *serialdatablock;
+    //static unsigned char *serialdatablock;
 
 	eudaq::RawDataEvent ev("TimepixEvent",GetRunNumber(), GetIncreaseEventNumber() );
 	
-    serialdatablock = new unsigned char[2*size];
+    unsigned char *serialdatablock = new unsigned char[2*size];
         
     for (unsigned i=0; i < size ; i ++)
     {
@@ -157,9 +157,14 @@ void TimepixProducer::Event(i16 *timepixdata, u32 size)
 		serialdatablock[2*i + 1] = timepixdata[i] & 0xFF ;
 	}
 
-    ev.AddBlock( -1 , serialdatablock , 2*size*sizeof(char));
+    ev.AddBlock( 0 , serialdatablock , 2*size);
 
-    SendEvent(ev);
+//	bool acqact = pixelmanCtrl->getAcquisitionActive();
+//	Sleep(100);
+//	bool acqact2 = pixelmanCtrl->getAcquisitionActive();
+	SendEvent(ev);
+
+	delete[] serialdatablock;
 }
 
 void TimepixProducer::SimpleEvent()

@@ -142,7 +142,7 @@ BOOL CPixelmanProducerMFCDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 	//OnPaint;
 
-	m_hostname.SetWindowText("mortimer.physik.uni-freiburg.de");	
+	m_hostname.SetWindowText("192.168.0.2");	
 	
 	m_AcqCount.SetWindowText("0");
 	m_AcqTime.SetWindowText("0");
@@ -494,27 +494,15 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 			{
 				Sleep(1);
 			}
-	// getProducer()->Event(mpxDevId[mpxCurrSel].databuffer, mpxDevId[mpxCurrSel].sizeOfDataBuffer);
 	timePixDaqStatus.parPortSetBusyLineLow();
 		
 	while (waitForTrigger == -1)
 	{
-		
-			
-		
-		{
-			
+		{		
 			numberOfLoops++;
 		}
 		waitForTrigger = mpxWaitForTrigger();
 	}
-	
-		
-	
-
-	
-	
-	
 	
 	if (waitForTrigger<0)
 		{
@@ -523,7 +511,7 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 		}
 
 	// wait for the mpxCtrl thread to finish
-/*	DWORD dwRet;
+	DWORD dwRet;
 	do	
 	{
 		dwRet = WaitForSingleObject(pThread->m_hThread, 100);
@@ -533,15 +521,15 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 			AfxMessageBox(errorStr, MB_ICONERROR, 0);			
 		}
 	} while	((dwRet != WAIT_OBJECT_0) && (dwRet != WAIT_FAILED));
-	
-	// now data readout is finished, we can clear the AcquisitonActive flag and return
-	*/	
+
+	// now the chip is read out
+	// send the data to eudaq
+	Sleep(100);
+	getProducer()->Event(mpxDevId[mpxCurrSel].databuffer, mpxDevId[mpxCurrSel].sizeOfDataBuffer);
+
+	// data readout is finished, we can clear the AcquisitonActive flag and return
 	clearAcquisitionActive();
 	return retval;
-
-	
-
-	
 }
 	
 int CPixelmanProducerMFCDlg::mpxWaitForTrigger()
