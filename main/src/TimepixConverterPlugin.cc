@@ -1,6 +1,7 @@
 #include "eudaq/DataConverterPlugin.hh"
 #include "eudaq/Exception.hh"
 #include "eudaq/RawDataEvent.hh"
+#include "eudaq/Logger.hh"
 
 #if USE_LCIO
 #  include "lcio.h"
@@ -71,25 +72,34 @@ namespace eudaq {
 
     // loop all data blocks
     for (size_t block = 0 ; block < re.NumBlocks(); block++) {
-      RawDataEvent::data_t bytedata = re.GetBlock(block);
+	RawDataEvent::data_t bytedata = re.GetBlock(block);
+    
+	std::vector<short> timepixdata(bytedata.size()/2);
 
-       std::vector<short> timepixdata(bytedata.size()/2);
-
-      // convert the byte sequence to lcio data
-       for (unsigned int i = 0; i < (bytedata.size()/2); i++) {
-        // the byte sequence is little endian
-        timepixdata[i] = (bytedata[2*i] << 8) | bytedata[2*i+1];
-      }
-
-      lcio::TrackerRawDataImpl * timepixlciodata = new lcio::TrackerRawDataImpl;
-      timepixlciodata->setCellID0(0);
-      timepixlciodata->setCellID1(block);
-      timepixlciodata->setADCValues(timepixdata);
-
-      lcio::LCCollectionVec * timepixCollection = new lcio::LCCollectionVec(lcio::LCIO::TRACKERRAWDATA);
-      timepixCollection->addElement(timepixlciodata);
-
-      le.addCollection(timepixCollection,"TimePixRawData");
+	// convert the byte sequence to lcio data
+	for (unsigned int i = 0; i < (bytedata.size()/2); i++) {
+	    // the byte sequence is little endian
+	    timepixdata[i] = (bytedata[2*i] << 8) | bytedata[2*i+1];
+	}
+	
+	lcio::TrackerRawDataImpl * timepixlciodata = new lcio::TrackerRawDataImpl;
+	timepixlciodata->setCellID0(0);
+	timepixlciodata->setCellID1(re.GetID(block));
+	timepixlciodata->setADCValues(timepixdata);
+	
+	try{
+	    // if the collection is already existing add the current data
+	    lcio::LCCollectionVec * timepixCollection = dynamic_cast<lcio::LCCollectionVec *>(le.getCollection("TimePixRawData"));
+	    timepixCollection->addElement(timepixlciodata);
+	}
+	catch(lcio::DataNotAvailableException &)
+	{
+	    // collection does not exist, create it and add it to the event
+	    lcio::LCCollectionVec * timepixCollection = new lcio::LCCollectionVec(lcio::LCIO::TRACKERRAWDATA);
+	    timepixCollection->addElement(timepixlciodata);
+	    
+	    le.addCollection(timepixCollection,"TimePixRawData");
+	}
     }// for (block)
 
     return true;
