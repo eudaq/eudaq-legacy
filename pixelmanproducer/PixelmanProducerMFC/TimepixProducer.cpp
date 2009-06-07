@@ -267,6 +267,8 @@ void TimepixProducer::OnStopRun()
 			Sleep(1);
 		}
 		
+		//EUDAQ_DEBUG("Sending EORE");
+		Sleep(1000);
 		SendEvent(eudaq::RawDataEvent::EORE(_T("Timepix"),GetRunNumber(), GetEventNumber()));
 		//std::cout << "Stop Run" << std::endl;
 		//MessageBox(NULL, "End Of Run", "Message from Runcontrol",NULL);

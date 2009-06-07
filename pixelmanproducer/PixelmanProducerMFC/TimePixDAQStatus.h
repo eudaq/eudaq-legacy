@@ -4,6 +4,7 @@
 #define LOW 0
 typedef int parPort;
 
+#include <pthread.h>
 //#include "targetver.h"
 
 class TimePixDAQStatus
@@ -28,4 +29,6 @@ protected:
 	int _Inp32(short par); //wraps the Inp32 function from
 							//inpout32.dll for error handling
 
+	// a mutex to protext the parallel port. It makes this class thread safe
+	pthread_mutex_t _parportMutex;
 };

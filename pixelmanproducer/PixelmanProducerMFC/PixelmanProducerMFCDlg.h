@@ -46,15 +46,26 @@ public:
 
 	//functions to be remotely called from runcontrol
 	int mpxCtrlPerformFrameAcqTimePixProd();
-	int mpxCtrlPerformTriggeredFrameAcqTimePixProd();
+	void mpxCtrlStartTriggeredFrameAcqTimePixProd();
+	void mpxCtrlFinishTriggeredFrameAcqTimePixProd();
 	int mpxCtrlGetFrame32TimePixProd();
 	
 	void setAcquisitionActive();
 	bool getAcquisitionActive();
 
+	void finishRun();
+
 	void disablePixelManProdAcqControls();
 	void enablePixelManProdAcqControls();
 	
+	void setFrameAcquisitionThread( CWinThread* frameAcquThread );
+	CWinThread* getFrameAcquisitionThread();
+
+	/** Check if trigger line is raised and stop the acquisiton on the chip if so.
+	 *	Note: This function is thread safe because it only uses thread safe functions
+	 * (I hope that mpxCtrlTriggerType() is tread safe...)
+	 */
+	int mpxCheckForTrigger();
 
 	CEditExtended m_AcqCount;
 	CEditExtended m_AcqTime;
@@ -99,7 +110,7 @@ protected://veerbte Klassen koennen drauf zugreifen
 	afx_msg HCURSOR OnQueryDragIcon();
 	
 	//protected member variables functions
-	int mpxWaitForTrigger();
+
 	//a PixelmanProducer has a TimePixDAQStatus
 	TimePixDAQStatus timePixDaqStatus;
 	CStatic m_ThlMaskLabel;
@@ -138,5 +149,9 @@ private://keiner kann drauf zu greifen
 	CButton m_writeMask;
 	CButton m_connect;
 	
-
+	// variable to hold the frame acquisition thread
+	CWinThread* m_frameAcquisitionThread;
+	// mutex to protext the frameAcquisitonThread variable, since it is accessed
+	// by the thread with the main loop
+	pthread_mutex_t m_frameAcquisitionThreadMutex;
 };

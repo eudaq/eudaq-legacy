@@ -76,7 +76,7 @@ CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 	// Inititalise the mutexes
     pthread_mutex_init( &m_AcquisitionActiveMutex, 0 );
 	pthread_mutex_init( &m_producer_mutex, 0);
-
+	pthread_mutex_init( &m_frameAcquisitionThreadMutex, 0);
 }
 
 
@@ -92,6 +92,7 @@ CPixelmanProducerMFCDlg::~CPixelmanProducerMFCDlg()
 
     pthread_mutex_destroy( &m_AcquisitionActiveMutex );	
     pthread_mutex_destroy( &m_producer_mutex );	
+	pthread_mutex_destroy( &m_frameAcquisitionThreadMutex );
 }
 
 
@@ -230,7 +231,8 @@ UINT mpxCtrlPerformAcqLoopThread(LPVOID pParam)
 				break;
 
 			case TimepixProducer::STOP_RUN :
-				pMainWnd->getProducer()->SetRunStatusFlag(TimepixProducer::RUN_STOPPED);
+				//EUDAQ_DEBUG("Main loop: Stopping run");
+				pMainWnd->finishRun();
 				break;
 			
 			case TimepixProducer::TERMINATE:
@@ -253,7 +255,33 @@ UINT mpxCtrlPerformAcqLoopThread(LPVOID pParam)
 		// if run is active read the next event
 		if (pMainWnd->getProducer()->GetRunStatusFlag() == TimepixProducer::RUN_ACTIVE )
 		{
-			pMainWnd->mpxCtrlPerformTriggeredFrameAcqTimePixProd();	
+			if (!pMainWnd->getAcquisitionActive())
+			{
+				// no acquisition active, start it
+				pMainWnd->mpxCtrlStartTriggeredFrameAcqTimePixProd();
+			}
+			else // acquisition is active, check for trigger and perform possible readout
+			{
+				int triggerStatus = pMainWnd->mpxCheckForTrigger();
+
+				if ( triggerStatus == -1)
+				{
+					// no trigger yet, continue the main loop
+					continue;
+				}
+
+				if ( triggerStatus<0)
+				{		
+					// there was an error, give a warning
+					CString errorStr;
+					errorStr.Format("MpxMgrError: %i", triggerStatus);
+					AfxMessageBox(errorStr, MB_ICONERROR, 0);
+					// and do nothing ???
+				}
+
+				// now perform the actual readout of the chip and send the data to eudaq
+				pMainWnd->mpxCtrlFinishTriggeredFrameAcqTimePixProd();
+			}
 		}
 	} while (executeMainLoop);
 	pMainWnd->enablePixelManProdAcqControls();
@@ -474,44 +502,25 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 	return 0;
 }
 
+void CPixelmanProducerMFCDlg::mpxCtrlStartTriggeredFrameAcqTimePixProd()
+{	
+	setFrameAcquisitionThread( AfxBeginThread(mpxCtrlPerformTriggeredFrameAcqThread,this) );
 
-
-
-int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
-{
-	static int retval, waitForTrigger, numberOfLoops;
-	static CString errorStr;
-	
-	//MessageBox("PerformTriggeredFrameAcqTimePixProd", "PerformTriggeredFrameAcqTimePixProd", 0);
-	retval = -1;
-	waitForTrigger = -1;
-	numberOfLoops = 0;
-	
-	CWinThread* pThread = AfxBeginThread(mpxCtrlPerformTriggeredFrameAcqThread,this);
 	// wait until the acquisition realy is active before lowering the busy flag.
     // (The flag is set via callback function and can be accessed with getAcquisitionActive())
 	while(getAcquisitionActive() == false)
-			{
-				Sleep(1);
-			}
-	timePixDaqStatus.parPortSetBusyLineLow();
-		
-	while (waitForTrigger == -1)
 	{
-		{		
-			numberOfLoops++;
-		}
-		waitForTrigger = mpxWaitForTrigger();
+		Sleep(1);
 	}
-	
-	if (waitForTrigger<0)
-		{
-			errorStr.Format("MpxMgrError: %i", retval);
-			AfxMessageBox(errorStr, MB_ICONERROR, 0);
-		}
+	timePixDaqStatus.parPortSetBusyLineLow();
 
+	// ok, acquisition is running. Return to the main loop
+}
+
+void CPixelmanProducerMFCDlg::mpxCtrlFinishTriggeredFrameAcqTimePixProd()
+{
 	// wait for the data acquisition thread (readout of the chip) to finish
-	WaitForSingleObject(pThread->m_hThread, INFINITE);
+	WaitForSingleObject(getFrameAcquisitionThread()->m_hThread, INFINITE);
 
 	// now the chip is read out
 	// send the data to eudaq
@@ -520,10 +529,68 @@ int CPixelmanProducerMFCDlg::mpxCtrlPerformTriggeredFrameAcqTimePixProd()
 
 	// data readout is finished, we can clear the AcquisitonActive flag and return
 	clearAcquisitionActive();
-	return retval;
 }
-	
-int CPixelmanProducerMFCDlg::mpxWaitForTrigger()
+
+void CPixelmanProducerMFCDlg::finishRun()
+{
+	// flag whether there still is an event to read out and send
+	bool performReadout = false;
+
+	// check if there was a trigger
+	if(timePixDaqStatus.parPortCheckTriggerLine() == HIGH)
+	{
+		performReadout=true; // we need this information later
+	}
+
+	// raise the busy, this will lower the trigger line if it had been high
+	timePixDaqStatus.parPortSetBusyLineHigh();
+
+	//EUDAQ_DEBUG("Busy raised");
+
+	if (performReadout) // in case there is still an event to read
+	{
+		//EUDAQ_DEBUG("Busy raised");
+		// wait until the shutter has closed again
+		// (unfortunately 1 ms is the shortest we can get :-( )
+		Sleep(1);
+	}
+	else
+	{
+		// check for a race condition: The producer has raised busy without the trigger line being high
+		// If there was a trigger just this moment both levels could be high and the readout could be blocked
+
+		//EUDAQ_DEBUG("checking for race condition");
+		if(timePixDaqStatus.parPortCheckTriggerLine() == HIGH)
+		{ // the race condition occured. lower the busy and raise it again
+			EUDAQ_WARN("Resolvong race condition: Busy and Trigger were high at the same time.");
+			timePixDaqStatus.parPortSetBusyLineLow();
+			Sleep(1); // wait to give the TLU time to notice the change
+			timePixDaqStatus.parPortSetBusyLineHigh();
+		}
+	}
+
+	// now it's time to stop the acquisition 
+	DEVID devId = this->mpxDevId[this->mpxCurrSel].deviceId;
+	int retval = mpxCtrlTriggerType(devId, TRIGGER_ACQSTOP); // ignore return value? I have no idea what to do...
+	// wait for acquisition thread to finish
+	WaitForSingleObject(getFrameAcquisitionThread()->m_hThread, INFINITE);
+
+	// if there is still an event to send
+	if(performReadout)
+	{
+		//EUDAQ_DEBUG("sending last event in run");
+		// send the data to eudaq
+		Sleep(50); // we  need this sleep, don't ask me why 
+		getProducer()->Event(mpxDevId[mpxCurrSel].databuffer, mpxDevId[mpxCurrSel].sizeOfDataBuffer);
+	}
+
+	// finally the AcquisitonActive and the RUN_ACTIVE flag
+	clearAcquisitionActive();
+	//EUDAQ_DEBUG("Setting status to run stopped");
+	getProducer()->SetRunStatusFlag(TimepixProducer::RUN_STOPPED);
+}
+
+int CPixelmanProducerMFCDlg::mpxCheckForTrigger()
 {
 	DEVID devId = this->mpxDevId[this->mpxCurrSel].deviceId;
 	
@@ -586,7 +653,14 @@ void CPixelmanProducerMFCDlg::OnBnClickedButton1()
 		timePixDaqStatus.parPortSetBusyLineLow();
 	else
 		timePixDaqStatus.parPortSetBusyLineHigh();*/
-	this->mpxCtrlPerformTriggeredFrameAcqTimePixProd();
+
+	// start acquisition
+	mpxCtrlStartTriggeredFrameAcqTimePixProd();
+	// wait for trigger
+	while (mpxCheckForTrigger() == -1) Sleep(1) ;
+
+	// perform the readout
+	mpxCtrlFinishTriggeredFrameAcqTimePixProd();
 }
 
 
@@ -658,4 +732,21 @@ void CPixelmanProducerMFCDlg::deleteProducer()
 	pthread_mutex_lock( & m_producer_mutex );
 		delete m_producer;
 	pthread_mutex_unlock( & m_producer_mutex );
+}
+
+void CPixelmanProducerMFCDlg::setFrameAcquisitionThread( CWinThread* frameAcquThread )
+{
+	pthread_mutex_lock( & m_frameAcquisitionThreadMutex );
+		m_frameAcquisitionThread = frameAcquThread;
+	pthread_mutex_unlock( & m_frameAcquisitionThreadMutex );
+}
+
+CWinThread* CPixelmanProducerMFCDlg::getFrameAcquisitionThread( )
+{
+	CWinThread* retval;
+	pthread_mutex_lock( & m_frameAcquisitionThreadMutex );
+		retval = m_frameAcquisitionThread;
+	pthread_mutex_unlock( & m_frameAcquisitionThreadMutex );
+
+	return retval;
 }
