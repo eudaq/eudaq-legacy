@@ -66,15 +66,17 @@ namespace eudaq {
     eudaq::RawDataEvent const & re = dynamic_cast<eudaq::RawDataEvent const &>(ee);
 
     // the vector for the timepix data, only needed one, so it's created before the loop
-    static const size_t NUMPIX = 65536;
-    std::vector<short> timepixdata(NUMPIX);
+    //    static const size_t NUMPIX = 65536;
+    //    std::vector<short> timepixdata(NUMPIX);
 
     // loop all data blocks
     for (size_t block = 0 ; block < re.NumBlocks(); block++) {
-      std::vector<unsigned char> bytedata = re.GetBlock(block);
+      RawDataEvent::data_t bytedata = re.GetBlock(block);
+
+       std::vector<short> timepixdata(bytedata.size()/2);
 
       // convert the byte sequence to lcio data
-      for (unsigned int i = 0; i < NUMPIX; i++) {
+       for (unsigned int i = 0; i < (bytedata.size()/2); i++) {
         // the byte sequence is little endian
         timepixdata[i] = (bytedata[2*i] << 8) | bytedata[2*i+1];
       }
