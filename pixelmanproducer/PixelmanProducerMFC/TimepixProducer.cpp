@@ -157,7 +157,7 @@ void TimepixProducer::Event(i16 *timepixdata, u32 size)
 		serialdatablock[2*i + 1] = timepixdata[i] & 0xFF ;
 	}
 
-    ev.AddBlock( 0 , serialdatablock , 2*size);
+    ev.AddBlock(  pixelmanCtrl->m_ModuleID.getInt(), serialdatablock , 2*size);
 
 //	bool acqact = pixelmanCtrl->getAcquisitionActive();
 //	Sleep(100);

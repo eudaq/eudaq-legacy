@@ -67,8 +67,10 @@ public:
 	 */
 	int mpxCheckForTrigger();
 
-	CEditExtended m_AcqCount;
-	CEditExtended m_AcqTime;
+	// There might be several plugins available, so we have to define which module/chip is readout
+	CEditExtended m_ModuleID;
+//	CEditExtended m_AcqCount;
+//	CEditExtended m_AcqTime;
 	
 	CEditExtended m_hostname;
 	CHexEdit m_parPortAddress;
@@ -143,7 +145,8 @@ private://keiner kann drauf zu greifen
 	bool m_AcquisitionActive;
 	pthread_mutex_t m_AcquisitionActiveMutex;
 	//Acq. Related controls	
-	CSpinButtonCtrl m_SpinAcqCount;
+	CSpinButtonCtrl m_SpinModuleID;
+//	CSpinButtonCtrl m_SpinAcqCount;
 		CComboBox m_chipSelect;
 	CButton m_AsciiThlAdjFile;
 	CButton m_writeMask;

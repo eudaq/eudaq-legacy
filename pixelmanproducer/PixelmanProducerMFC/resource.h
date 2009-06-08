@@ -10,9 +10,11 @@
 #define IDB_BITMAP1                     129
 #define IDB_BITMAP2                     131
 #define IDC_EDIT1                       1000
-#define IDC_ACQCOUNT                    1001
+#define IDC_MODULEID                    1001
+//#define IDC_ACQCOUNT                    1001
 #define IDC_EDIT3                       1002
-#define IDC_SPINACQCOUNT                1003
+#define IDC_SPINMODULEID                1003
+//#define IDC_SPINACQCOUNT                1003
 #define IDC_ACQTIME                     1004
 #define IDC_QUIT                        1005
 #define IDC_WRITEASCIIMASKS             1006

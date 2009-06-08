@@ -100,9 +100,11 @@ void CPixelmanProducerMFCDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_EDIT1, m_hostname);
-	DDX_Control(pDX, IDC_SPINACQCOUNT, m_SpinAcqCount);
-	DDX_Control(pDX, IDC_ACQCOUNT, m_AcqCount);
-	DDX_Control(pDX, IDC_EDIT3, m_AcqTime);
+	DDX_Control(pDX, IDC_SPINMODULEID, m_SpinModuleID);
+//	DDX_Control(pDX, IDC_SPINACQCOUNT, m_SpinAcqCount);
+	DDX_Control(pDX, IDC_MODULEID, m_ModuleID);
+//	DDX_Control(pDX, IDC_ACQCOUNT, m_AcqCount);
+//	DDX_Control(pDX, IDC_EDIT3, m_AcqTime);
 	DDX_Control(pDX, IDC_THLMSKLABEL, m_ThlMaskLabel);
 	DDX_Control(pDX, IDC_THLASCIIMASK, m_AsciiThlAdjFile);
 	DDX_Control(pDX, IDC_CHIPSELECT, m_chipSelect);
@@ -143,12 +145,15 @@ BOOL CPixelmanProducerMFCDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 	//OnPaint;
 
-	m_hostname.SetWindowText("192.168.0.2");	
+	m_hostname.SetWindowText("192.168.0.3");	
 	
-	m_AcqCount.SetWindowText("0");
-	m_AcqTime.SetWindowText("0");
-	m_SpinAcqCount.SetRange(0, 10000);
-	m_SpinAcqCount.SetBuddy(&m_AcqCount);
+	m_ModuleID.SetWindowText("0");
+//	m_AcqCount.SetWindowText("0");
+//	m_AcqTime.SetWindowText("0");
+	m_SpinModuleID.SetRange(0, 10000);
+	m_SpinModuleID.SetBuddy(&m_ModuleID);
+//	m_SpinAcqCount.SetRange(0, 10000);
+//	m_SpinAcqCount.SetBuddy(&m_AcqCount);
 	m_commHistRunCtrl.AddString("Producer Started");
 	producerStarted = false;
 
@@ -416,8 +421,10 @@ UINT mpxCtrlPerformFrameAcqThread(LPVOID pParam)//thread der zur normalen Acq. g
 
 	DEVID devId = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceId;
 	
-	int numberOfFrames = pMainWnd->m_AcqCount.getInt();
-	int timeOfEachAcq = pMainWnd->m_AcqTime.getInt();
+//	int numberOfFrames = pMainWnd->m_AcqCount.getInt();
+	int numberOfFrames = 1;
+//	int timeOfEachAcq = pMainWnd->m_AcqTime.getInt();
+	int timeOfEachAcq = 1; // = 1 second ???
 	
 	i16 *  databuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].databuffer;            
 	u32 sizeOfDataBuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].sizeOfDataBuffer;
@@ -701,9 +708,11 @@ void CPixelmanProducerMFCDlg::disablePixelManProdAcqControls()
 	m_AsciiThlAdjFile.EnableWindow(false);
 	m_writeMask.EnableWindow(false);
 	m_chipSelect.EnableWindow(false);
-	m_AcqCount.EnableWindow(false);
-	m_AcqTime.EnableWindow(false);
-	m_SpinAcqCount.EnableWindow(false);
+	m_ModuleID.EnableWindow(false);
+//	m_AcqCount.EnableWindow(false);
+//	m_AcqTime.EnableWindow(false);
+	m_SpinModuleID.EnableWindow(false);
+//	m_SpinAcqCount.EnableWindow(false);
 }
 
 void CPixelmanProducerMFCDlg::enablePixelManProdAcqControls()
@@ -712,9 +721,11 @@ void CPixelmanProducerMFCDlg::enablePixelManProdAcqControls()
 	m_AsciiThlAdjFile.EnableWindow(true);
 	m_writeMask.EnableWindow(true);
 	m_chipSelect.EnableWindow(true);
-	m_AcqCount.EnableWindow(true);
-	m_AcqTime.EnableWindow(true);
-	m_SpinAcqCount.EnableWindow(true);
+	m_ModuleID.EnableWindow(true);
+//	m_AcqCount.EnableWindow(true);
+//	m_AcqTime.EnableWindow(true);
+	m_SpinModuleID.EnableWindow(true);
+//	m_SpinAcqCount.EnableWindow(true);
 }
 
 TimepixProducer * CPixelmanProducerMFCDlg::getProducer()
