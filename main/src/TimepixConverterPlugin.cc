@@ -4,10 +4,11 @@
 #include "eudaq/Logger.hh"
 
 #if USE_LCIO
-#  include "lcio.h"
-#  include "IMPL/LCEventImpl.h"
-#  include "IMPL/TrackerRawDataImpl.h"
-#  include "IMPL/LCCollectionVec.h"
+#  include <lcio.h>
+#  include <IMPL/LCEventImpl.h>
+#  include <IMPL/TrackerRawDataImpl.h>
+#  include <IMPL/LCCollectionVec.h>
+#  include <IMPL/LCFlagImpl.h>
 #endif
 
 #include <iostream>
@@ -96,6 +97,12 @@ namespace eudaq {
 	{
 	    // collection does not exist, create it and add it to the event
 	    lcio::LCCollectionVec * timepixCollection = new lcio::LCCollectionVec(lcio::LCIO::TRACKERRAWDATA);
+
+	    // set the flags that cellID1 should be stored
+	    lcio::LCFlagImpl trkFlag(0) ;
+	    trkFlag.setBit( lcio::LCIO::TRAWBIT_ID1 ) ;
+	    timepixCollection->setFlag( trkFlag.getFlag() );
+
 	    timepixCollection->addElement(timepixlciodata);
 	    
 	    le.addCollection(timepixCollection,"TimePixRawData");
