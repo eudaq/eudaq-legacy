@@ -28,27 +28,30 @@ namespace eudaq {
 
   private:
     StandardPlane ConvertPlane(const std::vector<unsigned char> & data, unsigned id) const {
-      StandardPlane plane(id, "FORTIS", "?");
-      plane.m_tluevent = getlittleendian<unsigned>(&data[4]);
+      size_t expected = ((m_NumColumns + 2) * m_NumRows) * sizeof (short);
+      if (data.size() < expected)
+        EUDAQ_THROW("Bad Data Size (" + to_string(data.size()) + " < " + to_string(expected) + ")");
+      StandardPlane plane(id, "FORTIS", "FORTIS");
       unsigned npixels = m_NumRows * m_NumColumns;
-      plane.SetSizeZS(512,512,npixels); // create an array that 
+      plane.SetSizeZS(512, 512, npixels);
       size_t i = 0;
       for (size_t Row = 0; Row < m_NumRows; ++Row) {
-	for (size_t Column = 0; Column < m_NumColumns; ++Column) {
-
-	  unsigned offset = (Column + 2 + Row*(m_NumColumns+2))*sizeof (short);
-	  unsigned short d = getlittleendian<unsigned short>(&data[offset]);
-	  plane.m_x[i] = Column + m_InitialColumn ;
-	  plane.m_y[i] = Row + m_InitialRow;
-	  plane.m_pix[0][i] = 0xffff - d ; // FORTIS data has a pedestal near 0xFFFF with excursions below this when charge is deposited. The initial [0] refers to the frame number.
-	  i++;
-	}
+        for (size_t Column = 0; Column < m_NumColumns; ++Column) {
+          unsigned offset = (Column + 2 + (m_NumColumns + 2) * Row) * sizeof (short);
+          unsigned short d = getlittleendian<unsigned short>(&data[offset]);
+          plane.m_x[i] = Column + m_InitialColumn ;
+          plane.m_y[i] = Row + m_InitialRow;
+          // FORTIS data has a pedestal near 0xFFFF with excursions below this when charge is deposited.
+          // The initial [0] refers to the frame number.
+          plane.m_pix[0][i] = 0xffff - d ;
+          i++;
+        }
       }
       return plane;
     }
     FORTISConverterPlugin() : DataConverterPlugin("FORTIS"),
-			      m_NumRows(512), m_NumColumns(512),
-			      m_InitialRow(0), m_InitialColumn(0) {}
+                              m_NumRows(512), m_NumColumns(512),
+                              m_InitialRow(0), m_InitialColumn(0) {}
     mutable unsigned m_NumRows, m_NumColumns, m_InitialRow , m_InitialColumn;
 
     static FORTISConverterPlugin const m_instance;
@@ -58,20 +61,14 @@ namespace eudaq {
 
   bool FORTISConverterPlugin::GetStandardSubEvent(StandardEvent & result, const Event & source) const {
     if (source.IsBORE()) {
-      std::string configstr = source.GetTag("CONFIG");
-      eudaq::Configuration config(configstr, "Producer.FORTIS");
-      
-      std::cout << "Config = " << configstr << std::endl;
-
-      m_NumRows = config.Get("NumRows", 512);
-      m_NumColumns = config.Get("NumColumns", 512);
-      m_InitialRow = config.Get("InitialRow", 0);
-      m_InitialColumn = config.Get("InitialColumn", 0);
+      m_NumRows = from_string(source.GetTag("NumRows"), 512);
+      m_NumColumns = from_string(source.GetTag("NumColumns"), 512);
+      m_InitialRow = from_string(source.GetTag("InitialRow"), 0);
+      m_InitialColumn = from_string(source.GetTag("InitialColumn"), 0);
 
       std::cout << " Nrows , NColumns = " << m_NumRows << "  ,  " <<  m_NumColumns << std::endl;
       std::cout << " Initial row , column = " << m_InitialRow << "  ,  " <<  m_InitialColumn << std::endl;
 
-      //FillInfo(source);
       return true;
     } else if (source.IsEORE()) {
       // nothing to do
