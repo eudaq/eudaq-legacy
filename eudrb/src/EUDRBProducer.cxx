@@ -93,7 +93,7 @@ public:
         }
       }
       Timer t_add;
-      ev.AddBlock(m_idoffset+n_eudrb, &buffer[0], number_of_bytes);
+      ev.AddBlock(m_idoffset+n_eudrb, &m_buffer[0], number_of_bytes);
       t_add.Stop();
       total_bytes+=(number_of_bytes+7)&~7;
       if (m_ev % 100 == 0) {

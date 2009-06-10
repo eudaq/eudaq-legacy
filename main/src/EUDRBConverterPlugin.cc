@@ -17,24 +17,24 @@
 
 namespace eudaq {
 
-  void map_1x1(double & x, double & y, unsigned c, unsigned r, unsigned, unsigned, unsigned) {
+  void map_1x1(unsigned & x, unsigned & y, unsigned c, unsigned r, unsigned, unsigned, unsigned) {
     x = c;
     y = r;
   }
 
-  void map_4x1(double & x, double & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned) {
+  void map_4x1(unsigned & x, unsigned & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned) {
     unsigned mat = (m == 0 || m == 3) ? 3-m : m;
     x = c + mat * nc;
     y = r;
   }
 
-  void map_2x2(double & x, double & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned nr) {
+  void map_2x2(unsigned & x, unsigned & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned nr) {
     x = (m < 2) ? c : 2*nc - 1 - c;
     y = (m == 0 || m == 3) ? r : 2*nr - 1 - r;
   }
 
   struct SensorInfo {
-    typedef void (*mapfunc_t)(double & x, double & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned nr);
+    typedef void (*mapfunc_t)(unsigned & x, unsigned & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned nr);
     SensorInfo(const std::string name, unsigned c, unsigned r, unsigned m, unsigned w, unsigned h, mapfunc_t mfunc = 0)
       : name(name), cols(c), rows(r), mats(m), width(w), height(h), mapfunc(mfunc)
       {}
@@ -145,7 +145,10 @@ namespace eudaq {
           row = ((data[4*i] & 0x3F) << 3) |  (data[4*i+1] >> 5);
           col = ((data[4*i+1] & 0x1F) << 4) | (data[4*i+2] >> 4);
         }
-        info.Sensor().mapfunc(plane.m_x[i], plane.m_y[i], col, row, mat, info.Sensor().cols, info.Sensor().rows);
+        unsigned x, y;
+        info.Sensor().mapfunc(x, y, col, row, mat, info.Sensor().cols, info.Sensor().rows);
+        plane.m_x[i] = x;
+        plane.m_y[i] = y;
         plane.m_pix[0][i] = ((data[4*i+2] & 0x0F) << 8) | (data[4*i+3]);
       }
     }
@@ -175,7 +178,7 @@ namespace eudaq {
           if (missingpixel && row == info.Sensor().rows-1 && col == info.Sensor().cols-1) break; // last pixel is not transferred
           for (size_t frame = 0; frame < info.Frames(); ++frame) {
             for (size_t mat = 0; mat < info.Sensor().mats; ++mat) {
-              double x = 0, y = 0;
+              unsigned x = 0, y = 0;
               info.Sensor().mapfunc(x, y, col, row, mat, info.Sensor().cols, info.Sensor().rows);
               size_t i = x + y*info.Sensor().width;
               if (frame == 0) {
