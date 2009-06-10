@@ -2047,7 +2047,7 @@ private:
   bool m_modified, m_runended;
   unsigned long long m_prevt;
   unsigned long m_histoevents; // count of histogrammed events for normalization factor
-  counted_ptr<eudaq::EUDRBDecoder> m_decoder;
+  //counted_ptr<eudaq::EUDRBDecoder> m_decoder;
   std::vector<TColor*> m_colours;
 
   // Layout hints
