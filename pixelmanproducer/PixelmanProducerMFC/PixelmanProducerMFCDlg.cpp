@@ -488,6 +488,7 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 	i16 *  databuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].databuffer;            
 	u32 sizeOfDataBuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].sizeOfDataBuffer;
 	retval = pMainWnd->mpxCtrlPerformFrameAcq(devId, 1, pMainWnd->infDouble, NULL, NULL);
+	
 	retval2 = pMainWnd->mpxCtrlGetFrame16(devId, databuffer, sizeOfDataBuffer, 0);
 	
 	/////////////
@@ -500,8 +501,11 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 	
 	if (threadRetVal<0)
 		{
-			errorStr.Format("MpxMgrError: %i", threadRetVal);
-			AfxMessageBox(errorStr, MB_ICONERROR, 0);
+			//errorStr.Format("MpxMgrError: %i", threadRetVal);
+			//AfxMessageBox(errorStr, MB_ICONERROR, 0);
+			databuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].errorFrame;
+			EUDAQ_ERROR("Device "+pMainWnd->m_ModuleID.getStdStr()+
+				": Could not read frame "+eudaq::to_string(pMainWnd->getProducer()->GetEventNumber()));
 		}
 
 //	pMainWnd->enablePixelManProdAcqControls();

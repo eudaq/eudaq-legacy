@@ -61,7 +61,9 @@ PLUGIN_INIT
 		mgr->mpxCtrlGetDevInfo(mpxDevId[0].deviceId, &(mpxDevId[0].deviceInfo));
 		static int chipSize = mpxDevId[0].deviceInfo.rowLen * mpxDevId[0].deviceInfo.rowLen;
 		mpxDevId[0].databuffer = new i16[chipSize];
+		mpxDevId[0].errorFrame = new i16[chipSize];
 		memset(mpxDevId[0].databuffer, 0, chipSize * sizeof(i16));
+		memset(mpxDevId[0].errorFrame, 0xFFFF, chipSize * sizeof(i16));
 		mpxDevId[0].sizeOfDataBuffer = chipSize;
 		
 		int chipNo = 0;
