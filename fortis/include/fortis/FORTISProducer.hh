@@ -33,66 +33,138 @@ public:
       done(false),
       started(false),
       juststopped(false),
-      m_rawData()
+      configured(false),
+      m_rawData(),
+      m_frameBuffer(2),
+      m_triggers_pending(false),
+      m_buffer_number(0)
   {} // empty constructor
 
 
-  // Poll for new data
-  // N.B. This will have to be changed when we don't veto triggers during FORTIS readout and we end up with several
-  // telescope events
-
   void Process() {
 
-    if (!started) { // If the run isn't started just sleep for a while and return
+    // we always want to be sensitive to data from the FORTIS.... which can arrive any time after configuration....
+    if (!configured) { // If we aren't configured just sleep for a while and return
       eudaq::mSleep(1);
       return;
     }
-
-    // counted_ptr<eudaq::RawDataEvent> ev; // declare a pointer to a RawDataEvent object.
 
     if (juststopped) started = false; // this risks loosing the last event or two in the buffers. cf. EUDRBProducer for ideas how to fix this.
 
     // wait for data here....
     try {
 
-      //     FORTISData.read( data[buffer_number] ,  (sizeof short)*m_num_pixels_per_frame );
-      m_rawData_pointer = (char *)&m_rawData[0];
+      m_buffer_number = ( ++m_buffer_number ) % 2; // alternate between buffers...
 
-      FORTISData.read( m_rawData_pointer , 2*m_num_pixels_per_frame );
+      m_rawData_pointer = reinterpret_cast<char *>(&m_frameBuffer[m_buffer_number][0]); // read into buffer number m_buffer_number
+      if (  m_FORTIS_Data.good() ) {
+	m_FORTIS_Data.read( m_rawData_pointer , sizeof(short)*m_num_pixels_per_frame );
+      } else {
+	EUDAQ_THROW("Problem reading FORTIS data from input pipe");
+      }
 
+      std::cout << "Read block of data ..."<< std::endl;
 
     }  catch (const std::exception & e) {
       printf("Caught exception: %s\n", e.what());
-      SetStatus(eudaq::Status::LVL_ERROR, "Configuration Error");
+      SetStatus(eudaq::Status::LVL_ERROR, "Read Error");
     }
 
-    // OK, we have a frame from the FORTIS. Scan through looking for triggers....
+    if (started) { // OK, the run has started. We want to do something with the frames we are reading....
 
-    //FORTISPackData ( m_rawData , number_of_triggers_this_frame , ..... ); // this is pseudo code....
+      std::cout << "Processing data"<<std::endl;
 
+      ProcessFrame();
 
-    // loop round sending empty events to data collector for each telecope trigger that we haven't read out...
-
-    // end of loop
-
-    RawDataEvent ev(FORTIS_DATATYPE_NAME, m_run, m_ev); // create an instance of the RawDataEvent with FORTIS-ID
-
-    int evtModID = 0; // FORTIS will have only one module....
-    ev.AddBlock(evtModID , m_rawData); // add the raw data block to the event
-
-    SendEvent( ev ); // send the data to the data-collector
-    
-
-    if ( m_ev < 10 ) { // print out a debug message for each of first ten events, then every 10th 
-      std::cout << "Sent event " << m_ev << std::endl;
-    } else if ( m_ev % 10 == 0 ) {
-      std::cout << "Sent event " << m_ev << std::endl;
     }
-
-    ++m_ev; // increment the internal event counter.
   }
 
 
+  // Called from Process, in order to 
+  void ProcessFrame() {
+
+    const int evtModID = 0; // FORTIS will have only one module....
+
+    unsigned int words_per_row =  m_NumColumns +  WORDS_IN_ROW_HEADER;
+    unsigned int row_counter ;
+    unsigned int word_counter ;
+
+    // If DEBUG flag is set then print out the frame...
+    // #define DEBUG 1
+#if DEBUG
+
+    for (row_counter=0; row_counter < m_NumRows ; row_counter++) {
+
+      std::cout << "Row = " << row_counter << std::endl ;
+
+      
+      for (word_counter =0; word_counter < words_per_row ; word_counter++) {
+
+	std::cout << hex << m_frameBuffer[m_buffer_number][word_counter + (words_per_row)*row_counter ] << "\t" ;
+      }
+
+    std::cout << dec << std::endl;      
+    }
+
+#endif
+
+    m_currentFrame = m_frameBuffer[m_buffer_number][0];
+
+    if (  m_triggers_pending > 0 ) { // We have triggers pending from a previous frame. 
+                                     // Append this frame to the previous one and send out event....
+
+      // look the other way while I do something really inefficient....
+      int frame;
+
+      for ( frame = 0; frame<2 ; frame++ ) {
+
+	int buffer_number = (m_buffer_number + frame + 1 )%2; // point to the previous frame first.
+	for (word_counter = 0 ; word_counter < m_num_pixels_per_frame ; word_counter++) {
+
+	  m_rawData[frame*m_num_pixels_per_frame + word_counter] =  m_frameBuffer[buffer_number][word_counter] ;
+	}
+      }
+    
+      std::cout << "Sending Event number " << m_ev << " , frame number " << m_currentFrame << std::endl;
+ 
+       RawDataEvent ev(FORTIS_DATATYPE_NAME, m_run, m_ev); // create an instance of the RawDataEvent with FORTIS-ID
+       ev.AddBlock(evtModID , m_rawData); // add the raw data block to the event
+       SendEvent( ev ); // send the 2-frame data to the data-collector
+
+       ++m_ev; // increment the internal event counter.
+       --m_triggers_pending; // decrement the number of triggers to send out...
+
+       while ( m_triggers_pending > 0 ) {
+
+	 std::cout << "Sending EMPTY Event number " << m_ev << std::endl;
+
+	 RawDataEvent ev(FORTIS_DATATYPE_NAME, m_run, m_ev);
+	 SendEvent( ev );
+	 ++m_ev; // increment the internal event counter.
+	 --m_triggers_pending; // decrement the number of triggers to send out...
+       }
+
+    }
+
+    m_triggers_pending = 0; // this shouldn't be necessary....
+
+    // Loop through looking for triggers ...
+    for ( row_counter=0; row_counter < m_NumRows ; row_counter++) {
+      m_triggers_pending = m_triggers_pending + m_frameBuffer[m_buffer_number ][1 + row_counter*words_per_row ];
+    }
+
+    std::cout << "Found " << m_triggers_pending << " triggers in frame " << m_currentFrame << std::endl;
+
+    if ( m_ev < 10 ) { // print out a debug message for each of first ten events, then every 10th 
+      std::cout << "Processed frame number = " << m_currentFrame << std::endl;
+      std::cout << "Sent event " << m_ev << std::endl;
+    } else if ( m_ev % 10 == 0 ) {
+      std::cout << "Processed frame number = " << m_currentFrame << std::endl;
+    }
+
+
+
+  }
 
   virtual void OnConfigure(const eudaq::Configuration & param) {
     SetStatus(eudaq::Status::LVL_OK, "Wait");
@@ -104,19 +176,27 @@ public:
       std::cout << "Configuring (" << param.Name() << ")..." << std::endl;
 
       // put our configuration stuff in here...
-      m_num_pixels_per_frame = ( m_param.Get("NumRows", 512) + WORDS_IN_ROW_HEADER) *  m_param.Get("NumColumns", 512) ;
-      std::cout << "Number of rows: " <<   m_param.Get("NumRows", 512) << std::endl;
-      std::cout << "Number of columns: " <<   m_param.Get("NumColumns", 512) << std::endl;
+      m_NumRows = m_param.Get("NumRows", 512) ;
+      m_NumColumns = m_param.Get("NumColumns", 512) ;
+      m_num_pixels_per_frame = ( m_NumColumns + WORDS_IN_ROW_HEADER) *   m_NumRows ;
+
+      std::cout << "Number of rows: " <<  m_NumRows << std::endl;
+      std::cout << "Number of columns: " <<  m_NumColumns  << std::endl;
       std::cout <<"Number of pixels in each frame (including row-headers =" << m_num_pixels_per_frame << std::endl;
       
       // Open input file ( actually a named pipe... )
-      std::cout << "Opening named pipe for raw data input. Filename = " << m_param.Get("NamedPipe","./fortis_named_pipe") << std::endl;
-      FORTISData.open( "./fortis_named_pipe" , ios::in | ios::binary );
-      if ( ! FORTISData.is_open() ) { throw "Unable to open named pipe"; }
+      std::string filename = m_param.Get("NamedPipe","./fortis_named_pipe") ;
+      std::cout << "Opening named pipe for raw data input. Filename = " << filename << std::endl;
 
-      // FORTISData.open( m_param.Get("NamedPipe","./fortis_named_pipe") , ios::in | ios::binary );
+      m_FORTIS_Data.open( filename.c_str() , ios::in | ios::binary );
+      if ( ! m_FORTIS_Data.is_open() ) { EUDAQ_THROW("Unable to open named pipe"); }
 
-      m_rawData.resize(2*m_num_pixels_per_frame); // set the size of our event.
+
+      m_frameBuffer[0].resize( sizeof(short) * m_num_pixels_per_frame); // set the size of our frame buffer.
+      m_frameBuffer[1].resize( sizeof(short) * m_num_pixels_per_frame); 
+      m_rawData.resize( 2* sizeof(short) * m_num_pixels_per_frame); // set the size of our event(big enough for two frames)...
+
+      configured = true;
 
       std::cout << "...Configured (" << param.Name() << ")" << std::endl;
       EUDAQ_INFO("Configured (" + param.Name() + ")");
@@ -140,15 +220,20 @@ public:
     try {
       m_run = param;
       m_ev = 0;
+
+      // At the start of run point to buffer_number=0 and declare that we don't have any triggers in the  
+      // previous frame.
+       m_triggers_pending = 0;
+       m_buffer_number = 0;
+
+       m_currentFrame=0;
+       m_previousFrame=0;
       
       std::cout << "Start Run: " << param << std::endl;
       
       RawDataEvent ev( RawDataEvent::BORE( FORTIS_DATATYPE_NAME , m_run ) );
-      std::string paramname = "InitialRow";
-      std::cout << "pname " << paramname << std::endl
-		<< "m_param " << m_param << std::endl;
-      int InitialRow = m_param.Get(paramname, 0x0) ;
-      ev.SetTag("InitialRow", to_string( InitialRow )) ; // put run parameters into BORE
+
+      ev.SetTag("InitialRow", to_string( m_param.Get("InitialRow", 0x0)  )) ; // put run parameters into BORE
       ev.SetTag("InitialColumn", to_string( m_param.Get("InitialColumn", 0x0) )) ; // put run parameters into BORE  
       ev.SetTag("NumRows", to_string( m_param.Get("NumRows", 512) )) ; // put run parameters into BORE
       ev.SetTag("NumColumns", to_string( m_param.Get("NumRows", 512) )) ; // put run parameters into BORE
@@ -194,7 +279,7 @@ public:
   virtual void OnTerminate() {
     std::cout << "Terminating..." << std::endl;
   
-    FORTISData.close();
+    m_FORTIS_Data.close();
 
     // Kill the thread with the command-line-programme here ....
 
@@ -204,17 +289,32 @@ public:
 
       // Declare members of class FORTISProducer.
   unsigned m_run, m_ev;
-  bool done, started, juststopped;
+  bool done, started, juststopped , configured;
   eudaq::Configuration  m_param;
 
   //  std::vector<unsigned short> m_rawData; // buffer for raw data frames. 
   //  std::vector<char> m_rawData; // buffer for raw data frames. 
   std::vector<unsigned short> m_rawData; // buffer for raw data frames. 
-  char * m_rawData_pointer;
 
-  int m_num_pixels_per_frame ;
 
 private:
-  ifstream FORTISData;
+  typedef std::vector<unsigned short> FrameBuffer;
+  typedef std::vector<FrameBuffer> DoubleFrame;
 
+  ifstream m_FORTIS_Data;
+  DoubleFrame m_frameBuffer; // buffer for two frames
+
+  unsigned int m_currentFrame;
+  unsigned int m_previousFrame;
+
+  unsigned int m_triggers_pending;
+  unsigned int m_buffer_number  ;
+
+  char * m_rawData_pointer;
+  unsigned int m_NumRows ;
+  unsigned int m_NumColumns;
+  unsigned int m_num_pixels_per_frame ;
+
+
+  
 };
