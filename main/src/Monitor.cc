@@ -2,7 +2,7 @@
 #include "eudaq/Logger.hh"
 #include "eudaq/PluginManager.hh"
 
-#define EUDAQ_MAX_EVENTS_PER_IDLE 32
+#define EUDAQ_MAX_EVENTS_PER_IDLE 10
 
 namespace eudaq {
 
@@ -27,6 +27,8 @@ namespace eudaq {
     //std::cout << "processevent" << std::endl;
     if (!m_reader.get()) return false;
     if (!m_reader->NextEvent()) return false;
+    std::cout << "ProcessEvent " << m_reader->Event().GetEventNumber()
+              << (m_reader->Event().IsBORE() ? "B" : "") << std::endl;
     try {
       const DetectorEvent & dev = m_reader->Event();
       if (dev.IsBORE()) m_lastbore = counted_ptr<DetectorEvent>(new DetectorEvent(dev));
@@ -38,6 +40,7 @@ namespace eudaq {
   }
 
   void Monitor::OnIdle() {
+    //std::cout << "..." << std::endl;
     if (m_callstart) {
       m_callstart = false;
       OnStartRun(m_run);
@@ -55,8 +58,10 @@ namespace eudaq {
   }
 
   void Monitor::OnStartRun(unsigned param) {
+    std::cout << "run " << param << std::endl;
     m_run = param;
     m_reader = counted_ptr<FileReader>(new FileReader(to_string(m_run)));
+    PluginManager::ConvertToStandard(m_reader->Event()); // process BORE
     EUDAQ_INFO("Starting run " + to_string(m_run));
   }
 
