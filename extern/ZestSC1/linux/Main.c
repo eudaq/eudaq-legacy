@@ -92,16 +92,19 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
                 }
                 CardID = Value;
 
+                int ok = 1;
                 for (i=0; i<4; i++)
                 {
                     Status = ZestSC1_ReadEEPROMRaw(DeviceHandle, EEPROM_SERIAL_ADDRESS+i, &Value);
                     if (Status!=ZESTSC1_SUCCESS)
                     {
                         usb_close(DeviceHandle);
-                        continue;
+                        ok = 0;
+                        break;
                     }
                     SerialNum = (SerialNum<<8) | Value;
                 }
+                if (!ok) continue;
                 Status = ZestSC1_ReadEEPROMRaw(DeviceHandle, EEPROM_FPGA_ADDRESS, &Value);
                 if (Status!=ZESTSC1_SUCCESS)
                 {
@@ -115,10 +118,11 @@ static ZESTSC1_STATUS ZestSC1_CountCards(unsigned long *NumCards,
                     // Caller was requesting a specific card and this is it
                     // We know there is only one interface on the ZestSC1 - claim it
                     *Interface = Dev->config[0].interface[0].altsetting[0].bInterfaceNumber;
-                    if (usb_claim_interface(DeviceHandle, Dev->config[0].interface[0].altsetting[0].bInterfaceNumber)!=0)
+                    int ret = usb_claim_interface(DeviceHandle, Dev->config[0].interface[0].altsetting[0].bInterfaceNumber);
+                    if (ret!=0)
                     {
                         usb_close(DeviceHandle);
-                        continue;
+                        return ZESTSC1_INTERNAL_ERROR;
                     }
                     *RetHandle = DeviceHandle;
 
