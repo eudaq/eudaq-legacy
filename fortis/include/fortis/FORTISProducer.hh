@@ -3,6 +3,7 @@
 #include "eudaq/Utils.hh"
 #include "eudaq/Logger.hh"
 #include "eudaq/OptionParser.hh"
+#include "fortis/FORTIS.hh"
 
 #include <iostream>
 #include <ostream>
@@ -10,6 +11,7 @@
 #include <cctype>
 #include <vector>
 #include <cassert>
+#include <pthread.h>
 
 // Declare their use so we don't have to type namespace each time ....
 using eudaq::RawDataEvent;
@@ -18,9 +20,8 @@ using std::vector;
 
 using namespace std;
 
-// put this next definition somewhere more sensible....
-#define FORTIS_DATATYPE_NAME "FORTIS"
-#define WORDS_IN_ROW_HEADER 2
+
+
 
 class FORTISProducer : public eudaq::Producer {
 
@@ -37,7 +38,8 @@ public:
       m_rawData(),
       m_frameBuffer(2),
       m_triggers_pending(false),
-      m_buffer_number(0)
+      m_buffer_number(0),
+      m_executableThreadId()
   {} // empty constructor
 
 
@@ -157,7 +159,6 @@ public:
 
     if ( m_ev < 10 ) { // print out a debug message for each of first ten events, then every 10th 
       std::cout << "Processed frame number = " << m_currentFrame << std::endl;
-      std::cout << "Sent event " << m_ev << std::endl;
     } else if ( m_ev % 10 == 0 ) {
       std::cout << "Processed frame number = " << m_currentFrame << std::endl;
     }
@@ -182,8 +183,13 @@ public:
 
       std::cout << "Number of rows: " <<  m_NumRows << std::endl;
       std::cout << "Number of columns: " <<  m_NumColumns  << std::endl;
-      std::cout <<"Number of pixels in each frame (including row-headers =" << m_num_pixels_per_frame << std::endl;
-      
+      std::cout << "Number of pixels in each frame (including row-headers) = " << m_num_pixels_per_frame << std::endl;
+
+      std::cout << "Starting Command line programme to stream FORTIS data" << std::endl;
+      startExecutable();
+
+      usleep(1000000);
+
       // Open input file ( actually a named pipe... )
       std::string filename = m_param.Get("NamedPipe","./fortis_named_pipe") ;
       std::cout << "Opening named pipe for raw data input. Filename = " << filename << std::endl;
@@ -191,6 +197,7 @@ public:
       m_FORTIS_Data.open( filename.c_str() , ios::in | ios::binary );
       if ( ! m_FORTIS_Data.is_open() ) { EUDAQ_THROW("Unable to open named pipe"); }
 
+      std::cout << "Opened name pipe " << std::endl;
 
       m_frameBuffer[0].resize( sizeof(short) * m_num_pixels_per_frame); // set the size of our frame buffer.
       m_frameBuffer[1].resize( sizeof(short) * m_num_pixels_per_frame); 
@@ -216,6 +223,10 @@ public:
 
   virtual void OnStartRun(unsigned param) {
 
+    if (started) {
+      std::cout << "Already started. Refusing to do anything." << std::endl;
+      return;
+    } 
 
     try {
       m_run = param;
@@ -223,12 +234,9 @@ public:
 
       // At the start of run point to buffer_number=0 and declare that we don't have any triggers in the  
       // previous frame.
-       m_triggers_pending = 0;
-       m_buffer_number = 0;
-
-       m_currentFrame=0;
-       m_previousFrame=0;
-      
+      m_triggers_pending = 0;
+      m_buffer_number = 0;
+ 
       std::cout << "Start Run: " << param << std::endl;
       
       RawDataEvent ev( RawDataEvent::BORE( FORTIS_DATATYPE_NAME , m_run ) );
@@ -282,7 +290,8 @@ public:
     m_FORTIS_Data.close();
 
     // Kill the thread with the command-line-programme here ....
-
+    std::string killcommand =  "killall " + m_exeArgs.filename; 
+    system(  killcommand.c_str() );
     done = true;
   }
 
@@ -298,14 +307,17 @@ public:
 
 
 private:
+
+  // PRIVATE TYPEDEFS
   typedef std::vector<unsigned short> FrameBuffer;
   typedef std::vector<FrameBuffer> DoubleFrame;
 
-  ifstream m_FORTIS_Data;
+  
+  // PRIVATE MEMBER VARIABLES
+  ifstream m_FORTIS_Data;  ///< Named pipe for receiving FORTIS data
   DoubleFrame m_frameBuffer; // buffer for two frames
 
   unsigned int m_currentFrame;
-  unsigned int m_previousFrame;
 
   unsigned int m_triggers_pending;
   unsigned int m_buffer_number  ;
@@ -315,6 +327,24 @@ private:
   unsigned int m_NumColumns;
   unsigned int m_num_pixels_per_frame ;
 
+  pthread_t m_executableThreadId;
+  
+  ExecutableArgs m_exeArgs;
+  
+  // PRIVATE METHODS
+  
+  /// Entry point for thread that starts the command-line-program that streams data from FORTIS
+  void startExecutable() {
+    // ExecutableArgs exeArgs;
+    m_exeArgs.dir = m_param.Get("ExecutableDirectory","./");
+    m_exeArgs.filename  = m_param.Get("ExecutableFilename","stream_exe") ;
+    m_exeArgs.args = m_param.Get("ExecutableArgs","");
 
+    unsigned threadCreateResult = pthread_create(&m_executableThreadId, NULL, &startExecutableThread, (void*)&m_exeArgs);
+  
+    // If the thread wasn't made successfully, bail out
+    if(threadCreateResult) { EUDAQ_THROW("Error creating thread (result=" + to_string(threadCreateResult) + ")!" ); }    
+  }
   
 };
+
