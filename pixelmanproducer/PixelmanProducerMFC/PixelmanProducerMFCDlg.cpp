@@ -101,10 +101,10 @@ void CPixelmanProducerMFCDlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_EDIT1, m_hostname);
 	DDX_Control(pDX, IDC_SPINMODULEID, m_SpinModuleID);
-//	DDX_Control(pDX, IDC_SPINACQCOUNT, m_SpinAcqCount);
+	//	DDX_Control(pDX, IDC_SPINACQCOUNT, m_SpinAcqCount);
 	DDX_Control(pDX, IDC_MODULEID, m_ModuleID);
-//	DDX_Control(pDX, IDC_ACQCOUNT, m_AcqCount);
-//	DDX_Control(pDX, IDC_EDIT3, m_AcqTime);
+	//	DDX_Control(pDX, IDC_ACQCOUNT, m_AcqCount);
+	//	DDX_Control(pDX, IDC_EDIT3, m_AcqTime);
 	DDX_Control(pDX, IDC_THLMSKLABEL, m_ThlMaskLabel);
 	DDX_Control(pDX, IDC_THLASCIIMASK, m_AsciiThlAdjFile);
 	DDX_Control(pDX, IDC_CHIPSELECT, m_chipSelect);
@@ -112,7 +112,8 @@ void CPixelmanProducerMFCDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CONNECT, m_connect);
 	DDX_Control(pDX, IDC_EDIT2, m_parPortAddress);
 	DDX_Control(pDX, IDC_COMMANDS, m_commHistRunCtrl);
-	
+
+	DDX_Control(pDX, IDC_EDIT3, m_timeToEndOfShutter);
 }
 
 
@@ -155,6 +156,7 @@ BOOL CPixelmanProducerMFCDlg::OnInitDialog()
 //	m_SpinAcqCount.SetRange(0, 10000);
 //	m_SpinAcqCount.SetBuddy(&m_AcqCount);
 	m_commHistRunCtrl.AddString("Producer Started");
+	
 	producerStarted = false;
 
 	
@@ -167,6 +169,7 @@ BOOL CPixelmanProducerMFCDlg::OnInitDialog()
 	}
 
 	m_parPortAddress.SetWindowText("0x378");
+	m_timeToEndOfShutter.SetWindowText("0");
 
 	m_ThlMaskLabel.SetWindowText("No ASCII Mask selected");
 	
@@ -716,6 +719,7 @@ void CPixelmanProducerMFCDlg::disablePixelManProdAcqControls()
 //	m_AcqCount.EnableWindow(false);
 //	m_AcqTime.EnableWindow(false);
 	m_SpinModuleID.EnableWindow(false);
+	m_timeToEndOfShutter.EnableWindow(false);
 //	m_SpinAcqCount.EnableWindow(false);
 }
 
@@ -729,6 +733,7 @@ void CPixelmanProducerMFCDlg::enablePixelManProdAcqControls()
 //	m_AcqCount.EnableWindow(true);
 //	m_AcqTime.EnableWindow(true);
 	m_SpinModuleID.EnableWindow(true);
+	m_timeToEndOfShutter.EnableWindow(true);
 //	m_SpinAcqCount.EnableWindow(true);
 }
 

@@ -69,6 +69,7 @@ public:
 
 	// There might be several plugins available, so we have to define which module/chip is readout
 	CEditExtended m_ModuleID;
+	CEditExtended m_timeToEndOfShutter;
 //	CEditExtended m_AcqCount;
 //	CEditExtended m_AcqTime;
 	
@@ -156,5 +157,5 @@ private://keiner kann drauf zu greifen
 	CWinThread* m_frameAcquisitionThread;
 	// mutex to protext the frameAcquisitonThread variable, since it is accessed
 	// by the thread with the main loop
-	pthread_mutex_t m_frameAcquisitionThreadMutex;
+	pthread_mutex_t m_frameAcquisitionThreadMutex;	
 };

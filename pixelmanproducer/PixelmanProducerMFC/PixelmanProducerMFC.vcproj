@@ -234,6 +234,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\TimePixBore.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\TimePixDAQStatus.cpp"
 				>
 			</File>
@@ -276,7 +280,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\Pixelman_2008_03_30\_other_\headers\mpxpluginmgrapi.h"
+				RelativePath="..\..\Pixelman_2008_03_30\_other_\headers\mpxpluginmgrapi.h"
 				>
 			</File>
 			<File
@@ -297,6 +301,10 @@
 			</File>
 			<File
 				RelativePath=".\targetver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\TimePixBore.h"
 				>
 			</File>
 			<File
