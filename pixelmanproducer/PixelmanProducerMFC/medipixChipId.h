@@ -12,4 +12,5 @@ public:
 	DevInfo deviceInfo;
 	i16* databuffer;
 	u32 sizeOfDataBuffer;
+	i16* errorFrame;
 };
