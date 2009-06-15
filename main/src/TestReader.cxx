@@ -91,7 +91,7 @@ int main(int /*argc*/, char ** argv) {
     counted_ptr<eudaq::DetectorEvent> lastevent;
     for (size_t i = 0; i < op.NumArgs(); ++i) {
       eudaq::FileReader reader(op.GetArg(i), ipat.Value());
-      EUDAQ_INFO("Reading: " + reader.FileName());
+      EUDAQ_INFO("Reading: " + reader.Filename());
       unsigned ndata = 0, ndatalast = 0, nnondet = 0, nbore = 0, neore = 0;
       do {
         const eudaq::DetectorEvent & dev = reader.Event();

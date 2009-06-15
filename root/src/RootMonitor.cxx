@@ -1410,7 +1410,7 @@ public:
   virtual void OnStartRun(unsigned param) {
     RootLocker lock;
     Monitor::OnStartRun(param);
-    m_tb_filename->SetText(m_reader ? m_reader->FileName().c_str() : "");
+    m_tb_filename->SetText(m_reader ? m_reader->Filename().c_str() : "");
     m_tb_runnum->SetText(eudaq::to_string(param).c_str());
 
     for (size_t i = 0; i < m_board.size(); ++i) {
@@ -1426,7 +1426,7 @@ public:
       m_histoevents = 0;
       // Initialize histograms
     } else if (ev.IsEORE()) {
-      std::string filename = m_reader->FileName();
+      std::string filename = m_reader->Filename();
       size_t dot = filename.find_last_of("./\\:");
       if (dot != std::string::npos && filename[dot] == '.') filename.erase(dot);
       filename += ".root";

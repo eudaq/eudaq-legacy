@@ -59,7 +59,7 @@ int main(int /*argc*/, char ** argv) {
       eudaq::FileReader reader(op.GetArg(i), ipat.Value());
       if (tracksonly.IsSet()) EUDAQ_THROW("Tracking is not yet implemented");
       if (clust.Value() < 1 || (clust.Value() % 2) != 1) EUDAQ_THROW("Cluster size must be an odd number");
-      std::cout << "Reading: " << reader.FileName() << std::endl;
+      std::cout << "Reading: " << reader.Filename() << std::endl;
       std::vector<std::vector<Cluster> > track;
       unsigned runnum = 0;
       const int dclust = clust.Value()/2;

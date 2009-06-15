@@ -17,7 +17,7 @@ namespace eudaq {
       m_reader = counted_ptr<FileReader>(new FileReader(datafile));
       PluginManager::Initialize(m_reader->Event()); // process BORE
       //m_callstart = true;
-      std::cout << "DEBUG: Reading file " << datafile << " -> " << m_reader->FileName() << std::endl;
+      std::cout << "DEBUG: Reading file " << datafile << " -> " << m_reader->Filename() << std::endl;
       //OnStartRun(m_run);
     }
     StartThread();

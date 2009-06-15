@@ -70,7 +70,7 @@ int main(int /*argc*/, char ** argv) {
               << "Board: " << board.Value() << std::endl;
     for (size_t i = 0; i < op.NumArgs(); ++i) {
       eudaq::FileReader reader(op.GetArg(i), ipat.Value());
-      EUDAQ_INFO("Reading: " + reader.FileName());
+      EUDAQ_INFO("Reading: " + reader.Filename());
       if (!reader.Event().IsBORE()) {
         EUDAQ_THROW("First event is not a BORE!");
       }

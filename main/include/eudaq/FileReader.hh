@@ -13,7 +13,7 @@ namespace eudaq {
   public:
     FileReader(const std::string & filename, const std::string & filepattern = "");
     bool NextEvent(size_t skip = 0);
-    std::string FileName() const { return m_filename; }
+    std::string Filename() const { return m_filename; }
     unsigned RunNumber() const;
     const DetectorEvent & Event() const;
     //const StandardEvent & GetStandardEvent() const;
