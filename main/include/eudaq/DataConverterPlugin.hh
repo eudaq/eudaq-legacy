@@ -11,6 +11,8 @@ namespace lcio { using namespace EVENT; }
 
 namespace eudaq{
 
+  class Configuration;
+
 /**
  *  The DataConverterPlugin is the abstract base for all plugins. The
  *  actual impementation provides the GetLCIOEvent() and GetStandardEvent()
@@ -25,6 +27,8 @@ namespace eudaq{
   class DataConverterPlugin {
   public:
     typedef std::pair<unsigned, std::string> t_eventid;
+
+    virtual void Initialize(eudaq::Event const &, eudaq::Configuration const &) {}
 
     /** Returns the LCIO version of the event.
      */

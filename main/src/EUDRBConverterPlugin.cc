@@ -101,7 +101,7 @@ namespace eudaq {
 
   class EUDRBConverterBase {
   public:
-    void FillInfo(const Event & bore) const {
+    void FillInfo(const Event & bore, const Configuration &) {
       unsigned nboards = from_string(bore.GetTag("BOARDS"), 0);
       std::cout << "FillInfo " << nboards << std::endl;
       for (unsigned i = 0; i < nboards; ++i) {
@@ -200,16 +200,19 @@ namespace eudaq {
       }
     }
   protected:
-    mutable std::vector<BoardInfo> m_info;
+    std::vector<BoardInfo> m_info;
   };
 
   /********************************************/
 
   class EUDRBConverterPlugin : public DataConverterPlugin, public EUDRBConverterBase {
   public:
+    virtual void Initialize(const Event & e, const Configuration & c) {
+      FillInfo(e, c);
+    }
     //virtual lcio::LCEvent * GetLCIOEvent( eudaq::Event const * ee ) const;
 
-    virtual bool GetStandardSubEvent(StandardEvent &, const eudaq::Event &) const;
+    virtual bool GetStandardSubEvent(StandardEvent &, const Event &) const;
 
   private:
     EUDRBConverterPlugin() : DataConverterPlugin("EUDRB") {}
@@ -221,8 +224,7 @@ namespace eudaq {
 
   bool EUDRBConverterPlugin::GetStandardSubEvent(StandardEvent & result, const Event & source) const {
     if (source.IsBORE()) {
-      FillInfo(source);
-      // TODO: copy some info into StandardEvent?
+      // shouldn't happen
       return true;
     } else if (source.IsEORE()) {
       // nothing to do
@@ -240,6 +242,9 @@ namespace eudaq {
   /********************************************/
 
   class LegacyEUDRBConverterPlugin : public DataConverterPlugin, public EUDRBConverterBase {
+    virtual void Initialize(const eudaq::Event & e, const eudaq::Configuration & c) {
+      FillInfo(e, c);
+    }
     virtual bool GetStandardSubEvent(StandardEvent &, const Event & source) const;
   private:
     LegacyEUDRBConverterPlugin() : DataConverterPlugin(Event::str2id("_DRB")){}
@@ -249,8 +254,7 @@ namespace eudaq {
   bool LegacyEUDRBConverterPlugin::GetStandardSubEvent(StandardEvent & result, const eudaq::Event & source) const {
     std::cout << "GetStandardSubEvent " << source.GetRunNumber() << ", " << source.GetEventNumber() << std::endl;
     if (source.IsBORE()) {
-      FillInfo(source);
-      // TODO: copy some info into StandardEvent?
+      // shouldn't happen
       return true;
     } else if (source.IsEORE()) {
       // nothing to do

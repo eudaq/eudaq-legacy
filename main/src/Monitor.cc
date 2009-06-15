@@ -15,7 +15,7 @@ namespace eudaq {
     if (datafile != "") {
       // set offline
       m_reader = counted_ptr<FileReader>(new FileReader(datafile));
-      PluginManager::ConvertToStandard(m_reader->Event()); // process BORE
+      PluginManager::Initialize(m_reader->Event()); // process BORE
       //m_callstart = true;
       std::cout << "DEBUG: Reading file " << datafile << " -> " << m_reader->FileName() << std::endl;
       //OnStartRun(m_run);
@@ -61,7 +61,7 @@ namespace eudaq {
     std::cout << "run " << param << std::endl;
     m_run = param;
     m_reader = counted_ptr<FileReader>(new FileReader(to_string(m_run)));
-    PluginManager::ConvertToStandard(m_reader->Event()); // process BORE
+    PluginManager::Initialize(m_reader->Event()); // process BORE
     EUDAQ_INFO("Starting run " + to_string(m_run));
   }
 

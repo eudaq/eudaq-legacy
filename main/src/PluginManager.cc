@@ -1,5 +1,6 @@
 #include "eudaq/PluginManager.hh"
 #include "eudaq/Exception.hh"
+#include "eudaq/Configuration.hh"
 
 #if USE_LCIO
 #  include "lcio.h"
@@ -19,16 +20,16 @@ namespace eudaq {
     return manager;
   }
 
-  void PluginManager::RegisterPlugin(DataConverterPlugin const * plugin) {
+  void PluginManager::RegisterPlugin(DataConverterPlugin * plugin) {
     m_pluginmap[plugin->GetEventType()] = plugin;
   }
 
-  DataConverterPlugin const & PluginManager::GetPlugin(const Event & event) {
+  DataConverterPlugin & PluginManager::GetPlugin(const Event & event) {
     return GetPlugin(std::make_pair(event.get_id(), event.GetSubType()));
   }
 
-  DataConverterPlugin const & PluginManager::GetPlugin(PluginManager::t_eventid eventtype) {
-    std::map<t_eventid, DataConverterPlugin const *>::iterator pluginiter
+  DataConverterPlugin & PluginManager::GetPlugin(PluginManager::t_eventid eventtype) {
+    std::map<t_eventid, DataConverterPlugin *>::iterator pluginiter
       = m_pluginmap.find(eventtype);
 
     if (pluginiter == m_pluginmap.end()) {
@@ -36,6 +37,14 @@ namespace eudaq {
     }
 
     return *pluginiter->second;
+  }
+
+  void PluginManager::Initialize(const DetectorEvent & dev) {
+    const eudaq::Configuration conf(dev.GetTag("CONFIG"));
+    for (size_t i = 0; i < dev.NumEvents(); ++i) {
+      const eudaq::Event & subev = *dev.GetEvent(i);
+      GetInstance().GetPlugin(subev).Initialize(subev, conf);
+    }
   }
 
   StandardEvent PluginManager::ConvertToStandard(const DetectorEvent & dev) {

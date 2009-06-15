@@ -74,7 +74,7 @@ int main(int /*argc*/, char ** argv) {
       if (!reader.Event().IsBORE()) {
         EUDAQ_THROW("First event is not a BORE!");
       }
-      eudaq::PluginManager::ConvertToStandard(reader.Event());
+      eudaq::PluginManager::Initialize(reader.Event());
       while (reader.NextEvent()) {
         std::vector<unsigned>::iterator it = std::find(eventlist.begin(),
                                                        eventlist.end(),

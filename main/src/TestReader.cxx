@@ -101,7 +101,7 @@ int main(int /*argc*/, char ** argv) {
             EUDAQ_WARN("Multiple BOREs (" + to_string(nbore) + ")");
           }
           if (do_bore.IsSet()) std::cout << dev << std::endl;
-          eudaq::PluginManager::ConvertToStandard(dev);
+          eudaq::PluginManager::Initialize(dev);
         } else if (dev.IsEORE()) {
           neore++;
           if (neore > 1) {

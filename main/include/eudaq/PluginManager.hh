@@ -24,13 +24,14 @@ namespace eudaq {
 
     /** Register a new plugin to the plugin manager.
      */
-    void RegisterPlugin(DataConverterPlugin const * plugin);
+    void RegisterPlugin(DataConverterPlugin * plugin);
 
     /** Get the instance of the plugin manager. As this is a songleton class with
      *  private constructor and copy constructor, this is the only way to acces it.
      */
     static PluginManager & GetInstance();
 
+    static void Initialize(const DetectorEvent &);
     static StandardEvent ConvertToStandard(const DetectorEvent &);
     static lcio::LCEvent * ConvertToLCIO(const DetectorEvent &);
 
@@ -39,13 +40,13 @@ namespace eudaq {
 
     /** Get the correct plugin implementation according to the event type.
      */
-    DataConverterPlugin const & GetPlugin(const Event & event);
-    DataConverterPlugin const & GetPlugin(t_eventid eventtype);
+    DataConverterPlugin & GetPlugin(t_eventid eventtype);
+    DataConverterPlugin & GetPlugin(const Event & event);
 
   private:
     /** The map that correlates the event type with its converter plugin.
      */
-    std::map<t_eventid, DataConverterPlugin const *> m_pluginmap;
+    std::map<t_eventid, DataConverterPlugin *> m_pluginmap;
 
   private:
     PluginManager() {}
