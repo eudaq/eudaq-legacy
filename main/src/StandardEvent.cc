@@ -87,6 +87,32 @@ namespace eudaq {
                 + " frames, CDS=" + (NeedsCDS() ? "Needed" : "Done") + ")");
   }
 
+  std::vector<StandardPlane::pixel_t> StandardPlane::GetPixels() const {
+    if (m_pix.size() == 1 && !NeedsCDS()) {
+      return m_pix[0];
+    } else if (m_pix.size() == 2) {
+      if (NeedsCDS()) {
+        std::vector<StandardPlane::pixel_t> result(m_pix[0].size());
+        for (size_t i = 0; i < result.size(); ++i) {
+          result[i] = m_pix[0][i] - m_pix[1][i];
+        }
+        return result;
+      } else {
+        return m_pix[1 - m_pivot[i]];
+      }
+    } else if (m_pix.size() == 3 && NeedsCDS()) {
+      std::vector<StandardPlane::pixel_t> result(m_pix[0].size());
+      for (size_t i = 0; i < result.size(); ++i) {
+        result[i] = m_pix[0][i] * (m_pivot[i])
+                  + m_pix[1][i] * (1-2*m_pivot[i])
+                  + m_pix[2][i] * (m_pivot[i]-1);
+      }
+      return result;
+    }
+    EUDAQ_THROW("Unrecognised pixel format (" + to_string(m_pix.size())
+                + " frames, CDS=" + (NeedsCDS() ? "Needed" : "Done") + ")");
+  }
+
   StandardEvent::StandardEvent(unsigned run, unsigned evnum, unsigned long long timestamp)
     : Event(run, evnum, timestamp)
   {

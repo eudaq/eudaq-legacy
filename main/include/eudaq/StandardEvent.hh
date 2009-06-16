@@ -9,16 +9,21 @@ namespace eudaq {
 
   class StandardPlane : public Serializable {
   public:
-    enum FLAGS { FLAG_ZS = 1, FLAG_NEEDCDS = 2 };
+    enum FLAGS { FLAG_ZS = 1, // Data are zero suppressed
+                 FLAG_NEEDCDS = 2, // CDS needs to be calculated
+                 FLAG_NEGATIVE = 4 // Signal polarity is negative
+    };
     StandardPlane(unsigned id, const std::string & type, const std::string & sensor);
     StandardPlane(Deserializer &);
     bool IsZS() const { return m_flags & FLAG_ZS; }
     bool NeedsCDS() const { return m_flags & FLAG_NEEDCDS; }
+    bool IsNegative() const { return m_flags & FLAG_NEGATIVE; }
     void Serialize(Serializer &) const;
     typedef double pixel_t;
     typedef double coord_t;
     StandardPlane(size_t pixels = 0, size_t frames = 1);
     pixel_t GetPixel(size_t i) const;
+    std::vector<pixel_t> GetPixels() const;
     void SetSizeRaw(unsigned w, unsigned h, unsigned frames = 1, bool withpivot = false);
     void SetSizeRaw(unsigned w, unsigned h, bool withpivot) { SetSizeRaw(w, h, 1, withpivot); }
     void SetSizeZS(unsigned w, unsigned h, unsigned npix, unsigned frames = 1, bool withpivot = false);
