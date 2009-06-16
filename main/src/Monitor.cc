@@ -27,8 +27,11 @@ namespace eudaq {
     //std::cout << "processevent" << std::endl;
     if (!m_reader.get()) return false;
     if (!m_reader->NextEvent()) return false;
-    std::cout << "ProcessEvent " << m_reader->Event().GetEventNumber()
-              << (m_reader->Event().IsBORE() ? "B" : "") << std::endl;
+    if (m_reader->Event().GetEventNumber() % 10 == 0) {
+      std::cout << "ProcessEvent " << m_reader->Event().GetEventNumber()
+                << (m_reader->Event().IsBORE() ? "B" : m_reader->Event().IsEORE() ? "E" : "")
+                << std::endl;
+    }
     try {
       const DetectorEvent & dev = m_reader->Event();
       if (dev.IsBORE()) m_lastbore = counted_ptr<DetectorEvent>(new DetectorEvent(dev));

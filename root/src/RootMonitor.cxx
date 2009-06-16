@@ -1467,6 +1467,7 @@ public:
       if ((ev.GetEventNumber() % reduce) == 0) {
         m_tb_evtnum->SetText(eudaq::to_string(ev.GetEventNumber()).c_str());
 
+        m_histoevents++;
         totalnumevents++;
         std::vector<unsigned int> numberofclusters(m_board.size(),0);
         std::vector<std::vector<double> > cpos(m_board.size());
@@ -1803,7 +1804,7 @@ private:
     b.m_histoclustery   = new TH1DNew(make_name("ClustYProfile", board).c_str(), "Cluster Y Profile", num_y_pixels, 0, num_y_pixels);
     b.m_historawval     = new TH1DNew(make_name("RawValues",     board).c_str(), "Raw Values",        512, 0, 4096);
     b.m_histocdsval     = new TH1DNew(make_name("CDSValues",     board).c_str(), "CDS Values",        150, -50, 100);
-    b.m_histonoise     = new TH1DNew(make_name("Noise",     board).c_str(), "Noise",        40, 0, 20);
+    b.m_histonoise     = new TH1DNew(make_name("Noise",     board).c_str(), "Noise",        100, 0, 10);
     b.m_histonoiseeventnr     = new TH1DNew(make_name("NoiseEventNr",     board).c_str(), "NoiseEventNr",        30, 0, 1500);
 
     b.m_histoclusterval = new TH1DNew(make_name("ClusterValues", board).c_str(), "Cluster Charge",    500,  0, 1000);
@@ -1900,8 +1901,10 @@ private:
     b.m_clusters.clear();
     b.m_clusterx.clear();
     b.m_clustery.clear();
+    //std::cout << "DEBUG: FillBoard " << m_histoevents << std::endl;
     if (m_histoevents >= 20) {
       if (m_histoevents < 500) {
+        //std::cout << "DEBUG: filling noise" << std::endl;
         b.m_histonoise2d->Reset();
         for (int iy = 1; iy <= b.m_tempcds->GetNbinsY(); ++iy) {
           for (int ix = 1; ix <= b.m_tempcds->GetNbinsX(); ++ix) {
