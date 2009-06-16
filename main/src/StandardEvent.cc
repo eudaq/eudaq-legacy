@@ -70,16 +70,21 @@ namespace eudaq {
   StandardPlane::pixel_t StandardPlane::GetPixel(size_t i) const {
     if (m_pix.size() < 1 || i >= m_pix[0].size()) {
       EUDAQ_THROW("Index out of bounds (" + to_string(i) + ")");
-    } else if (m_pix.size() == 1) {
+    } else if (m_pix.size() == 1 && !NeedsCDS()) {
       return m_pix[0][i];
     } else if (m_pix.size() == 2) {
-      return m_pix[0][i] - m_pix[1][i];
-    } else if (m_pix.size() == 3) {
+      if (NeedsCDS()) {
+        return m_pix[0][i] - m_pix[1][i];
+      } else {
+        return m_pix[1 - m_pivot[i]][i];
+      }
+    } else if (m_pix.size() == 3 && NeedsCDS()) {
       return m_pix[0][i] * (m_pivot[i])
            + m_pix[1][i] * (1-2*m_pivot[i])
            + m_pix[2][i] * (m_pivot[i]-1);
     }
-    EUDAQ_THROW("Unrecognised number of frames (" + to_string(m_pix.size()) + ")");
+    EUDAQ_THROW("Unrecognised pixel format (" + to_string(m_pix.size())
+                + " frames, CDS=" + (NeedsCDS() ? "Needed" : "Done") + ")");
   }
 
   StandardEvent::StandardEvent(unsigned run, unsigned evnum, unsigned long long timestamp)
