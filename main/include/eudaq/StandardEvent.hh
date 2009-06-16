@@ -9,8 +9,11 @@ namespace eudaq {
 
   class StandardPlane : public Serializable {
   public:
+    enum FLAGS { FLAG_ZS = 1, FLAG_NEEDCDS = 2 };
     StandardPlane(unsigned id, const std::string & type, const std::string & sensor);
     StandardPlane(Deserializer &);
+    bool IsZS() const { return m_flags & FLAG_ZS; }
+    bool NeedsCDS() const { return m_flags & FLAG_NEEDCDS; }
     void Serialize(Serializer &) const;
     typedef double pixel_t;
     typedef double coord_t;
@@ -24,8 +27,10 @@ namespace eudaq {
     std::string m_type, m_sensor;
     unsigned m_id, m_tluevent;
     unsigned m_xsize, m_ysize;
-    std::vector<coord_t> m_x, m_y;
+    unsigned m_flags;
     std::vector<std::vector<pixel_t> > m_pix;
+    std::vector<coord_t> m_x, m_y;
+    std::vector<unsigned> m_mat;
     std::vector<bool> m_pivot;
   };
 

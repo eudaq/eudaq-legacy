@@ -136,6 +136,7 @@ namespace eudaq {
       bool padding = (data[data.size()-trailersize-4] == 0);
       unsigned npixels = (data.size() - headersize - trailersize - 4*padding) / 4;
       plane.SetSizeZS(info.Sensor().width, info.Sensor().height, npixels);
+      plane.m_mat.resize(plane.m_pix[0].size());
       for (unsigned i = 0; i < npixels; ++i) {
         int mat = (data[4*i] >> 6), col = 0, row = 0;
         if (info.m_version < 2) {
@@ -149,6 +150,7 @@ namespace eudaq {
         info.Sensor().mapfunc(x, y, col, row, mat, info.Sensor().cols, info.Sensor().rows);
         plane.m_x[i] = x;
         plane.m_y[i] = y;
+        plane.m_mat[i] = mat;
         plane.m_pix[0][i] = ((data[4*i+2] & 0x0F) << 8) | (data[4*i+3]);
       }
     }
@@ -171,6 +173,8 @@ namespace eudaq {
       }
       //unsigned npixels = info.Sensor().cols * info.Sensor().rows * info.Sensor().mats;
       plane.SetSizeRaw(info.Sensor().width, info.Sensor().height, info.Frames(), true);
+      plane.m_flags |= StandardPlane::FLAG_NEEDCDS;
+      plane.m_mat.resize(plane.m_pix[0].size());
       unsigned pivot = ((data[5] & 0x3) << 16) | (data[6] << 8) | data[7];
       const unsigned char * ptr = &data[headersize];
       for (unsigned row = 0; row < info.Sensor().rows; ++row) {
@@ -184,6 +188,7 @@ namespace eudaq {
               if (frame == 0) {
                 plane.m_x[i] = x;
                 plane.m_y[i] = y;
+                plane.m_mat[i] = mat;
                 if (info.m_version < 2) {
                   plane.m_pivot[i] = (row << 7 | col) >= pivot;
                 } else {

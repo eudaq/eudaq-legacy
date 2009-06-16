@@ -15,9 +15,11 @@ namespace eudaq {
     ds.read(m_tluevent);
     ds.read(m_xsize);
     ds.read(m_ysize);
+    ds.read(m_flags);
+    ds.read(m_pix);
     ds.read(m_x);
     ds.read(m_y);
-    ds.read(m_pix);
+    ds.read(m_mat);
     ds.read(m_pivot);
   }
 
@@ -29,14 +31,16 @@ namespace eudaq {
     ser.write(m_tluevent);
     ser.write(m_xsize);
     ser.write(m_ysize);
+    ser.write(m_flags);
+    ser.write(m_pix);
     ser.write(m_x);
     ser.write(m_y);
-    ser.write(m_pix);
+    ser.write(m_mat);
     ser.write(m_pivot);
   }
 
   StandardPlane::StandardPlane(size_t pixels, size_t frames) 
-    : m_x(pixels), m_y(pixels), m_pix(frames, std::vector<pixel_t>(pixels)), m_pivot(pixels)
+    : m_pix(frames, std::vector<pixel_t>(pixels)), m_x(pixels), m_y(pixels), m_pivot(pixels)
   {
     //
   }
@@ -47,9 +51,11 @@ namespace eudaq {
 
   void StandardPlane::SetSizeRaw(unsigned w, unsigned h, unsigned frames, bool withpivot) {
     SetSizeZS(w, h, w*h, frames, withpivot);
+    m_flags &= ~FLAG_ZS;
   }
 
   void StandardPlane::SetSizeZS(unsigned w, unsigned h, unsigned npix, unsigned frames, bool withpivot) {
+    m_flags |= FLAG_ZS;
     m_xsize = w;
     m_ysize = h;
     m_x.resize(npix);
