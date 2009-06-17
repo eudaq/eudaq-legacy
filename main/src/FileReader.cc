@@ -1,24 +1,45 @@
 #include "eudaq/FileReader.hh"
 #include "eudaq/FileNamer.hh"
 #include "eudaq/PluginManager.hh"
+#include "eudaq/Event.hh"
+#include "eudaq/Logger.hh"
 
 namespace eudaq {
 
   FileReader::FileReader(const std::string & file, const std::string & filepattern)
     : m_filename(FileNamer(filepattern).Set('X', ".raw").SetReplace('R', file)),
       m_des(m_filename),
-      m_ev(EventFactory::Create(m_des)) {
+      m_ver(1) {
+    unsigned versiontag = m_des.peek<unsigned>();
+    if (versiontag == Event::str2id("VER2")) {
+      m_ver = 2;
+      m_des.read(versiontag);
+    } else if (versiontag != Event::str2id("_DET")) {
+      EUDAQ_WARN("Unrecognised native file (tag=" + Event::id2str(versiontag) + "), assuming version 1");
+    }
+    EUDAQ_INFO("FileReader, version = " + to_string(m_ver));
+    NextEvent();
   }
 
   bool FileReader::NextEvent(size_t skip) {
     if (!m_des.HasData()) {
       return false;
     }
-    for (size_t i = 0; i <= skip; ++i) {
-      if (!m_des.HasData()) break;
-      m_ev = eudaq::EventFactory::Create(m_des);
+    if (m_ver < 2) {
+      for (size_t i = 0; i <= skip; ++i) {
+        if (!m_des.HasData()) break;
+        m_ev = eudaq::EventFactory::Create(m_des);
+      }
+      return true;
+    } else {
+      BufferSerializer buf;
+      for (size_t i = 0; i <= skip; ++i) {
+        if (!m_des.HasData()) break;
+        m_des.read(buf);
+      }
+      m_ev = eudaq::EventFactory::Create(buf);
+      return true;
     }
-    return true;
   }
 
   unsigned FileReader::RunNumber() const {

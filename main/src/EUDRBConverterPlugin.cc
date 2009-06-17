@@ -103,7 +103,7 @@ namespace eudaq {
   public:
     void FillInfo(const Event & bore, const Configuration &) {
       unsigned nboards = from_string(bore.GetTag("BOARDS"), 0);
-      std::cout << "FillInfo " << nboards << std::endl;
+      //std::cout << "FillInfo " << nboards << std::endl;
       for (unsigned i = 0; i < nboards; ++i) {
         unsigned id = from_string(bore.GetTag("ID" + to_string(i)), i);
         if (m_info.size() <= id) m_info.resize(id+1);

@@ -91,15 +91,17 @@ namespace eudaq {
     if (m_pix.size() == 1 && !NeedsCDS()) {
       return m_pix[0];
     } else if (m_pix.size() == 2) {
+      std::vector<StandardPlane::pixel_t> result(m_pix[0].size());
       if (NeedsCDS()) {
-        std::vector<StandardPlane::pixel_t> result(m_pix[0].size());
         for (size_t i = 0; i < result.size(); ++i) {
           result[i] = m_pix[0][i] - m_pix[1][i];
         }
-        return result;
       } else {
-        return m_pix[1 - m_pivot[i]];
+        for (size_t i = 0; i < result.size(); ++i) {
+          result[i] = m_pix[1 - m_pivot[i]][i];
+        }
       }
+      return result;
     } else if (m_pix.size() == 3 && NeedsCDS()) {
       std::vector<StandardPlane::pixel_t> result(m_pix[0].size());
       for (size_t i = 0; i < result.size(); ++i) {
@@ -135,7 +137,8 @@ namespace eudaq {
   }
 
   void StandardEvent::Print(std::ostream & os) const {
-    os << "Planes " << m_planes.size() << "\n";
+    Event::Print(os);
+    os << ", " << m_planes.size() << " planes:\n";
     for (size_t i = 0; i < m_planes.size(); ++i) {
       os << "  " << m_planes[i] << "\n";
     }

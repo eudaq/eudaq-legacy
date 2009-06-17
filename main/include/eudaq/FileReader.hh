@@ -22,6 +22,7 @@ namespace eudaq {
     std::string m_filename;
     FileDeserializer m_des;
     counted_ptr<eudaq::Event> m_ev;
+    unsigned m_ver;
     //mutable counted_ptr<eudaq::StandardEvent> m_sev;
   };
 

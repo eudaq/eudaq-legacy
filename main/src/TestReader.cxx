@@ -48,9 +48,8 @@ bool DoEvent(unsigned ndata, const eudaq::DetectorEvent & dev, bool do_process, 
     }
     unsigned boardnum = 0;
     for (size_t i = 0; i < sev.NumPlanes(); ++i) {
-      if (do_display) std::cout << "Plane:" << std::endl;
       const eudaq::StandardPlane & plane = sev.GetPlane(i);
-      if (do_display) std::cout << " Plane " << i << ":\n" << plane;
+      //if (do_display) std::cout << " Plane: " << plane << std::endl;
       //std::cout << "DEBUG: zs" << std::endl;
       if (do_process || do_zs) {
         if (do_zs && plane.m_pix.size() == 1) {

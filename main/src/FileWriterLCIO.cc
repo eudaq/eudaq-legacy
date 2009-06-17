@@ -1,29 +1,41 @@
-#include "eudaq/FileWriterLCIO.hh"
+#if USE_LCIO
 #include "eudaq/FileNamer.hh"
 #include "eudaq/PluginManager.hh"
+#include "eudaq/FileWriter.hh"
+
+#include "IO/ILCFactory.h"
+#include "IMPL/LCEventImpl.h"
+#include "IMPL/LCCollectionVec.h"
+#include "EVENT/LCIO.h"
+#include "Exceptions.h"
+#include "IMPL/LCTOOLS.h"
+#include "IO/LCWriter.h"
+#include "lcio.h"
+
 #include <iostream>
 
-#if USE_LCIO
-#  include "IO/ILCFactory.h"
-#  include "IMPL/LCEventImpl.h"
-#  include "IMPL/LCCollectionVec.h"
-#  include "EVENT/LCIO.h"
-#  include "Exceptions.h"
-#  include "IMPL/LCTOOLS.h"
-#  include "IO/LCWriter.h"
-#  include "lcio.h"
-
 namespace eudaq {
+
+  class FileWriterLCIO : public FileWriter {
+  public:
+    FileWriterLCIO(const std::string &);
+    virtual void StartRun(unsigned);
+    virtual void WriteEvent(const DetectorEvent &);
+    virtual unsigned long long FileBytes() const;
+  private:
+    lcio::LCWriter *m_lcwriter; /// The lcio writer
+    bool m_fileopened; /// We have to keep track whether a file is open ourselves
+  };
 
   namespace {
     static RegisterFileWriter<FileWriterLCIO> reg("lcio");
   }
 
-  FileWriterLCIO::FileWriterLCIO(const std::string & param)
+  FileWriterLCIO::FileWriterLCIO(const std::string & /*param*/)
     : m_lcwriter(lcio::LCFactory::getInstance()->createLCWriter()), // get an LCWriter from the factory
       m_fileopened(false)
   {
-    std::cout << "EUDAQ_DEBUG: FileWriterLCIO::FileWriterLCIO(" << param << ")" << std::endl;
+    //EUDAQ_DEBUG("Constructing FileWriterLCIO(" + to_string(param) + ")");
   }
 
   void FileWriterLCIO::StartRun(unsigned runnumber) {
@@ -65,8 +77,6 @@ namespace eudaq {
       m_lcwriter->close();
     }
   }
-
-  unsigned long long FileWriterLCIO::FileBytes() const { return 0; }
 
 }
 
