@@ -162,7 +162,44 @@ void TimepixProducer::Event(i16 *timepixdata, u32 size)
 //	bool acqact = pixelmanCtrl->getAcquisitionActive();
 //	Sleep(100);
 //	bool acqact2 = pixelmanCtrl->getAcquisitionActive();
-	SendEvent(ev);
+
+	for (int i=0; i < 3; i++)
+	{
+		try
+		{
+			SendEvent(ev);
+			break;
+		}
+		catch(...)
+		{
+			if (i < 2)
+			{
+				EUDAQ_WARN("Device "+eudaq::to_string(pixelmanCtrl->m_ModuleID.getInt()) + ": " +
+					eudaq::to_string(i) + ". Could not send event " + eudaq::to_string( ev.GetEventNumber() )
+					+ ". Retrying...");
+			}
+				// Sleep to wait for possible network problems to resolve
+			Sleep(500);
+		}
+		if (i==2)
+		{
+			EUDAQ_ERROR("Device "+eudaq::to_string(pixelmanCtrl->m_ModuleID.getInt()) + ": "
+					     "Finally failed to  send event " + eudaq::to_string( ev.GetEventNumber() ));
+			EUDAQ_WARN("Device "+eudaq::to_string(pixelmanCtrl->m_ModuleID.getInt()) + ": "
+					     "Sending empty error event " + eudaq::to_string( ev.GetEventNumber() ));
+			eudaq::RawDataEvent emptyEv("Timepix",GetRunNumber(),ev.GetEventNumber() );
+			try
+			{
+				SendEvent(ev);
+				break;
+			}	
+			catch(...)
+			{
+				EUDAQ_ERROR("Device "+eudaq::to_string(pixelmanCtrl->m_ModuleID.getInt()) + ": " +
+					"Even sending the empty event failed, sorry");
+			}	
+		}
+	}
 
 	delete[] serialdatablock;
 }
@@ -194,9 +231,9 @@ void TimepixProducer::OnConfigure(const eudaq::Configuration & param)
 	if ( GetRunStatusFlag() == TimepixProducer::RUN_ACTIVE )
 	{
 		// give a warning to eudaq and do nothing
-	    pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Run already active"));
-		EUDAQ_WARN("StartRun requested when run already active");
-		SetStatus(eudaq::Status::LVL_WARN, "StartRun requested when run already active");
+	    pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Cannot configure, run is active"));
+		EUDAQ_WARN("Configure requested when run already active");
+		SetStatus(eudaq::Status::LVL_WARN, "Configure requested when run already active");
 		return;
 	}
 	else

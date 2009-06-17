@@ -53,6 +53,9 @@ public:
 	void setAcquisitionActive();
 	bool getAcquisitionActive();
 
+	void setStartAcquisitionFailed(bool failedStatus);
+	bool getStartAcquisitionFailed();
+
 	void finishRun();
 
 	void disablePixelManProdAcqControls();
@@ -145,6 +148,10 @@ public:
 private://keiner kann drauf zu greifen
 	bool m_AcquisitionActive;
 	pthread_mutex_t m_AcquisitionActiveMutex;
+
+	bool m_StartAcquisitionFailed;
+	pthread_mutex_t m_StartAcquisitionFailedMutex;
+
 	//Acq. Related controls	
 	CSpinButtonCtrl m_SpinModuleID;
 //	CSpinButtonCtrl m_SpinAcqCount;

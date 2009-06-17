@@ -72,7 +72,11 @@ class TimepixProducer : public eudaq::Producer
 	 */
 	timepix_producer_command_t PopCommand();
 
-    /** The protected member functions live in the communication thread.
+	/** Threadsave way to push the next commnad into the queue.
+	 */
+	void PushCommand(timepix_producer_command_t command);
+
+	/** The protected member functions live in the communication thread.
      *  Make sure they do not perfom computing intensive tasks and return as
      *  soon as possible.
      */
@@ -92,9 +96,6 @@ protected:
     unsigned m_ev;		pthread_mutex_t m_ev_mutex;
 	pthread_mutexattr_t m_mutexattr;
 
-	/** Threadsave way to push the next commnad into the queue.
-	 */
-	void PushCommand(timepix_producer_command_t command);
 	
 private:
 	CPixelmanProducerMFCDlg* pixelmanCtrl;

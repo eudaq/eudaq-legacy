@@ -63,7 +63,7 @@ IMPLEMENT_DYNAMIC(CPixelmanProducerMFCDlg, CDialog)
 
 CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 	: CDialog(CPixelmanProducerMFCDlg::IDD, pParent), timePixDaqStatus(0x378),
-		m_AcquisitionActive(false), m_producer(0)
+		m_AcquisitionActive(false), m_producer(0), m_StartAcquisitionFailed(false)
 {
 	m_csThlFilePath.Empty();
 	m_csMaskFilePath.Empty();
@@ -75,6 +75,7 @@ CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 
 	// Inititalise the mutexes
     pthread_mutex_init( &m_AcquisitionActiveMutex, 0 );
+    pthread_mutex_init( &m_StartAcquisitionFailedMutex, 0 );	
 	pthread_mutex_init( &m_producer_mutex, 0);
 	pthread_mutex_init( &m_frameAcquisitionThreadMutex, 0);
 }
@@ -91,6 +92,7 @@ CPixelmanProducerMFCDlg::~CPixelmanProducerMFCDlg()
 	//this->DialogBoxDelete(this);
 
     pthread_mutex_destroy( &m_AcquisitionActiveMutex );	
+    pthread_mutex_destroy( &m_StartAcquisitionFailedMutex );	
     pthread_mutex_destroy( &m_producer_mutex );	
 	pthread_mutex_destroy( &m_frameAcquisitionThreadMutex );
 }
@@ -148,7 +150,7 @@ BOOL CPixelmanProducerMFCDlg::OnInitDialog()
 
 	m_hostname.SetWindowText("192.168.0.3");	
 	
-	m_ModuleID.SetWindowText("0");
+	m_ModuleID.SetWindowText("1");
 //	m_AcqCount.SetWindowText("0");
 //	m_AcqTime.SetWindowText("0");
 	m_SpinModuleID.SetRange(0, 10000);
@@ -229,8 +231,9 @@ UINT mpxCtrlPerformAcqLoopThread(LPVOID pParam)
 	bool executeMainLoop = true;
 	do
 	{
-		switch (pMainWnd->getProducer()->PopCommand())
+		switch (TimepixProducer::timepix_producer_command_t c = pMainWnd->getProducer()->PopCommand())
 		{
+
 			case TimepixProducer::NONE :
 				break; // don't do anything
 			
@@ -272,7 +275,7 @@ UINT mpxCtrlPerformAcqLoopThread(LPVOID pParam)
 			{
 				int triggerStatus = pMainWnd->mpxCheckForTrigger();
 
-				if ( triggerStatus == -1)
+				if ( triggerStatus == 1)
 				{
 					// no trigger yet, continue the main loop
 					continue;
@@ -291,6 +294,8 @@ UINT mpxCtrlPerformAcqLoopThread(LPVOID pParam)
 				pMainWnd->mpxCtrlFinishTriggeredFrameAcqTimePixProd();
 			}
 		}
+		// This slows down the trigger detection, but should improve overall performance
+		Sleep(1);
 	} while (executeMainLoop);
 	pMainWnd->enablePixelManProdAcqControls();
 	
@@ -482,7 +487,8 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 	CPixelmanProducerMFCDlg* pMainWnd = (CPixelmanProducerMFCDlg*) pParam;
 	
 	int threadRetVal = 0;
-	int retval, retval2;
+	int retval = 0;
+	int retval2 = 0;
 	static CString errorStr;
 
 	//pMainWnd->disablePixelManProdAcqControls();
@@ -490,9 +496,44 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 	DEVID devId = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceId;
 	i16 *  databuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].databuffer;            
 	u32 sizeOfDataBuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].sizeOfDataBuffer;
-	retval = pMainWnd->mpxCtrlPerformFrameAcq(devId, 1, pMainWnd->infDouble, NULL, NULL);
-	
-	retval2 = pMainWnd->mpxCtrlGetFrame16(devId, databuffer, sizeOfDataBuffer, 0);
+
+	// this thing triggers the callback which sets AcquisitionActive.
+	// If it fails 3 times set StartAcquisitionFailed to notify the main loop
+	int my_very_private_dont_touch_i;
+	for (my_very_private_dont_touch_i = 0; my_very_private_dont_touch_i < 3; my_very_private_dont_touch_i++)
+	{
+		retval = pMainWnd->mpxCtrlPerformFrameAcq(devId, 1, pMainWnd->infDouble, NULL, NULL);
+		// break if frame acquisition was sucessful
+		if (retval == 0)
+		{
+			break;
+		}
+		else //try to revive the chip
+		{
+			int abortOK = pMainWnd->mpxCtrlAbortOperation(devId);
+
+			if (my_very_private_dont_touch_i > 0) // try to reconnect on second and third attempt
+			{
+				int con = pMainWnd->mpxCtrlReconnectMpx(devId);
+				EUDAQ_INFO("Device " + eudaq::to_string(pMainWnd->m_ModuleID.getInt()) + ": reconnecting Chip");
+			}
+
+			int ini = pMainWnd->mpxCtrlInitMpxDevice(devId);
+			EUDAQ_INFO("Device " + eudaq::to_string(pMainWnd->m_ModuleID.getInt()) + ": reinitialising Chip");						
+		}
+	}
+
+	// if start of acquisition was not successful notify the main loop
+	if (my_very_private_dont_touch_i == 3)
+	{
+		pMainWnd->setStartAcquisitionFailed(true);
+	}
+
+	// only perform readout if acquisition was successful
+	if (retval == 0)
+	{
+		retval2 = pMainWnd->mpxCtrlGetFrame16(devId, databuffer, sizeOfDataBuffer, 0);
+	}
 	
 	/////////////
 
@@ -506,9 +547,17 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 		{
 			//errorStr.Format("MpxMgrError: %i", threadRetVal);
 			//AfxMessageBox(errorStr, MB_ICONERROR, 0);
-			databuffer = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].errorFrame;
+			// copy the error values to the frame
+			for (unsigned int i=0; i < sizeOfDataBuffer ; i ++)
+				databuffer[i] = (i16)0xFFFF;
 			EUDAQ_ERROR("Device "+pMainWnd->m_ModuleID.getStdStr()+
 				": Could not read frame "+eudaq::to_string(pMainWnd->getProducer()->GetEventNumber()));
+			// 
+			DEVID devId = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceId;
+			int abortOK = pMainWnd->mpxCtrlAbortOperation(devId);
+			EUDAQ_DEBUG("Operation aborted");
+			int initOK = pMainWnd->mpxCtrlInitMpxDevice(devId);
+			EUDAQ_DEBUG("Device reinitialised");
 		}
 
 //	pMainWnd->enablePixelManProdAcqControls();
@@ -518,15 +567,26 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 
 void CPixelmanProducerMFCDlg::mpxCtrlStartTriggeredFrameAcqTimePixProd()
 {	
+	setStartAcquisitionFailed(false);
+
 	setFrameAcquisitionThread( AfxBeginThread(mpxCtrlPerformTriggeredFrameAcqThread,this) );
 
 	// wait until the acquisition realy is active before lowering the busy flag.
     // (The flag is set via callback function and can be accessed with getAcquisitionActive())
-	while(getAcquisitionActive() == false)
+	while ((getAcquisitionActive() == false) && (getStartAcquisitionFailed()==false))
 	{
 		Sleep(1);
 	}
-	timePixDaqStatus.parPortSetBusyLineLow();
+
+	if (getStartAcquisitionFailed())
+	{ // acquisition failed to start after several retries, quit the producer
+		getProducer()->PushCommand( TimepixProducer::TERMINATE );
+		// the busy line remains high
+	}
+	else // acquisition has started successfully, lower the busy to accept a trigger
+	{
+		timePixDaqStatus.parPortSetBusyLineLow();
+	}
 
 	// ok, acquisition is running. Return to the main loop
 }
@@ -539,6 +599,7 @@ void CPixelmanProducerMFCDlg::mpxCtrlFinishTriggeredFrameAcqTimePixProd()
 	// now the chip is read out
 	// send the data to eudaq
 	Sleep(50);
+
 	getProducer()->Event(mpxDevId[mpxCurrSel].databuffer, mpxDevId[mpxCurrSel].sizeOfDataBuffer);
 
 	// data readout is finished, we can clear the AcquisitonActive flag and return
@@ -620,7 +681,7 @@ int CPixelmanProducerMFCDlg::mpxCheckForTrigger()
 		return mpxCtrlTriggerType(devId, TRIGGER_ACQSTOP);
 	}
 	else
-		return  -1;
+		return  1;
 }
 
 		
@@ -671,7 +732,7 @@ void CPixelmanProducerMFCDlg::OnBnClickedButton1()
 	// start acquisition
 	mpxCtrlStartTriggeredFrameAcqTimePixProd();
 	// wait for trigger
-	while (mpxCheckForTrigger() == -1) Sleep(1) ;
+	while (mpxCheckForTrigger() == 1) Sleep(1) ;
 
 	// perform the readout
 	mpxCtrlFinishTriggeredFrameAcqTimePixProd();
@@ -693,6 +754,13 @@ void  CPixelmanProducerMFCDlg::setAcquisitionActive()
 	pthread_mutex_unlock( &m_AcquisitionActiveMutex);
 }
 
+void  CPixelmanProducerMFCDlg::setStartAcquisitionFailed(bool failedStatus)
+{
+	pthread_mutex_lock( &m_StartAcquisitionFailedMutex);
+		m_StartAcquisitionFailed = failedStatus;
+	pthread_mutex_unlock( &m_StartAcquisitionFailedMutex);
+}
+
 void  CPixelmanProducerMFCDlg::clearAcquisitionActive()
 {
 	pthread_mutex_lock( &m_AcquisitionActiveMutex);
@@ -706,6 +774,15 @@ bool  CPixelmanProducerMFCDlg::getAcquisitionActive()
 	pthread_mutex_lock( &m_AcquisitionActiveMutex);
 		retval = m_AcquisitionActive;
 	pthread_mutex_unlock( &m_AcquisitionActiveMutex);
+	return retval;
+}
+
+bool  CPixelmanProducerMFCDlg::getStartAcquisitionFailed()
+{	
+	bool retval;
+	pthread_mutex_lock( &m_StartAcquisitionFailedMutex);
+		retval = m_StartAcquisitionFailed;
+	pthread_mutex_unlock( &m_StartAcquisitionFailedMutex);
 	return retval;
 }
 
