@@ -139,9 +139,8 @@ namespace eudaq {
   std::vector<T> StandardPlane::GetPixels() const {
     std::vector<T> result(m_pix[0].size());
     if (m_pix.size() == 1 && !NeedsCDS()) {
-      if (Polarity() > 0) return m_pix[0];
       for (size_t i = 0; i < result.size(); ++i) {
-        result[i] = -m_pix[0][i];
+        result[i] = m_pix[0][i] * Polarity();
       }
     } else if (m_pix.size() == 2) {
       if (NeedsCDS()) {
@@ -155,7 +154,7 @@ namespace eudaq {
       }
       return result;
     } else if (m_pix.size() == 3 && NeedsCDS()) {
-      std::vector<StandardPlane::pixel_t> result(m_pix[0].size());
+      std::vector<T> result(m_pix[0].size());
       for (size_t i = 0; i < result.size(); ++i) {
         result[i] = (m_pix[0][i] * (m_pivot[i])
                      + m_pix[1][i] * (1-2*m_pivot[i])
@@ -168,8 +167,8 @@ namespace eudaq {
                 + " frames, CDS=" + (NeedsCDS() ? "Needed" : "Done") + ")");
   }
 
-  template<> std::vector<short> StandardPlane::GetPixels() const;
-  template<> std::vector<int> StandardPlane::GetPixels() const;
-  template<> std::vector<double> StandardPlane::GetPixels() const;
+  template std::vector<short> StandardPlane::GetPixels<>() const;
+  template std::vector<int> StandardPlane::GetPixels<>() const;
+  template std::vector<double> StandardPlane::GetPixels<>() const;
 
 }
