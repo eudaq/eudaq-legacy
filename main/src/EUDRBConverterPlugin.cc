@@ -127,16 +127,17 @@ namespace eudaq {
       }
       return plane;
     }
-    static void ConvertZS(StandardPlane & plane, const std::vector<unsigned char> & data, const BoardInfo & info) {
+    static void ConvertZS(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info) {
       unsigned headersize = 8, trailersize = 8;
       if (info.m_version > 2) {
         headersize += 8;
         EUDAQ_THROW("EUDRB V3 decoding not yet implemented");
       }
-      bool padding = (data[data.size()-trailersize-4] == 0);
-      unsigned npixels = (data.size() - headersize - trailersize - 4*padding) / 4;
+      bool padding = (alldata[alldata.size()-trailersize-4] == 0);
+      unsigned npixels = (alldata.size() - headersize - trailersize) / 4 - padding;
       plane.SetSizeZS(info.Sensor().width, info.Sensor().height, npixels);
       plane.m_mat.resize(plane.m_pix[0].size());
+      const unsigned char * data = &alldata[headersize];
       for (unsigned i = 0; i < npixels; ++i) {
         int mat = (data[4*i] >> 6), col = 0, row = 0;
         if (info.m_version < 2) {

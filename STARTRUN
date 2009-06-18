@@ -49,6 +49,7 @@ printf '\t\t  DataCollector\n'
 sleep 2
 
 printf '\t\t  RootMonitor\n'
+#/usr/X11R6/bin/xterm -sb -sl 1000 -geom 80x10-500-500 -fn fixed -T "Root Monitor" -e 'gdb ./RootMonitor.exe' &
 ./RootMonitor.exe -x 350 -y 0 -w 1330 -g 900 -r tcp://localhost:$RCPORT &
 
 printf '\t\t  EUDRB\n'

@@ -193,7 +193,7 @@ objs: $(OBJ_FILES) $(EXEOBJ_FILES)
 ifneq ($(NO_DEFAULT_RULES),1)
 clean:
 	@echo -n " *** Removing old executable, library, object and dependency files in " && basename `pwd`
-	$(V) rm -f ./*.exe ./lib*.a ./lib*.so ./lib*.dylib ./lib*.dll ./lib*.lib $(OBJ)/*.o $(OBJ)/*.d
+	$(V) rm -f *.exe lib*.{a,so,dylib,dll,lib} $(OBJ)/*.{o,d}
 
   ifeq ($(MAKECMDGOALS),clean)
     NODEPS := 1

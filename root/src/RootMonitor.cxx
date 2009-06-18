@@ -1797,6 +1797,7 @@ private:
     b.m_histocluster2d  = new TH2DNew(make_name("ClusterMap",    board).c_str(), "Cluster Profile",  num_x_pixels, 0, num_x_pixels, num_y_pixels, 0, num_y_pixels);
     b.m_histotrack2d    = new TH2DNew(make_name("TrackMap",      board).c_str(), "Track Candidates",  num_x_pixels, 0, num_x_pixels, num_y_pixels, 0, num_y_pixels);
     b.m_histonoise2d    = new TH2DNew(make_name("NoiseMap",      board).c_str(), "Noise Profile",    num_x_pixels, 0, num_x_pixels, num_y_pixels, 0, num_y_pixels);
+    b.m_histonoise2d->SetMaximum(15);
     b.m_historawx       = new TH1DNew(make_name("RawXProfile",   board).c_str(), "Raw X Profile",      num_x_pixels, 0, num_x_pixels);
     b.m_historawy       = new TH1DNew(make_name("RawYProfile",   board).c_str(), "Raw Y Profile",      num_y_pixels, 0, num_y_pixels);
     b.m_histoclusterx   = new TH1DNew(make_name("ClustXProfile", board).c_str(), "Cluster X Profile", num_x_pixels, 0, num_x_pixels);
