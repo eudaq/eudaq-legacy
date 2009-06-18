@@ -17,13 +17,15 @@ namespace eudaq {
     StandardPlane(Deserializer &);
     bool IsZS() const { return m_flags & FLAG_ZS; }
     bool NeedsCDS() const { return m_flags & FLAG_NEEDCDS; }
-    bool IsNegative() const { return m_flags & FLAG_NEGATIVE; }
+    int Polarity() const { return m_flags & FLAG_NEGATIVE ? -1 : 1; }
     void Serialize(Serializer &) const;
     typedef double pixel_t;
     typedef double coord_t;
     StandardPlane(size_t pixels = 0, size_t frames = 1);
-    pixel_t GetPixel(size_t i) const;
-    std::vector<pixel_t> GetPixels() const;
+    double GetPixel(size_t i) const;
+    // defined for short, int, double
+    template <typename T>
+    std::vector<T> GetPixels() const;
     void SetSizeRaw(unsigned w, unsigned h, unsigned frames = 1, bool withpivot = false);
     void SetSizeRaw(unsigned w, unsigned h, bool withpivot) { SetSizeRaw(w, h, 1, withpivot); }
     void SetSizeZS(unsigned w, unsigned h, unsigned npix, unsigned frames = 1, bool withpivot = false);
@@ -32,7 +34,7 @@ namespace eudaq {
     std::string m_type, m_sensor;
     unsigned m_id, m_tluevent;
     unsigned m_xsize, m_ysize;
-    unsigned m_flags;
+    unsigned m_flags, m_pivotpixel;
     std::vector<std::vector<pixel_t> > m_pix;
     std::vector<coord_t> m_x, m_y;
     std::vector<unsigned> m_mat;

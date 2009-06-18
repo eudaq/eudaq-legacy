@@ -120,11 +120,13 @@ namespace eudaq {
       plane.m_tluevent = (data[data.size()-7] << 8) | data[data.size()-6];
       plane.m_xsize = info.Sensor().width;
       plane.m_ysize = info.Sensor().height;
+      plane.m_pivotpixel = ((data[5] & 0x3) << 16) | (data[6] << 8) | data[7];
       if (info.m_mode == BoardInfo::MODE_ZS) {
         ConvertZS(plane, data, info);
       } else {
         ConvertRaw(plane, data, info);
       }
+      plane.m_flags |= StandardPlane::FLAG_NEGATIVE;
       return plane;
     }
     static void ConvertZS(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info) {
@@ -176,7 +178,6 @@ namespace eudaq {
       plane.SetSizeRaw(info.Sensor().width, info.Sensor().height, info.Frames(), true);
       plane.m_flags |= StandardPlane::FLAG_NEEDCDS;
       plane.m_mat.resize(plane.m_pix[0].size());
-      unsigned pivot = ((data[5] & 0x3) << 16) | (data[6] << 8) | data[7];
       const unsigned char * ptr = &data[headersize];
       for (unsigned row = 0; row < info.Sensor().rows; ++row) {
         for (unsigned col = 0; col < info.Sensor().cols; ++col) {
@@ -191,9 +192,9 @@ namespace eudaq {
                 plane.m_y[i] = y;
                 plane.m_mat[i] = mat;
                 if (info.m_version < 2) {
-                  plane.m_pivot[i] = (row << 7 | col) >= pivot;
+                  plane.m_pivot[i] = (row << 7 | col) >= plane.m_pivotpixel;
                 } else {
-                  plane.m_pivot[i] = (row << 9 | col) >= pivot;
+                  plane.m_pivot[i] = (row << 9 | col) >= plane.m_pivotpixel;
                 }
               }
               short pix = *ptr++ << 8;
