@@ -129,6 +129,7 @@ namespace eudaq {
       if (id >= m_info.size() || m_info[id].m_version < 1) EUDAQ_THROW("Unrecognised ID ("+to_string(id)+", num="+to_string(m_info.size())+") converting EUDRB event");
       return m_info[id];
     }
+    bool ConvertStandard(StandardEvent & stdEvent, const Event & eudaqEvent) const;
     StandardPlane ConvertPlane(const std::vector<unsigned char> & data, unsigned id) const {
       const BoardInfo & info = GetInfo(id);
       StandardPlane plane(id, "EUDRB", info.Sensor().name);
@@ -144,84 +145,34 @@ namespace eudaq {
       plane.m_flags |= StandardPlane::FLAG_NEGATIVE;
       return plane;
     }
-    static void ConvertZS(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info) {
-      unsigned headersize = 8, trailersize = 8;
-      if (info.m_version > 2) {
-        headersize += 8;
-        EUDAQ_THROW("EUDRB V3 decoding not yet implemented");
-      }
-      bool padding = (alldata[alldata.size()-trailersize-4] == 0);
-      unsigned npixels = (alldata.size() - headersize - trailersize) / 4 - padding;
-      plane.SetSizeZS(info.Sensor().width, info.Sensor().height, npixels);
-      plane.m_mat.resize(plane.m_pix[0].size());
-      const unsigned char * data = &alldata[headersize];
-      for (unsigned i = 0; i < npixels; ++i) {
-        int mat = (data[4*i] >> 6), col = 0, row = 0;
-        if (info.m_version < 2) {
-          row = ((data[4*i] & 0x7) << 5) | (data[4*i+1] >> 3);
-          col = ((data[4*i+1] & 0x7) << 4) | (data[4*i+2] >> 4);
-        } else {
-          row = ((data[4*i] & 0x3F) << 3) |  (data[4*i+1] >> 5);
-          col = ((data[4*i+1] & 0x1F) << 4) | (data[4*i+2] >> 4);
-        }
-        unsigned x, y;
-        info.Sensor().mapfunc(x, y, col, row, mat, info.Sensor().cols, info.Sensor().rows);
-        plane.m_x[i] = x;
-        plane.m_y[i] = y;
-        plane.m_mat[i] = mat;
-        plane.m_pix[0][i] = ((data[4*i+2] & 0x0F) << 8) | (data[4*i+3]);
-      }
-    }
-    static void ConvertRaw(StandardPlane & plane, const std::vector<unsigned char> & data, const BoardInfo & info) {
-      unsigned headersize = 8, trailersize = 8;
-      if (info.m_version > 2) {
-        headersize += 8;
-        EUDAQ_THROW("EUDRB V3 decoding not yet implemented");
-      }
-      unsigned possible1 = 2 *  info.Sensor().cols * info.Sensor().rows      * info.Sensor().mats * info.Frames();
-      unsigned possible2 = 2 * (info.Sensor().cols * info.Sensor().rows - 1) * info.Sensor().mats * info.Frames();
-      bool missingpixel = false;
-      if (data.size() - headersize - trailersize == possible1) {
-        // OK
-      } else if (data.size() - headersize - trailersize == possible2) {
-        missingpixel = true;
-      } else {
-        EUDAQ_THROW("Bad raw data size (" + to_string(data.size() - headersize - trailersize)+") expecting "
-                    + to_string(possible1) + " or " + to_string(possible2));
-      }
-      //unsigned npixels = info.Sensor().cols * info.Sensor().rows * info.Sensor().mats;
-      plane.SetSizeRaw(info.Sensor().width, info.Sensor().height, info.Frames(), true);
-      plane.m_flags |= StandardPlane::FLAG_NEEDCDS;
-      plane.m_mat.resize(plane.m_pix[0].size());
-      const unsigned char * ptr = &data[headersize];
-      for (unsigned row = 0; row < info.Sensor().rows; ++row) {
-        for (unsigned col = 0; col < info.Sensor().cols; ++col) {
-          if (missingpixel && row == info.Sensor().rows-1 && col == info.Sensor().cols-1) break; // last pixel is not transferred
-          for (size_t frame = 0; frame < info.Frames(); ++frame) {
-            for (size_t mat = 0; mat < info.Sensor().mats; ++mat) {
-              unsigned x = 0, y = 0;
-              info.Sensor().mapfunc(x, y, col, row, mat, info.Sensor().cols, info.Sensor().rows);
-              size_t i = x + y*info.Sensor().width;
-              if (frame == 0) {
-                plane.m_x[i] = x;
-                plane.m_y[i] = y;
-                plane.m_mat[i] = mat;
-                if (info.m_version < 2) {
-                  plane.m_pivot[i] = (row << 7 | col) >= plane.m_pivotpixel;
-                } else {
-                  plane.m_pivot[i] = (row << 9 | col) >= plane.m_pivotpixel;
-                }
-              }
-              short pix = *ptr++ << 8;
-              pix |= *ptr++;
-              pix &= 0xfff;
-              plane.m_pix[frame][i] = pix;
-            }
-          }
-        }
-      }
-    }
+    static void ConvertZS(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info);
+    static void ConvertRaw(StandardPlane & plane, const std::vector<unsigned char> & data, const BoardInfo & info);
+    static bool ConvertLCIO(lcio::LCEvent & lcioEvent, const Event & eudaqEvent);
   protected:
+    static size_t NumPlanes(const Event & event) {
+      if (const RawDataEvent * ev = dynamic_cast<const RawDataEvent *>(&event)) {
+        return ev->NumBlocks();
+      } else if (const EUDRBEvent * ev = dynamic_cast<const EUDRBEvent *>(&event)) {
+        return ev->NumBoards();
+      }
+      return 0;
+    }
+    static std::vector<unsigned char> GetPlane(const Event & event, size_t i) {
+      if (const RawDataEvent * ev = dynamic_cast<const RawDataEvent *>(&event)) {
+        return ev->GetBlock(i);
+      } else if (const EUDRBEvent * ev = dynamic_cast<const EUDRBEvent *>(&event)) {
+        return ev->GetBoard(i).GetDataVector();
+      }
+      return std::vector<unsigned char>();
+    }
+    static size_t GetID(const Event & event, size_t i) {
+      if (const RawDataEvent * ev = dynamic_cast<const RawDataEvent *>(&event)) {
+        return ev->GetID(i);
+      } else if (const EUDRBEvent * ev = dynamic_cast<const EUDRBEvent *>(&event)) {
+        return ev->GetBoard(i).GetID();
+      }
+      return 0;
+    }
     std::vector<BoardInfo> m_info;
   };
 
@@ -233,21 +184,50 @@ namespace eudaq {
       FillInfo(e, c);
     }
 
-#if USE_LCIO
-    virtual bool GetLCIOSubEvent( lcio::LCEvent & lcioEvent, const Event & eudaqEvent ) const;
-#endif
+    virtual bool GetStandardSubEvent(StandardEvent & result, const Event & source) const {
+      return ConvertStandard(result, source);
+    }
 
-    virtual bool GetStandardSubEvent(StandardEvent &, const Event &) const;
+#if USE_LCIO
+    virtual bool GetLCIOSubEvent(lcio::LCEvent & lcioEvent, const Event & eudaqEvent) const {
+      return ConvertLCIO(lcioEvent, eudaqEvent);
+    }
+#endif
 
   private:
     EUDRBConverterPlugin() : DataConverterPlugin("EUDRB") {}
-
     static EUDRBConverterPlugin const m_instance;
   };
 
   EUDRBConverterPlugin const EUDRBConverterPlugin::m_instance;
 
-  bool EUDRBConverterPlugin::GetStandardSubEvent(StandardEvent & result, const Event & source) const {
+  /********************************************/
+
+  class LegacyEUDRBConverterPlugin : public DataConverterPlugin, public EUDRBConverterBase {
+    virtual void Initialize(const eudaq::Event & e, const eudaq::Configuration & c) {
+      FillInfo(e, c);
+    }
+
+    virtual bool GetStandardSubEvent(StandardEvent & result, const Event & source) const {
+      return ConvertStandard(result, source);
+    }
+
+#if USE_LCIO
+    virtual bool GetLCIOSubEvent(lcio::LCEvent & lcioEvent, const Event & eudaqEvent) const {
+      return ConvertLCIO(lcioEvent, eudaqEvent);
+    }
+#endif
+
+  private:
+    LegacyEUDRBConverterPlugin() : DataConverterPlugin(Event::str2id("_DRB")){}
+    static LegacyEUDRBConverterPlugin const m_instance;
+  };
+
+  LegacyEUDRBConverterPlugin const LegacyEUDRBConverterPlugin::m_instance;
+
+  /********************************************/
+
+  bool EUDRBConverterBase::ConvertStandard(StandardEvent & result, const Event & source) const {
     if (source.IsBORE()) {
       // shouldn't happen
       return true;
@@ -256,18 +236,96 @@ namespace eudaq {
       return true;
     }
     // If we get here it must be a data event
-    const RawDataEvent & ev = dynamic_cast<const RawDataEvent &>(source);
-    for (size_t i = 0; i < ev.NumBlocks(); ++i) {
-      result.AddPlane(ConvertPlane(ev.GetBlock(i),
-                                   ev.GetID(i)));
+    size_t numplanes = NumPlanes(source);
+    for (size_t i = 0; i < numplanes; ++i) {
+      result.AddPlane(ConvertPlane(GetPlane(source, i), GetID(source, i)));
     }
     return true;
   }
 
-#if USE_LCIO
-  bool EUDRBConverterPlugin::GetLCIOSubEvent(lcio::LCEvent & result, const Event & source) const {
+  void EUDRBConverterBase::ConvertZS(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info) {
+    unsigned headersize = 8, trailersize = 8;
+    if (info.m_version > 2) {
+      headersize += 8;
+      EUDAQ_THROW("EUDRB V3 decoding not yet implemented");
+    }
+    bool padding = (alldata[alldata.size()-trailersize-4] == 0);
+    unsigned npixels = (alldata.size() - headersize - trailersize) / 4 - padding;
+    plane.SetSizeZS(info.Sensor().width, info.Sensor().height, npixels);
+    plane.m_mat.resize(plane.m_pix[0].size());
+    const unsigned char * data = &alldata[headersize];
+    for (unsigned i = 0; i < npixels; ++i) {
+      int mat = (data[4*i] >> 6), col = 0, row = 0;
+      if (info.m_version < 2) {
+        row = ((data[4*i] & 0x7) << 5) | (data[4*i+1] >> 3);
+        col = ((data[4*i+1] & 0x7) << 4) | (data[4*i+2] >> 4);
+      } else {
+        row = ((data[4*i] & 0x3F) << 3) |  (data[4*i+1] >> 5);
+        col = ((data[4*i+1] & 0x1F) << 4) | (data[4*i+2] >> 4);
+      }
+      unsigned x, y;
+      info.Sensor().mapfunc(x, y, col, row, mat, info.Sensor().cols, info.Sensor().rows);
+      plane.m_x[i] = x;
+      plane.m_y[i] = y;
+      plane.m_mat[i] = mat;
+      plane.m_pix[0][i] = ((data[4*i+2] & 0x0F) << 8) | (data[4*i+3]);
+    }
+  }
 
-    if ( source.IsBORE() ) {
+  void EUDRBConverterBase::ConvertRaw(StandardPlane & plane, const std::vector<unsigned char> & data, const BoardInfo & info) {
+    unsigned headersize = 8, trailersize = 8;
+    if (info.m_version > 2) {
+      headersize += 8;
+      EUDAQ_THROW("EUDRB V3 decoding not yet implemented");
+    }
+    unsigned possible1 = 2 *  info.Sensor().cols * info.Sensor().rows      * info.Sensor().mats * info.Frames();
+    unsigned possible2 = 2 * (info.Sensor().cols * info.Sensor().rows - 1) * info.Sensor().mats * info.Frames();
+    bool missingpixel = false;
+    if (data.size() - headersize - trailersize == possible1) {
+      // OK
+    } else if (data.size() - headersize - trailersize == possible2) {
+      missingpixel = true;
+    } else {
+      EUDAQ_THROW("Bad raw data size (" + to_string(data.size() - headersize - trailersize)+") expecting "
+                  + to_string(possible1) + " or " + to_string(possible2));
+    }
+    //unsigned npixels = info.Sensor().cols * info.Sensor().rows * info.Sensor().mats;
+    plane.SetSizeRaw(info.Sensor().width, info.Sensor().height, info.Frames(), true);
+    plane.m_flags |= StandardPlane::FLAG_NEEDCDS;
+    plane.m_mat.resize(plane.m_pix[0].size());
+    const unsigned char * ptr = &data[headersize];
+    for (unsigned row = 0; row < info.Sensor().rows; ++row) {
+      for (unsigned col = 0; col < info.Sensor().cols; ++col) {
+        if (missingpixel && row == info.Sensor().rows-1 && col == info.Sensor().cols-1) break; // last pixel is not transferred
+        for (size_t frame = 0; frame < info.Frames(); ++frame) {
+          for (size_t mat = 0; mat < info.Sensor().mats; ++mat) {
+            unsigned x = 0, y = 0;
+            info.Sensor().mapfunc(x, y, col, row, mat, info.Sensor().cols, info.Sensor().rows);
+            size_t i = x + y*info.Sensor().width;
+            if (frame == 0) {
+              plane.m_x[i] = x;
+              plane.m_y[i] = y;
+              plane.m_mat[i] = mat;
+              if (info.m_version < 2) {
+                plane.m_pivot[i] = (row << 7 | col) >= plane.m_pivotpixel;
+              } else {
+                plane.m_pivot[i] = (row << 9 | col) >= plane.m_pivotpixel;
+              }
+            }
+            short pix = *ptr++ << 8;
+            pix |= *ptr++;
+            pix &= 0xfff;
+            plane.m_pix[frame][i] = pix;
+          }
+        }
+      }
+    }
+  }
+
+#if USE_LCIO
+  bool EUDRBConverterBase::ConvertLCIO(lcio::LCEvent & result, const Event & source) {
+
+    if (source.IsBORE()) {
       // shouldn't happen
       return true;
     } else if (source.IsEORE()) {
@@ -291,19 +349,18 @@ namespace eudaq {
     // a description of the setup
     std::vector< eutelescope::EUTelSetupDescription * >  setupDescription;
 
-
     // to understand if we have problem with de-syncronisation, let
     // me prepare a Boolean switch and a vector of size_t to contain the
     // pivot pixel position
     bool outOfSyncFlag = false;
     std::vector<size_t > pivotPixelPosVec;
 
-    const RawDataEvent & rawDataEvent = dynamic_cast< const RawDataEvent & > ( source ) ;
+    //const RawDataEvent & rawDataEvent = dynamic_cast< const RawDataEvent & > ( source ) ;
 
+    size_t numplanes = NumPlanes(source);
+    for (size_t i = 0; i < numplanes; ++i) {
 
-    for ( size_t iPlane = 0 ; iPlane < rawDataEvent.NumBlocks(); ++iPlane ) {
-
-      StandardPlane plane = ConvertPlane( rawDataEvent.GetBlock( iPlane ), rawDataEvent.GetID( iPlane ) );
+      StandardPlane plane = ConvertPlane(GetPlane(source, i), GetID(source, i));
 
       // The current detector is ...
       eutelescope::EUTelPixelDetector * currentDetector = 0x0;
@@ -413,9 +470,6 @@ namespace eudaq {
         rawDataEncoder["sensorID"] = iPlane;
 
         // get the full vector of CDS
-        std::vector<short > cdsVec;
-        for ( size_t iPixel = 0; iPixel < plane.m_pix[0].size() ; ++iPixel ) cdsVec.push_back(  static_cast< short > ( plane.m_pix[0][ iPixel ] ) );
-
         std::vector<short> cdsVec = plane.GetPixels<short>();
 
         // now we have to strip out the marker cols from the CDS
@@ -560,37 +614,5 @@ namespace eudaq {
 #endif
   }
 #endif
-
-  /********************************************/
-
-  class LegacyEUDRBConverterPlugin : public DataConverterPlugin, public EUDRBConverterBase {
-    virtual void Initialize(const eudaq::Event & e, const eudaq::Configuration & c) {
-      FillInfo(e, c);
-    }
-    virtual bool GetStandardSubEvent(StandardEvent &, const Event & source) const;
-  private:
-    LegacyEUDRBConverterPlugin() : DataConverterPlugin(Event::str2id("_DRB")){}
-    static LegacyEUDRBConverterPlugin const m_instance;
-  };
-
-  bool LegacyEUDRBConverterPlugin::GetStandardSubEvent(StandardEvent & result, const eudaq::Event & source) const {
-    std::cout << "GetStandardSubEvent " << source.GetRunNumber() << ", " << source.GetEventNumber() << std::endl;
-    if (source.IsBORE()) {
-      // shouldn't happen
-      return true;
-    } else if (source.IsEORE()) {
-      // nothing to do
-      return true;
-    }
-    // If we get here it must be a data event
-    const EUDRBEvent & ev = dynamic_cast<const EUDRBEvent &>(source);
-    for (size_t i = 0; i < ev.NumBoards(); ++i) {
-      result.AddPlane(ConvertPlane(ev.GetBoard(i).GetDataVector(),
-                                   ev.GetBoard(i).GetID()));
-    }
-    return true;
-  }
-
-  LegacyEUDRBConverterPlugin const LegacyEUDRBConverterPlugin::m_instance;
 
 } //namespace eudaq
