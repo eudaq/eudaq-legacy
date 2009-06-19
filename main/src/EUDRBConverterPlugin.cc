@@ -38,7 +38,7 @@ namespace eudaq {
   }
 
   void map_4x1(unsigned & x, unsigned & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned) {
-    unsigned mat = (m == 0 || m == 3) ? 3-m : m;
+    unsigned mat = (m == 1 || m == 2) ? 3-m : m;
     x = c + mat * nc;
     y = r;
   }
