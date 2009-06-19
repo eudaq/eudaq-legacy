@@ -24,7 +24,6 @@
 #  include "EUTelSimpleSparsePixel.h"
 #endif
 
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -328,7 +327,7 @@ namespace eudaq {
         }
       } else {
 
-        // fix-me: do something here...
+        EUDAQ_ERROR("Unrecognised sensor type in LCIO converter: " + plane.m_sensor);
         return true;
 
       }
@@ -413,14 +412,11 @@ namespace eudaq {
         rawDataEncoder["yMax"]     = currentDetector->getYMax();
         rawDataEncoder["sensorID"] = iPlane;
 
-        // get the full vector of CDS 
+        // get the full vector of CDS
         std::vector<short > cdsVec;
         for ( size_t iPixel = 0; iPixel < plane.m_pix[0].size() ; ++iPixel ) cdsVec.push_back(  static_cast< short > ( plane.m_pix[0][ iPixel ] ) );
 
-        /* 
-           TEMPLATE NOT WORKING
-        std::vector<short > cdsVec = plane.GetPixels<short >();
-        */
+        std::vector<short> cdsVec = plane.GetPixels<short>();
 
         // now we have to strip out the marker cols from the CDS
         // value. To do this I need a vector of short large enough
@@ -463,7 +459,6 @@ namespace eudaq {
         // add the cds stripped values to the current TrackerRawData
         cdsFrame->setADCValues( cdsStrippedVec ) ;
 
-
         // put the pivot pixel in the timestamp field of the
         // TrackerRawData. I know that is not correct, but this is
         // the only place where I can put this info
@@ -473,16 +468,10 @@ namespace eudaq {
         // the pivot pixel vector for synchronization checks
         pivotPixelPosVec.push_back( plane.m_pivotpixel );
 
-
         // now append the TrackerRawData object to the corresponding
         // collection releasing the auto pointer
         rawDataCollection->push_back( cdsFrame.release() );
-
-
-
-
       }
-
 
       delete currentDetector;
 
@@ -499,7 +488,6 @@ namespace eudaq {
 
       result.addCollection( eudrbSetupCollection.release(), "eudrbSetup" );
     }
-
 
     // check if all the boards where running in synchronous mode or
     // not. Remember that the last pivot pixel entry is the one of the
@@ -548,13 +536,12 @@ namespace eudaq {
       } else if ( result.getEventNumber()  == 20 ) {
         // if the number of consecutive warnings is equal to the maximum
         // allowed, don't bother the user anymore with this message,
-        // because it's very luckily the run was taken unsynchronized on
+        // because it's very likely the run was taken unsynchronized on
         // purpose
         std::cout << "The maximum number of unsychronized events has been reached." << std::endl
                   << "Assuming the run was taken in asynchronous mode" << std::endl;
       }
     }
-
 
     // add the collections to the event only if not empty!
     if ( rawDataCollection->size() != 0 ) {
@@ -570,7 +557,6 @@ namespace eudaq {
     (void)result;
     EUDAQ_ERROR("EUDAQ was not compiled with EUTelescope support: cannot convert EUDRB event to LCIO format");
     return false;
-
 #endif
   }
 #endif
