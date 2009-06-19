@@ -30,7 +30,7 @@ namespace eudaq {
     virtual bool HasData();
     template <typename T>
     T peek() {
-      FillBuffer(sizeof (T));
+      FillBuffer();
       BufferSerializer buf(m_start, m_stop);
       T result;
       buf.read(result);
