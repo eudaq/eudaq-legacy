@@ -38,7 +38,7 @@ namespace eudaq {
   }
 
   void map_4x1(unsigned & x, unsigned & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned) {
-    unsigned mat = (m == 1 || m == 2) ? 3-m : m;
+    unsigned mat = (m == 0 || m == 3) ? 3-m : m;
     x = c + mat * nc;
     y = r;
   }
@@ -255,7 +255,7 @@ namespace eudaq {
     plane.m_mat.resize(plane.m_pix[0].size());
     const unsigned char * data = &alldata[headersize];
     for (unsigned i = 0; i < npixels; ++i) {
-      int mat = (data[4*i] >> 6), col = 0, row = 0;
+      int mat = 3 - (data[4*i] >> 6), col = 0, row = 0;
       if (info.m_version < 2) {
         row = ((data[4*i] & 0x7) << 5) | (data[4*i+1] >> 3);
         col = ((data[4*i+1] & 0x7) << 4) | (data[4*i+2] >> 4);
