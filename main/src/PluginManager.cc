@@ -57,10 +57,15 @@ namespace eudaq {
 
 #if USE_LCIO
   lcio::LCEvent * PluginManager::ConvertToLCIO(const DetectorEvent & dev) {
-    lcio::LCEvent * event = new lcio::LCEventImpl;
+    lcio::LCEventImpl * event = new lcio::LCEventImpl;
+    event->setEventNumber(dev.GetEventNumber());
+    event->setRunNumber(dev.GetRunNumber());
+    event->setTimeStamp(dev.GetTimestamp());
+
     for (size_t i = 0; i < dev.NumEvents(); ++i) {
       ConvertLCIOSubEvent(*event, *dev.GetEvent(i));
     }
+
     return event;
   }
 #else
