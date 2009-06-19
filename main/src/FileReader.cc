@@ -19,9 +19,7 @@ namespace eudaq {
     //  EUDAQ_WARN("Unrecognised native file (tag=" + Event::id2str(versiontag) + "), assuming version 1");
     //}
     //EUDAQ_INFO("FileReader, version = " + to_string(m_ver));
-    //while (!NextEvent()) {
-    //  mSleep(20);
-    //}
+    //NextEvent();
   }
 
   bool FileReader::NextEvent(size_t skip) {
@@ -43,22 +41,6 @@ namespace eudaq {
       m_ev = eudaq::EventFactory::Create(buf);
       return true;
     }
-    return true;
-//     if (m_ver < 2) {
-//       for (size_t i = 0; i <= skip; ++i) {
-//         if (!m_des.HasData()) break;
-//         m_ev = eudaq::EventFactory::Create(m_des);
-//       }
-//       return true;
-//     } else {
-//       BufferSerializer buf;
-//       for (size_t i = 0; i <= skip; ++i) {
-//         if (!m_des.HasData()) break;
-//         m_des.read(buf);
-//       }
-//       m_ev = eudaq::EventFactory::Create(buf);
-//       return true;
-//     }
   }
 
   unsigned FileReader::RunNumber() const {
