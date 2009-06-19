@@ -147,7 +147,7 @@ namespace eudaq {
     }
     static void ConvertZS(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info);
     static void ConvertRaw(StandardPlane & plane, const std::vector<unsigned char> & data, const BoardInfo & info);
-    static bool ConvertLCIO(lcio::LCEvent & lcioEvent, const Event & eudaqEvent);
+    bool ConvertLCIO(lcio::LCEvent & lcioEvent, const Event & eudaqEvent) const;
   protected:
     static size_t NumPlanes(const Event & event) {
       if (const RawDataEvent * ev = dynamic_cast<const RawDataEvent *>(&event)) {
@@ -323,7 +323,7 @@ namespace eudaq {
   }
 
 #if USE_LCIO
-  bool EUDRBConverterBase::ConvertLCIO(lcio::LCEvent & result, const Event & source) {
+  bool EUDRBConverterBase::ConvertLCIO(lcio::LCEvent & result, const Event & source) const {
 
     if (source.IsBORE()) {
       // shouldn't happen
@@ -358,9 +358,9 @@ namespace eudaq {
     //const RawDataEvent & rawDataEvent = dynamic_cast< const RawDataEvent & > ( source ) ;
 
     size_t numplanes = NumPlanes(source);
-    for (size_t i = 0; i < numplanes; ++i) {
+    for (size_t iPlane = 0; iPlane < numplanes; ++iPlane) {
 
-      StandardPlane plane = ConvertPlane(GetPlane(source, i), GetID(source, i));
+      StandardPlane plane = ConvertPlane(GetPlane(source, iPlane), GetID(source, iPlane));
 
       // The current detector is ...
       eutelescope::EUTelPixelDetector * currentDetector = 0x0;
@@ -415,7 +415,7 @@ namespace eudaq {
           // them out. First I need to have the original position
           // (with markers in) and then calculate how many pixels I
           // have to remove
-          size_t originalX = plane.m_x[ iPixel ] ;
+          size_t originalX = (size_t)plane.m_x[ iPixel ] ;
 
           if ( find( markerVec.begin(), markerVec.end(), originalX ) == markerVec.end() ) {
             // the original X is not on a marker column, so I need
@@ -428,11 +428,11 @@ namespace eudaq {
             sparsePixel->setXCoord( originalX - diff );
 
             // no problem instead with the Y coordinate
-            sparsePixel->setYCoord( plane.m_y[ iPixel ] );
+            sparsePixel->setYCoord( (size_t)plane.m_y[ iPixel ] );
 
             // last the pixel charge. The CDS is automatically
             // calculated by the EUDRB
-            sparsePixel->setSignal( plane.m_pix[0][ iPixel ] );
+            sparsePixel->setSignal( (size_t)plane.m_pix[0][ iPixel ] );
 
             // in case of DEBUG
             // streamlog_out ( DEBUG0 ) << ( *(sparsePixel.get() ) ) << endl;
