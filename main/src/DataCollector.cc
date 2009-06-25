@@ -140,7 +140,7 @@ namespace eudaq {
   }
 
   void DataCollector::OnReceive(const ConnectionInfo & id, counted_ptr<Event> ev) {
-    std::cout << "Received Event from " << id << ": " << *ev << std::endl;
+    //std::cout << "Received Event from " << id << ": " << *ev << std::endl;
     Info & inf = m_buffer[GetInfo(id)];
     inf.events.push_back(ev);
     bool tmp = false;
@@ -165,7 +165,9 @@ namespace eudaq {
   void DataCollector::OnCompleteEvent() {
     bool more = true;
     while (more) {
-      std::cout << "Complete Event: " << m_runnumber << "." << m_eventnumber << std::endl;
+      if (m_eventnumber < 10 || m_eventnumber % 10 == 0) {
+        std::cout << "Complete Event: " << m_runnumber << "." << m_eventnumber << std::endl;
+      }
       unsigned n_run = m_runnumber, n_ev = m_eventnumber;
       unsigned long long n_ts = (unsigned long long)-1;
       if (m_itlu != (size_t)-1) {
@@ -264,9 +266,9 @@ namespace eudaq {
         OnConnect(ev.id);
       } else {
         //std::cout << "Receive: " << ev.id << " " << ev.packet.size() << std::endl;
-        for (size_t i = 0; i < 8 && i < ev.packet.size(); ++i) {
-            std::cout << to_hex(ev.packet[i], 2) << ' ';
-        }
+        //for (size_t i = 0; i < 8 && i < ev.packet.size(); ++i) {
+        //    std::cout << to_hex(ev.packet[i], 2) << ' ';
+        //}
         //std::cout << ")" << std::endl;
         BufferSerializer ser(ev.packet.begin(), ev.packet.end());
         //std::cout << "Deserializing" << std::endl;
