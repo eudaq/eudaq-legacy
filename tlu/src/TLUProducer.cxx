@@ -35,15 +35,17 @@ public:
     {}
   void MainLoop() {
     do {
-      usleep(100);
-      if (!m_tlu) continue;
+      if (!m_tlu) {
+        eudaq::mSleep(50);
+        continue;
+      }
       bool JustStopped = TLUJustStopped;
       if (JustStopped) {
         m_tlu->Stop();
         eudaq::mSleep(100);
       }
       if (TLUStarted || JustStopped) {
-        eudaq::mSleep(100);
+        eudaq::mSleep(readout_delay);
         m_tlu->Update(timestamps); // get new events
         if (trig_rollover > 0 && m_tlu->GetTriggerNum() > trig_rollover) {
           bool inhibit = m_tlu->InhibitTriggers();
@@ -56,10 +58,12 @@ public:
           unsigned long long t = m_tlu->GetEntry(i).Timestamp();
           long long d = t-lasttime;
           float freq= 1./(d*20./1000000000);
-          std::cout << "  " << m_tlu->GetEntry(i)
-                    << ", diff=" << d << (d <= 0 ? "  ***" : "")
-                    << ", freq=" << freq
-                    << std::endl;
+          if (m_ev < 10 || m_ev%10 == 0) {
+            std::cout << "  " << m_tlu->GetEntry(i)
+                      << ", diff=" << d << (d <= 0 ? "  ***" : "")
+                      << ", freq=" << freq
+                      << std::endl;
+          }
           lasttime = t;
           TLUEvent ev(m_run, m_ev, t);
           if (i == m_tlu->NumEntries()-1) {
@@ -97,6 +101,7 @@ public:
       veto_mask = param.Get("VetoMask", 0);
       trig_rollover = param.Get("TrigRollover", 0);
       timestamps = param.Get("Timestamps", 1);
+      readout_delay = param.Get("ReadoutDelay", 100);
       // ***
       m_tlu->SetFirmware(param.Get("BitFile", ""));
       m_tlu->SetVersion(param.Get("Version", 0));
@@ -137,6 +142,7 @@ public:
       ev.SetTag("AndMask",  "0x"+to_hex(and_mask));
       ev.SetTag("OrMask",   "0x"+to_hex(or_mask));
       ev.SetTag("VetoMask", "0x"+to_hex(veto_mask));
+      ev.SetTag("ReadoutDelay", to_string(readout_delay));
       sleep(5); // temporarily, to fix startup with EUDRB
       //      SendEvent(TLUEvent::BORE(m_run).SetTag("Interval",trigger_interval).SetTag("DUT",dut_mask));
       SendEvent(ev);
@@ -212,7 +218,7 @@ public:
 private:
   unsigned m_run, m_ev;
   unsigned trigger_interval, dut_mask, veto_mask, and_mask, or_mask;
-  unsigned trig_rollover;
+  unsigned trig_rollover, readout_delay;
   bool timestamps, done;
   bool TLUStarted;
   bool TLUJustStopped;
