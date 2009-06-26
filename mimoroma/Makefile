@@ -1,44 +1,22 @@
-################################################################################
-# Automatically-generated file. Do not edit!
-################################################################################
+EXTERNAL_DEFS += EUDAQ_FUNC=__PRETTY_FUNCTION__ EUDAQ_PLATFORM=PF_$(PLATFORM)
+EXTERNAL_LIBS += eudaq
+EXTERNAL_LIBDIRS += ../bin
+EXTERNAL_INCS += ../main/include
 
--include ../makefile.init
+include ../Makefile.common
 
-RM := rm -rf
-
-# All of the sources participating in the build are defined here
--include sources.mk
--include subdir.mk
--include src/subdir.mk
--include objects.mk
-
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(strip $(C_DEPS)),)
--include $(C_DEPS)
-endif
+ifeq ($(PLATFORM),WIN32)
+EXTERNAL_LIBS += Ws2_32
 endif
 
--include ../makefile.defs
+default: exe
 
-# Add inputs and outputs from these tool invocations to the build variables 
+exe: $(EXE_FILES)
 
-# All Target
-all: daq_beam
+$(EXE_FILES): $(OBJ_FILES)
 
-# Tool invocations
-daq_beam: $(OBJS) $(USER_OBJS)
-	@echo 'Building target: $@'
-	@echo 'Invoking: GCC C Linker'
-	gcc  -o"daq_beam" $(OBJS) $(USER_OBJS) $(LIBS)
-	@echo 'Finished building target: $@'
-	@echo ' '
+lib: $(TARGET)
 
-# Other Targets
-clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) daq_beam
-	-@echo ' '
+all: exe
 
-.PHONY: all clean dependents
-.SECONDARY:
-
--include ../makefile.targets
+.PHONY: exe lib all default
