@@ -1,6 +1,6 @@
 MAKE := make
 
-DIRS := main tlu vme eudrb depfet fortis root gui
+DIRS := main tlu vme eudrb depfet fortis mimoroma root gui
 
 default: main
 
