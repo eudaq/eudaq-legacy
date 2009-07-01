@@ -61,16 +61,27 @@
          <property name="enabled" >
           <bool>false</bool>
          </property>
+         <property name="toolTip" >
+          <string>Send a log message</string>
+         </property>
          <property name="text" >
           <string>Log</string>
          </property>
         </widget>
        </item>
        <item row="3" column="1" >
-        <widget class="QLineEdit" name="txtLogmsg" />
+        <widget class="QLineEdit" name="txtLogmsg" >
+         <property name="toolTip" >
+          <string>Send a message to the LogCollector</string>
+         </property>
+        </widget>
        </item>
        <item row="2" column="1" >
-        <widget class="QLineEdit" name="txtRunmsg" />
+        <widget class="QLineEdit" name="txtRunmsg" >
+         <property name="toolTip" >
+          <string>An optional message to add to the Run</string>
+         </property>
+        </widget>
        </item>
        <item row="1" column="1" >
         <widget class="QComboBox" name="cmbConfig" >
@@ -79,6 +90,9 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="toolTip" >
+          <string>Select configuration to use</string>
          </property>
          <property name="editable" >
           <bool>true</bool>
@@ -95,6 +109,9 @@
         <widget class="QPushButton" name="btnStart" >
          <property name="enabled" >
           <bool>false</bool>
+         </property>
+         <property name="toolTip" >
+          <string>Start a run</string>
          </property>
          <property name="text" >
           <string>Start</string>
@@ -119,6 +136,9 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="toolTip" >
+          <string>Configure using the selected configuration</string>
+         </property>
          <property name="text" >
           <string>Config</string>
          </property>
@@ -128,6 +148,9 @@
         <widget class="QPushButton" name="btnStop" >
          <property name="enabled" >
           <bool>false</bool>
+         </property>
+         <property name="toolTip" >
+          <string>Stop a run</string>
          </property>
          <property name="text" >
           <string>Stop</string>
@@ -143,6 +166,9 @@
        </item>
        <item row="4" column="1" >
         <widget class="QLineEdit" name="txtGeoID" >
+         <property name="toolTip" >
+          <string>Double-click to change GeoID</string>
+         </property>
          <property name="readOnly" >
           <bool>true</bool>
          </property>
@@ -183,6 +209,9 @@
        </property>
        <item>
         <widget class="QTreeView" name="viewConn" >
+         <property name="toolTip" >
+          <string>Processes connected to the Run Control</string>
+         </property>
          <property name="rootIsDecorated" >
           <bool>false</bool>
          </property>
@@ -213,7 +242,6 @@
   <tabstop>btnStart</tabstop>
   <tabstop>txtLogmsg</tabstop>
   <tabstop>btnLog</tabstop>
-  <tabstop>viewConn</tabstop>
  </tabstops>
  <resources/>
  <connections>
