@@ -201,7 +201,7 @@ public:
 
 class ConfigurationClass : public TQObject { //a class holding some configuration informations
 public:
-  ConfigurationClass () : UPDATE_EVERY_N_EVENTS(40), HITCORR_NUM_BINS(20), CLUSTER_POSITION(1), CLUSTER_TYPE(3), SEED_THRESHOLD(5.0), SEED_NEIGHBOUR_THRESHOLD(2.0), CLUSTER_THRESHOLD(7.0), DEPFET_SEED_THRESHOLD(50.0), DEPFET_NEIGHBOUR_THRESHOLD(20.0) //some default values for the configuration
+  ConfigurationClass () : UPDATE_EVERY_N_EVENTS(40), HITCORR_NUM_BINS(20), CLUSTER_POSITION(1), CLUSTER_TYPE(3), SEED_THRESHOLD(5.0), SEED_NEIGHBOUR_THRESHOLD(2.0), CLUSTER_THRESHOLD(7.0), DEPFET_SEED_THRESHOLD(50.0), DEPFET_NEIGHBOUR_THRESHOLD(20.0), RESETONNEWRUN(true)  //some default values for the configuration
     {
     }
 
@@ -216,6 +216,7 @@ public:
   double CLUSTER_THRESHOLD;
   double DEPFET_SEED_THRESHOLD;
   double DEPFET_NEIGHBOUR_THRESHOLD;
+  bool RESETONNEWRUN;
 };
 
 struct Seed {
@@ -564,6 +565,16 @@ public:
       clusterpositionComboBox->Associate(this);
       m_conf_group_frame->AddFrame(clusterpositionComboBox.get(), m_hinttop.get());
 
+
+      m_conf_checkbox_resetonnewrun =  new TGCheckButton(m_conf_group_frame.get(),"Reset Histograms at BOR");
+      if(conf.RESETONNEWRUN)
+        m_conf_checkbox_resetonnewrun->SetState(kButtonDown);
+      else
+        m_conf_checkbox_resetonnewrun->SetState(kButtonUp);
+
+      m_conf_checkbox_resetonnewrun->Associate(this);
+      m_conf_group_frame->AddFrame(m_conf_checkbox_resetonnewrun.get(), m_hinttop.get());
+     
       m_conf_apply = new TGTextButton(m_conf_group_frame.get(),"&Apply",150);
       m_conf_apply->SetEnabled(kFALSE);
       m_conf_apply->Associate(this);
@@ -1312,8 +1323,14 @@ public:
       unsigned cdsupdate = (unsigned)m_conf_cds_lego_update->GetNumber();
       if(cdsupdate > 0)
         conf.UPDATE_EVERY_N_EVENTS = cdsupdate;
-
-
+      if(m_conf_checkbox_resetonnewrun->IsOn())
+        {
+          conf.RESETONNEWRUN = true;
+        }
+      else
+        {
+          conf.RESETONNEWRUN = false;
+        }  
       unsigned numbinshitcorr = (unsigned)m_conf_numbinshitcorr->GetNumber();
       if(numbinshitcorr != conf.HITCORR_NUM_BINS && numbinshitcorr > 0)
         {
@@ -1353,6 +1370,8 @@ public:
       double clusterthresh = (double) m_conf_clusterthreshold->GetNumber();
       if(clusterthresh > 0)
         conf.CLUSTER_THRESHOLD = clusterthresh;
+
+      
 
 
 
@@ -1413,10 +1432,34 @@ public:
     m_tb_filename->SetText(m_reader ? m_reader->Filename().c_str() : "");
     m_tb_runnum->SetText(eudaq::to_string(param).c_str());
 
-    for (size_t i = 0; i < m_board.size(); ++i) {
-      //      std::cout << "i=" << i << std::endl;
-      m_board[i].Reset();
-    }
+    if(conf.RESETONNEWRUN)
+      {
+
+        for (size_t i = 0; i < m_board.size(); ++i) {
+          //      std::cout << "i=" << i << std::endl;
+          m_board[i].Reset();
+        }
+
+        for (size_t i = 0; i < m_hitcorrelation.size(); ++i) {
+          m_hitcorrelation[i]->Reset("");
+        }
+        for (size_t i = 0; i <m_clustercorrelation.size(); ++i) {
+          m_clustercorrelation[i]->Reset("");
+        }
+        for (size_t i = 0; i <m_clustercorrelationy.size(); ++i) {
+          m_clustercorrelationy[i]->Reset("");
+        }
+        for (size_t i = 0; i <m_depfet_correlation.size(); ++i) {
+          m_depfet_correlation[i]->Reset("");
+        }
+        for (size_t i = 0; i <m_depfet_correlationy.size(); ++i) {
+          std::cout << "jaaa " << i << std::endl;
+          m_depfet_correlationy[i]->Reset("");
+        }
+        m_depfet_adc->Reset("");
+        m_depfet_map->Reset("");
+        m_histonumtracks->Reset("");
+      }
     SetStatus(eudaq::Status::LVL_OK);
   }
   virtual void OnEvent(const eudaq::StandardEvent & ev) {
@@ -1478,6 +1521,8 @@ public:
           numplanes++;
           std::vector<double> clusterposition;
           std::vector<double> clusterpositiony;
+          clusterposition.reserve(50);
+          clusterpositiony.reserve(50);
 
           //bool depfethit = depfet_cluster_charge.size() > 0;
           FillBoard(m_board[i], plane, i, numberofclusters[i], clusterposition, clusterpositiony/*, depfethit*/);
@@ -1742,7 +1787,7 @@ private:
       m_histocluster2d, m_histotrack2d, m_histonoise2d, m_testhisto, m_hitmap_depfet_corr;
     counted_ptr<TH1D> m_historawx, m_historawy, m_historawval, m_histocdsval, m_histonoise, m_histonoiseeventnr,
       m_histoclusterx, m_histoclustery, m_histoclusterval, m_histonumclusters,
-      m_histodeltax, m_histodeltay, m_histonumhits, rmshisto;
+      m_histodeltax, m_histodeltay, m_histonumhits;
     std::vector<double> m_clusters, m_clusterx, m_clustery;
     double m_trackx, m_tracky;
     void Reset() {
@@ -1760,7 +1805,6 @@ private:
       m_historawval->Reset();
       m_histocdsval->Reset();
       m_histonoise->Reset();
-      rmshisto->Reset();
       m_hitmap_depfet_corr->Reset();
       m_histonoiseeventnr->Reset();
 
@@ -1788,7 +1832,7 @@ private:
     b.m_canvas = b.m_embedded->GetCanvas();
     //b.m_canvas->Divide(1, 1);
 
-    b.rmshisto = new TH1DNew(make_name("rms histo",board).c_str(),"rms histo", 40, -50, 50);
+    // b.rmshisto = new TH1DNew(make_name("rms histo",board).c_str(),"rms histo", 40, -50, 50);
     b.m_historaw2d      = new TH2DNew(make_name("RawProfile",    board).c_str(), "Raw 2D Profile",    num_x_pixels, 0, num_x_pixels, num_y_pixels, 0, num_y_pixels);
     b.m_tempcds         = new TH2DNew(make_name("TempCDS",       board).c_str(), "Temp CDS",         num_x_pixels, 0, num_x_pixels, num_y_pixels, 0, num_y_pixels);
     b.m_tempcds2        = new TH2DNew(make_name("TempCDS2",      board).c_str(), "Temp CDS2",         num_x_pixels, 0, num_x_pixels, num_y_pixels, 0, num_y_pixels);
@@ -1828,36 +1872,42 @@ private:
     //std::cout << "Filling " << e.LocalEventNumber() << " board" << boardnumber
     //          << " frames " << m_decoder->NumFrames(e) << " pixels " << npixels << std::endl;
     std::vector<double> cds(hitpixels, 0.0), ones(hitpixels, 1.0);
+    double sumx2 = 0.0;
     if (plane.m_pix.size() == 1) {
       for (size_t i = 0; i < hitpixels; ++i) {
         cds[i] = plane.m_pix[0][i];
+        sumx2 += plane.m_pix[0][i] * plane.m_pix[0][i];
       }
     } else {
       for (size_t i = 0; i < hitpixels; ++i) {
         cds[i] = plane.GetPixel(i);
+        sumx2 += plane.GetPixel(i);
       }
       //rms for noise determination
-      b.rmshisto->FillN(hitpixels, &cds[0], &ones[0]);
+      //b.rmshisto->FillN(hitpixels, &cds[0], &ones[0]);
 
-      double rms = b.rmshisto->GetRMS();
+      double rms = sqrt(sumx2/hitpixels);
+      //double rms = b.rmshisto->GetRMS();
       b.m_histonoise->Fill(rms);
 
       if((totalnumevents-1) % 50 == 0) {
         int t = (totalnumevents-1)/50;
 
-        TF1 *f1 = new TF1("bla","gaus");
+       //  TF1 *f1 = new TF1("bla","gaus");
 
-        b.rmshisto->Fit(f1,"Q0","");
-        Double_t sigma = f1->GetParameter(2);
-        b.m_histonoiseeventnr->SetBinContent((t+1),sigma);
+//         b.rmshisto->Fit(f1,"Q0","");
+        
+        //  Double_t sigma = f1->GetParameter(2);
+        
+        b.m_histonoiseeventnr->SetBinContent((t+1),rms);
         b.m_histonoiseeventnr->SetBinError((t+1),0.0);
 
         for(int h = t+2; h <= t+4 && h <= 30; h++) {
           b.m_histonoiseeventnr->SetBinContent(h, 0.0);
           b.m_histonoiseeventnr->SetBinError(h, 0.0);
         }
-        delete f1;
-        b.rmshisto->Reset();
+        //  delete f1;
+        //b.rmshisto->Reset();
       }
       //end of rms for noise determination
 
@@ -2107,6 +2157,10 @@ private:
   counted_ptr<TGNumberEntry> m_conf_depfet_seedneighbourthreshold;
 
   counted_ptr<TGNumberEntry> m_conf_clusterthreshold;
+
+                             
+  counted_ptr<TGCheckButton> m_conf_checkbox_resetonnewrun;
+
 
   counted_ptr<TGTextButton> m_conf_apply;
   counted_ptr<TGTextButton> m_reset_histos;
