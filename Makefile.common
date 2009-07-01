@@ -154,7 +154,7 @@ CC_FILES  := $(wildcard $(SRC)/*.cc)
 CXX_FILES := $(wildcard $(SRC)/*.cxx)
 #SRC_FILES := $(C_FILES) $(CC_FILES) $(CXX_FILES)
 OBJ_FILES := $(CC_FILES:$(SRC)/%.cc=$(OBJ)/%.o) $(C_FILES:$(SRC)/%.c=$(OBJ)/%.o)
-DEP_FILES := $(CC_FILES:$(SRC)/%.cc=$(DEP)/%.d) $(CXX_FILES:$(SRC)/%.cxx=$(DEP)/%.d) $(C_FILES:$(SRC)/%.c=$(DEP)/%.d)
+DEP_FILES := $(CC_FILES:$(SRC)/%.cc=$(DEP)/%.d) $(CXX_FILES:$(SRC)/%.cxx=$(DEP)/%_exe.d) $(C_FILES:$(SRC)/%.c=$(DEP)/%.d)
 EXEOBJ_FILES := $(CXX_FILES:$(SRC)/%.cxx=$(OBJ)/%_exe.o)
 EXE_FILES := $(CXX_FILES:$(SRC)/%.cxx=$(BIN)/%.exe)
 
@@ -249,9 +249,9 @@ $(DEP)/%.d: %.cc
 	$V$(CCDEP) $< $(CPPFLAGS) | sed 's,\($*\)\.o[ :]*,$(OBJ)/\1.o $@ : ,g' > $@
 	@[ `${FSIZE} $@` -gt 0 ] || (rm $@; false)
 
-$(DEP)/%.d: %.cxx
+$(DEP)/%_exe.d: %.cxx
 	@echo " *** Creating   `basename $@`"
-	$V$(CCDEP) $< $(CPPFLAGS) | sed 's,\($*\)\.o[ :]*,$(OBJ)/\1.o $@ : ,g' > $@
+	$V$(CCDEP) $< $(CPPFLAGS) | sed 's,\($*\)\.o[ :]*,$(OBJ)/\1_exe.o $@ : ,g' > $@
 	@[ `${FSIZE} $@` -gt 0 ] || (rm $@; false)
 
 $(DEP)/%.hh.d: %.hh
