@@ -17,7 +17,7 @@ namespace eudaq {
     typedef unsigned char byte_t;
     typedef std::vector<byte_t> data_t;
     struct block_t : public Serializable {
-      block_t(unsigned id = -1, data_t data = data_t()) : id(id), data(data) {}
+      block_t(unsigned id = (unsigned)-1, data_t data = data_t()) : id(id), data(data) {}
       block_t(Deserializer &);
       void Serialize(Serializer &) const;
       unsigned id;
