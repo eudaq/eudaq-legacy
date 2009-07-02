@@ -315,8 +315,11 @@ void AltroUSBProducer::OnReset()
 
 void AltroUSBProducer::OnStatus()
 {
-    // Tell the main loop send the status
-    CommandPush( STATUS );
+    // Don't send status to the main loop. There are so many status requests that 
+    // they will obscure all other commands. Handle this in the communication thread if necessary, 
+    // i. e. in this function.
+    // For the time being: do nothing
+
 }
 
 void AltroUSBProducer::OnUnrecognised(const std::string & cmd, const std::string & param) 
@@ -369,11 +372,12 @@ void  AltroUSBProducer::Exec()
 
     while(!terminate)
     {
-	if (counter++%1000 == 0)
-	std::cout << "blip" <<counter/1000 <<std::endl;
+	if ( (counter++%1000 == 0) || GetRunActive() )
+	    std::cout << "blip" <<counter <<std::endl;
+
 	// look if there are any commands in the buffer
 	Commands command = CommandPop();
-	if (command && (command!=3)) 
+	if (command && (command!=STATUS)) 
 	    std::cout << "command is " << command << std::endl;
 	
 	switch( command )
@@ -477,7 +481,8 @@ void  AltroUSBProducer::Exec()
 		// delete the first acquisition flag
 		acquisition_mode &= (~M_FIRST);
 
-		std::cout <<  "Return value of  U2F_ReadOut is "<< retval << std::endl;
+		std::cout <<  "Return value of  U2F_ReadOut is "<< retval 
+			  << " , osize is " << osize<< std::endl;
 		
 		nbytesread += osize;
 
@@ -507,6 +512,7 @@ void  AltroUSBProducer::Exec()
 			 ( m_data_block[nbytesread-7] == 0xff ) && 
 			 ( m_data_block[nbytesread-8] == 0xff ) )
 		    { // end of event signature found
+			std::cout << "End of event signature found" << std::endl;
 			break;
 		    }
 		    else // number of bytes has to be 1024, otherwise there is something wrong
@@ -520,10 +526,10 @@ void  AltroUSBProducer::Exec()
 		else // check for new commands 
 		{
 		    break;
-		}
+		}//if osize
 		 
 		std::cout << "bong "<< std::endl;
-	    }
+	    } // for blockindex
 	    
             // dump 32 bit words instead of sending an eudaq event for the time being
 	    
@@ -557,6 +563,7 @@ void  AltroUSBProducer::Exec()
 	    // wait 1 ms and return to the start of the loop
 //	    eudaq::mSleep(100);
 	    std::cout << "processing event" << GetIncreaseEventNumber() << std::endl;;	    
-	}
-    }
+	}//  if (getRunActive)
+
+    }// while !terminate
 }
