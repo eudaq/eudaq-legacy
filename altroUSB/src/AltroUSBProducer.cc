@@ -128,7 +128,7 @@ void AltroUSBProducer::SetRunActive(bool activestatus)
 
 //void AltroUSBProducer::Event(volatile unsigned long *altrodata, int length)
 //{
-//    eudaq::RawDataEvent ev("TimepixEvent",GetRunNumber(), GetIncreaseEventNumber() );
+//    eudaq::RawDataEvent ev("AltroUSB",GetRunNumber(), GetIncreaseEventNumber() );
 //
 //    // a data block of unsigned char, in this the data is stored in little endian
 //    unsigned char *serialdatablock =  new unsigned char[length*sizeof(unsigned long)];
@@ -257,7 +257,7 @@ void AltroUSBProducer::OnStartRun(unsigned param)
 
     SetRunNumber( param );
     SetEventNumber( 0 ); // has to be 1 because BORE is event 0 :-(
-    SendEvent(eudaq::RawDataEvent::BORE( "AltroUSBEvent", param )); // send param instead of GetRunNumber
+    SendEvent(eudaq::RawDataEvent::BORE( "AltroUSB", param )); // send param instead of GetRunNumber
 //    std::cout << "Start Run: " << param << std::endl;
 
     // Tell the main loop to stop the run
@@ -291,7 +291,7 @@ void AltroUSBProducer::OnStopRun()
 	eudaq::mSleep(1);
 
     // now we know the run has stopped, send eore
-    SendEvent(eudaq::RawDataEvent::EORE("TimepixEvent", GetRunNumber(), GetEventNumber()));
+    SendEvent(eudaq::RawDataEvent::EORE("AltroUSB", GetRunNumber(), GetEventNumber()));
     
     EUDAQ_INFO("U2F has finished the run. DAQ is off");
     SetStatus(eudaq::Status::LVL_OK, "run finished.");
@@ -533,6 +533,24 @@ void  AltroUSBProducer::Exec()
 	    
             // dump 32 bit words instead of sending an eudaq event for the time being
 	    
+	    // if the input buffer is full, but there is no end of event signature:
+	    // throw an exception, the event is incomplete. How could this happen?
+	    if (nbytesread == m_block_size)
+	    {
+		EUDAQ_THROW("Error: Input buffer in memory is full!");
+	    }
+
+	    // create a RawDataEvent with the data that has been read
+	    if (nbytesread)
+	    {
+		eudaq::RawDataEvent event("AltroUSB",GetRunNumber(),GetIncreaseEventNumber());
+		// the last 12 bytes are the u2f trailer, they are not altro data
+		event.AddBlock(0, m_data_block, nbytesread - 12);
+	    
+		// Send the event to the data collector
+		SendEvent (event);
+	    }	    
+
 //	    for (unsigned int i = 0; i < nbytesread ; i++)
 //	    {
 //		if (i%4==0)
@@ -562,7 +580,7 @@ void  AltroUSBProducer::Exec()
 	    // if the run is not active
 	    // wait 1 ms and return to the start of the loop
 //	    eudaq::mSleep(100);
-	    std::cout << "processing event" << GetIncreaseEventNumber() << std::endl;;	    
+	    std::cout << "processing event" << GetEventNumber() << std::endl;;	    
 	}//  if (getRunActive)
 
     }// while !terminate
