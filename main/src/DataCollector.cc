@@ -3,9 +3,9 @@
 #include "eudaq/BufferSerializer.hh"
 #include "eudaq/DetectorEvent.hh"
 #include "eudaq/Logger.hh"
+#include "eudaq/Utils.hh"
 #include <iostream>
 #include <ostream>
-#include <fstream>
 
 namespace eudaq {
 
@@ -19,22 +19,6 @@ namespace eudaq {
       return 0;
     }
 
-    unsigned ReadRunNumber() {
-      unsigned result = 0;
-      std::ifstream file(RUN_NUMBER_FILE);
-      if (file.is_open()) {
-        file >> result;
-        if (file.fail())
-          EUDAQ_THROW("Error reading run number, check permissions of file "
-                      + std::string(RUN_NUMBER_FILE));
-        std::cout << "Read run number = " << result << std::endl;
-      } else {
-        EUDAQ_ERROR("Restarting run number from " + to_string(result) +
-                   " (Unable to open " + RUN_NUMBER_FILE + ")");
-      }
-      return result;
-    }
-
   } // anonymous namespace
 
   DataCollector::DataCollector(const std::string & runcontrol,
@@ -46,7 +30,7 @@ namespace eudaq {
       m_thread(),
       m_numwaiting(0),
       m_itlu((size_t)-1),
-      m_runnumber(ReadRunNumber()),
+      m_runnumber(ReadFromFile(RUN_NUMBER_FILE, 0U)),
       m_eventnumber(0),
       m_runstart(0)
   {
@@ -109,10 +93,7 @@ namespace eudaq {
         EUDAQ_THROW("You must configure before starting a run");
       }
       m_writer->StartRun(runnumber);
-      {
-        std::ofstream file(RUN_NUMBER_FILE);
-        file << runnumber << std::endl;
-      }
+      WriteToFile(RUN_NUMBER_FILE, runnumber);
       m_runnumber = runnumber;
       m_eventnumber = 0;
 

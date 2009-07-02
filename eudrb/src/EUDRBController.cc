@@ -9,6 +9,8 @@ namespace eudaq {
 
   namespace {
 
+    static const char * PEDESTAL_NUMBER_FILE = "../pedestal/pedestal.dat";
+
     static const char * MODE_NAMES[] = { "NONE", "RAW3", "RAW2", "ZS" };
     static const int NUM_MODES = sizeof MODE_NAMES / sizeof * MODE_NAMES;
     static const char * DET_NAMES[] = { "NONE", "MIMOSA5", "MIMOSTAR2", "MIMOTEL", "MIMOSA18", "MIMOSA26" };
@@ -151,26 +153,37 @@ namespace eudaq {
     m_vmes->Write(0x10, mimoconf);
   }
 
-  void EUDRBController::ConfigurePedestals(const eudaq::Configuration & param) {
+  std::string EUDRBController::ConfigurePedestals(const eudaq::Configuration & param) {
+    std::string fname;
     if (m_mode == M_ZS) {
-      int thresh = getpar(param, m_id, "Thresh", 10);
-      int ped = getpar(param, m_id, "Ped", 0);
-      float mult = getpar(param, m_id, "Mult", 2.0);
-      std::string fname = getpar(param, m_id, "PedestalFile", "");
-      if (thresh < 0 && fname == "") {
-        fname = "ped%.dat";
-        EUDAQ_WARN("Config missing pedestal file name, using " + fname);
+      int thresh = getpar(param, m_id, "Thresh", -1);
+      int ped = getpar(param, m_id, "Ped", -1);
+      float mult = getpar(param, m_id, "Mult", -1.0);
+      fname = getpar(param, m_id, "PedestalFile", "");
+      if (fname == "") {
+        if (mult != -1.0) {
+          EUDAQ_WARN("Multiplier being ignored because no pedestal file was given");
+        }
+        if (ped == -1) ped = 0;
+        if (thresh == -1) thresh = 10;
+      } else {
+        if (thresh != -1 || ped != -1) {
+          EUDAQ_WARN("Fixed pedestal values being ignored because a pedestal file was given");
+        }
+        if (mult == -1.0) mult = 2.0;
+        if (fname == "auto") {
+          fname = ReadLineFromFile(PEDESTAL_NUMBER_FILE);
+        }
+        if (fname.find_first_not_of("0123456789") == std::string::npos) {
+          std::string padding(6-fname.length(), '0');
+          fname = "run" + padding + fname + "-ped-db-b%.dat";
+        }
+        size_t n = fname.find('%');
+        if (n != std::string::npos) {
+          fname = std::string(fname, 0, n) + to_string(m_id) + std::string(fname, n+1);
+        }
+        if (fname[0] != '/' && fname[0] != '.') fname = "../pedestal/" + fname;
       }
-      if (fname != "" &&
-          fname.find_first_not_of("0123456789") == std::string::npos) {
-        std::string padding(6-fname.length(), '0');
-        fname = "run" + padding + fname + "-ped-db-b%.dat";
-      }
-      size_t n = fname.find('%');
-      if (n != std::string::npos) {
-        fname = std::string(fname, 0, n) + to_string(m_id) + std::string(fname, n+1);
-      }
-      if (fname != "") fname = "../pedestal/" + fname;
       pedestal_t peds = (fname == "") ? GeneratePedestals(thresh, ped)
         : ReadPedestals(fname, mult, m_det);
       LoadPedestals(peds);
@@ -180,7 +193,9 @@ namespace eudaq {
       else msg += " values = " + to_string(ped) + ", " + to_string(thresh);
       puts(msg.c_str());
       EUDAQ_INFO(msg);
+      if (fname == "") fname = to_string(ped) + ":" + to_string(thresh);
     }
+    return fname;
   }
 
   void EUDRBController::ResetBoard() {

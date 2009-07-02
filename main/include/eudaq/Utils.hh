@@ -11,7 +11,11 @@
 #include <sstream>
 #include <iomanip>
 #include <stdexcept>
+#include <fstream>
 #include <sys/types.h>
+
+#include "eudaq/Exception.hh"
+//#include "eudaq/Logger.hh"
 
 namespace eudaq {
 
@@ -204,6 +208,20 @@ namespace eudaq {
     }
     return result;
 #endif
+  }
+
+  std::string ReadLineFromFile(const std::string & fname);
+
+  template <typename T>
+  inline T ReadFromFile(const std::string & fname, const T & def = 0) {
+    return from_string(ReadLineFromFile(fname), def);
+  }
+
+  void WriteStringToFile(const std::string & fname, const std::string & val);
+
+  template <typename T>
+  inline void WriteToFile(const std::string & fname, const T & val) {
+    WriteStringToFile(fname, to_string(val));
   }
 
 }

@@ -2,6 +2,7 @@
 #include <fstream>
 #include "euRun.hh"
 #include "eudaq/OptionParser.hh"
+#include "eudaq/Utils.hh"
 #include "Colours.hh"
 
 static const char * statuses[] = {
@@ -48,23 +49,6 @@ int main(int argc, char ** argv) {
 
 namespace {
   static const char * GEOID_FILE = "GeoID.dat";
-
-  static unsigned ReadGeoID() {
-    unsigned result = 0;
-    std::ifstream file(GEOID_FILE);
-    if (file.is_open()) {
-      file >> result;
-      if (file.fail())
-        EUDAQ_THROW("Error GeoID, check permissions of file "
-                    + std::string(GEOID_FILE));
-      std::cout << "Read GeoID = " << result << std::endl;
-    } else {
-      EUDAQ_ERROR("Restarting GeoID from " + to_string(result) +
-                  " (Unable to open " + GEOID_FILE + ")");
-    }
-    return result;
-  }
-
 }
 
 RunConnectionDelegate::RunConnectionDelegate(RunControlModel * model) : m_model(model) {}
@@ -129,7 +113,7 @@ RunControlGUI::RunControlGUI(const std::string & listenaddress,
   connect(this, SIGNAL(StatusChanged(const QString &, const QString &)), this, SLOT(ChangeStatus(const QString &, const QString &)));
   connect(&m_statustimer, SIGNAL(timeout()), this, SLOT(timer()));
   m_statustimer.start(500);
-  txtGeoID->setText(QString::number(ReadGeoID()));
+  txtGeoID->setText(QString::number(eudaq::ReadFromFile(GEOID_FILE, 0U)));
   txtGeoID->installEventFilter(this);
 }
 
@@ -204,8 +188,7 @@ bool RunControlGUI::eventFilter(QObject *object, QEvent *event) {
     int newid = QInputDialog::getInteger(this, "Increment GeoID to:", "value", oldid+1, 0, 2147483647, 1, &ok);
     if (ok) {
       txtGeoID->setText(QString::number(newid));
-      std::ofstream file(GEOID_FILE);
-      file << newid << std::endl;
+      eudaq::WriteToFile(GEOID_FILE, newid);
     }
     return true;
   }

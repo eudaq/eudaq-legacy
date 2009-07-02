@@ -148,7 +148,7 @@ public:
       bool ok = true;
       for (size_t n_eudrb = 0; n_eudrb < m_boards.size(); n_eudrb++) {
         // give the first board ~20 seconds, then only wait 1 extra second for each other board
-        ok &= m_boards[n_eudrb]->WaitForReady(1.0 + 20.0 * (n_eudrb == 0));
+        ok &= m_boards[n_eudrb]->WaitForReady((n_eudrb == 0) ? 20.0 : 1.0);
       }
 
       std::cout << (ok ? "OK" : "*** Timeout ***") << std::endl;
@@ -164,8 +164,9 @@ public:
 //         boards[n_eudrb].vmes->Write(0, data);
 //       }
 
+      m_pedfiles.clear();
       for (size_t n_eudrb = 0; n_eudrb < m_boards.size(); n_eudrb++) {
-        m_boards[n_eudrb]->ConfigurePedestals(param);
+        m_pedfiles.push_back(m_boards[n_eudrb]->ConfigurePedestals(param));
       }
 
       std::cout << "...Configured (" << param.Name() << ")" << std::endl;
@@ -186,34 +187,26 @@ public:
       std::cout << "Start Run: " << param << std::endl;
       // EUDRB startup (activation of triggers etc)
       RawDataEvent ev(RawDataEvent::BORE("EUDRB", m_run));
+
       std::string version = to_string(m_boards[0]->Version());
+      std::string det = m_boards[0]->Det();
+      std::string mode = m_boards[0]->Mode();
       for (size_t i = 1; i < m_boards.size(); ++i) {
         std::string ver = to_string(m_boards[i]->Version());
         if (ver != version) version = "Mixed";
-      }
-      ev.SetTag("VERSION", to_string(version));
-      std::string det = m_boards[0]->Det();
-      for (size_t i = 1; i < m_boards.size(); ++i) {
         if (m_boards[i]->Det() != det) det = "Mixed";
-      }
-      ev.SetTag("DET", det);
-      for (size_t i = 0; i < m_boards.size(); ++i) {
-        ev.SetTag("DET" + to_string(i), m_boards[i]->Det());
-      }
-      std::string mode = m_boards[0]->Mode();
-      for (size_t i = 1; i < m_boards.size(); ++i) {
         if (m_boards[i]->Mode() != mode) mode = "Mixed";
       }
+      ev.SetTag("VERSION", to_string(version));
+      ev.SetTag("DET", det);
       ev.SetTag("MODE", mode);
-      for (size_t i = 0; i < m_boards.size(); ++i) {
-        ev.SetTag("MODE" + to_string(i), m_boards[i]->Mode());
-      }
       ev.SetTag("BOARDS", to_string(m_boards.size()));
-      //ev.SetTag("ROWS", to_string(256))
-      //ev.SetTag("COLS", to_string(66))
-      //ev.SetTag("MATS", to_string(4))
       for (size_t i = 0; i < m_boards.size(); ++i) {
         ev.SetTag("ID" + to_string(i), to_string(i + m_idoffset));
+        if (version == "Mixed") ev.SetTag("VERSION" + to_string(i), to_string(m_boards[i]->Version()));
+        if (det     == "Mixed") ev.SetTag("DET" + to_string(i), m_boards[i]->Det());
+        if (mode    == "Mixed") ev.SetTag("MODE" + to_string(i), m_boards[i]->Mode());
+        if (m_pedfiles[i] != "") ev.SetTag("PEDESTAL" + to_string(i), m_pedfiles[i]);
       }
       SendEvent(ev);
       eudaq::mSleep(100);
@@ -277,6 +270,7 @@ public:
   std::vector<counted_ptr<EUDRBController> > m_boards;
   //int fdOut;
   int m_idoffset, m_version, m_master;
+  std::vector<std::string> m_pedfiles;
 };
 
 int main(int /*argc*/, const char ** argv) {

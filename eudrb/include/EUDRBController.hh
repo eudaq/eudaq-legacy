@@ -21,7 +21,7 @@ namespace eudaq {
     std::string Det() const;
 
     void Configure(const eudaq::Configuration & param, int master);
-    void ConfigurePedestals(const eudaq::Configuration & param);
+    std::string ConfigurePedestals(const eudaq::Configuration & param);
     void ResetTriggerProc();
     void ResetBoard();
     bool WaitForReady(double timeout = 20.0);
