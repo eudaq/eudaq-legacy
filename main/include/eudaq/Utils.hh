@@ -14,9 +14,6 @@
 #include <fstream>
 #include <sys/types.h>
 
-#include "eudaq/Exception.hh"
-//#include "eudaq/Logger.hh"
-
 namespace eudaq {
 
   std::string ucase(const std::string &);

@@ -1,5 +1,6 @@
 #include "eudaq/Utils.hh"
 #include "eudaq/Platform.hh"
+#include "eudaq/Exception.hh"
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
