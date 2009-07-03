@@ -658,22 +658,22 @@ namespace tlu {
       int bit = 1 << i;
       if (m_mask & bit) leds[i].left = 1;
       if (i >= TLU_LEMO_DUTS) {
-	leds[i].right = leds[i].left;
-	continue;
+        leds[i].right = leds[i].left;
+        continue;
       }
       int ipsel = (m_ipsel >> (2*i)) & 3;
       switch (ipsel) {
       case IN_RJ45:
-	leds[i].right = leds[i].left;
-	leds[i].trig = 1;
-	break;
+        leds[i].right = leds[i].left;
+        leds[i].trig = 1;
+        break;
       case IN_LEMO:
-	leds[i].busy = leds[i].left;
-	leds[i].trig = 1;
-	break;
+        leds[i].busy = leds[i].left;
+        leds[i].trig = 1;
+        break;
       case IN_HDMI:
-	leds[i].trig = 2;
-	break;
+        leds[i].trig = 2;
+        break;
       }
     }
     //std::cout << "LEDS: " << to_string(leds) << std::endl;
@@ -695,20 +695,20 @@ namespace tlu {
     if (m_version == 1) {
       int ledval = 0;
       for (int i = 0; i < TLU_DUTS; ++i) {
-	if (leds[i].left) ledval |= 1 << i;
+        if (leds[i].left) ledval |= 1 << i;
       }
       WriteRegister(m_addr->TLU_DUT_LED_ADDRESS, ledval);
     } else {
       int dutled = 0, lemoled = 0;
       //std::cout << "LED:";
       for (int i = 0; i < TLU_DUTS; ++i) {
-	//std::cout << ' ' << leds[i];
-	if (leds[i].left) dutled |= 1 << (2*i+1);
-	if (leds[i].right) dutled |= 1 << (2*i);
-	if (leds[i].rst) lemoled |= 1 << (2*i);
-	if (leds[i].busy) lemoled |= 1 << (2*i+1);
-	int swap = ((leds[i].trig >> 1) & 1) | ((leds[i].trig & 1) << 1);
-	lemoled |= swap << (2*i+8);
+        //std::cout << ' ' << leds[i];
+        if (leds[i].left) dutled |= 1 << (2*i+1);
+        if (leds[i].right) dutled |= 1 << (2*i);
+        if (leds[i].rst) lemoled |= 1 << (2*i);
+        if (leds[i].busy) lemoled |= 1 << (2*i+1);
+        int swap = ((leds[i].trig >> 1) & 1) | ((leds[i].trig & 1) << 1);
+        lemoled |= swap << (2*i+8);
       }
       //std::cout << "\n  dut=" << hexdec(dutled) << ", lemo=" << hexdec(lemoled) << std::endl;
       // Swap the two LSBs, to work around routing bug on TLU
@@ -719,16 +719,16 @@ namespace tlu {
       lemoled ^= 0xff;
       //std::cout << "  dut=" << hexdec(dutled) << ", lemo=" << hexdec(lemoled) << std::endl;
       try {
-	WritePCA955(m_addr->TLU_I2C_BUS_MOTHERBOARD, m_addr->TLU_I2C_BUS_MOTHERBOARD_LED_IO, dutled);
+        WritePCA955(m_addr->TLU_I2C_BUS_MOTHERBOARD, m_addr->TLU_I2C_BUS_MOTHERBOARD_LED_IO, dutled);
       } catch (const eudaq::Exception & e) {
-	std::cerr << "Error writing DUT LEDs: " << e.what() << std::endl;
+        std::cerr << "Error writing DUT LEDs: " << e.what() << std::endl;
       }
       unsigned long addr = m_addr->TLU_I2C_BUS_LEMO_LED_IO;
       if (m_version < 3) addr = m_addr->TLU_I2C_BUS_LEMO_LED_IO_VB;
       try {
-	WritePCA955(m_addr->TLU_I2C_BUS_LEMO, addr, lemoled);
+        WritePCA955(m_addr->TLU_I2C_BUS_LEMO, addr, lemoled);
       } catch (const eudaq::Exception & e) {
-	std::cerr << "Error writing LEMO LEDs: " << e.what() << std::endl;
+        std::cerr << "Error writing LEMO LEDs: " << e.what() << std::endl;
       }
     }
   }
