@@ -102,6 +102,7 @@ public:
       trig_rollover = param.Get("TrigRollover", 0);
       timestamps = param.Get("Timestamps", 1);
       readout_delay = param.Get("ReadoutDelay", 100);
+      timestamp_per_run = param.Get("TimestampPerRun", false);
       // ***
       m_tlu->SetFirmware(param.Get("BitFile", ""));
       m_tlu->SetVersion(param.Get("Version", 0));
@@ -114,6 +115,7 @@ public:
       m_tlu->SetVetoMask(veto_mask);
       m_tlu->SetAndMask(and_mask);
       m_tlu->SetOrMask(or_mask);
+      m_tlu->ResetTimestamp();
 
       // by dhaas
       sleep(2);
@@ -145,6 +147,8 @@ public:
       ev.SetTag("ReadoutDelay", to_string(readout_delay));
       sleep(5); // temporarily, to fix startup with EUDRB
       //      SendEvent(TLUEvent::BORE(m_run).SetTag("Interval",trigger_interval).SetTag("DUT",dut_mask));
+      if (timestamp_per_run) m_tlu->ResetTimestamp();
+      ev.SetTag("TimestampZero", to_string(m_tlu->TimestampZero()));
       SendEvent(ev);
       sleep(5);
       m_tlu->ResetTriggerCounter();
@@ -219,7 +223,7 @@ private:
   unsigned m_run, m_ev;
   unsigned trigger_interval, dut_mask, veto_mask, and_mask, or_mask;
   unsigned trig_rollover, readout_delay;
-  bool timestamps, done;
+  bool timestamps, done, timestamp_per_run;
   bool TLUStarted;
   bool TLUJustStopped;
   unsigned long long lasttime;

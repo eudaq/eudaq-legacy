@@ -144,7 +144,8 @@ namespace tlu {
     m_lasttime(0),
     m_errorhandler(errorhandler),
     m_version(0),
-    m_addr(0)
+    m_addr(0),
+    m_timestampzero(0)
   {
     errorhandleraborts(errorhandler == 0);
     for (int i = 0; i < TLU_TRIGGER_INPUTS; ++i) {
@@ -232,13 +233,14 @@ namespace tlu {
     // Write to reset a few times...
     //for (int i=0; i<10 ; i++) {
     //mysleep (100);
-    mSleep(1);
+    mSleep(20);
     WriteRegister(m_addr->TLU_DUT_RESET_ADDRESS, 0x3F);
     WriteRegister(m_addr->TLU_DUT_RESET_ADDRESS, 0x00);
     //}
 
     // Reset pointers
-    WriteRegister(m_addr->TLU_RESET_REGISTER_ADDRESS, 0x0F);
+    WriteRegister(m_addr->TLU_RESET_REGISTER_ADDRESS, (1 << m_addr->TLU_TRIGGER_COUNTER_RESET_BIT)
+                  | (1 << m_addr->TLU_BUFFER_POINTER_RESET_BIT) | (1 << m_addr->TLU_TRIGGER_FSM_RESET_BIT));
     WriteRegister(m_addr->TLU_RESET_REGISTER_ADDRESS, 0x00);
 
     WriteRegister(m_addr->TLU_INTERNAL_TRIGGER_INTERVAL, m_triggerint);
@@ -309,12 +311,14 @@ namespace tlu {
   }
 
   void TLUController::ResetScalers() {
-//#ifdef TRIGGER_SCALERS_RESET_BIT
     WriteRegister(m_addr->TLU_RESET_REGISTER_ADDRESS, 1 << m_addr->TLU_TRIGGER_SCALERS_RESET_BIT);
     WriteRegister(m_addr->TLU_RESET_REGISTER_ADDRESS, 0);
-//#else
-//    EUDAQ_THROW("Not implemented");
-//#endif
+  }
+
+  void TLUController::ResetTimestamp() {
+    WriteRegister(m_addr->TLU_RESET_REGISTER_ADDRESS, 1 << m_addr->TLU_TIMESTAMP_RESET_BIT);
+    m_timestampzero = eudaq::Time::Current();
+    WriteRegister(m_addr->TLU_RESET_REGISTER_ADDRESS, 0);
   }
 
   void TLUController::ResetUSB() {
