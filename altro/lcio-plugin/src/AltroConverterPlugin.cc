@@ -1,13 +1,18 @@
-#include "eudaq/AltroConverterPlugin.hh"
+#include "eudaq/DataConverterPlugin.hh"
 #include "eudaq/Exception.hh"
 #include "eudaq/RawDataEvent.hh"
 #include "eudaq/Logger.hh"
 
-#include <IMPL/LCEventImpl.h>
-#include <IMPL/TrackerRawDataImpl.h>
-#include <IMPL/LCCollectionVec.h>
-#include <EVENT/LCIO.h>
-#include <IMPL/LCFlagImpl.h>
+#if USE_LCIO
+#  include <IMPL/LCEventImpl.h>
+#  include <IMPL/TrackerRawDataImpl.h>
+#  include <IMPL/LCCollectionVec.h>
+#  include <EVENT/LCIO.h>
+#  include <IMPL/LCFlagImpl.h>
+#  include <EVENT/LCEvent.h>
+#  include <Exceptions.h>
+#  include <lcio.h>
+#endif
 
 #include <iostream>
 #include <cmath>
@@ -16,9 +21,116 @@
 namespace eudaq
 {
 
-AltroConverterPlugin const AltroConverterPlugin::m_altroconverterplugininstance;
+/** A helper class to read the byte sequence of big endian 32 bit data as 10 bit, 32 bit or
+ *  40 bit data.
+ *  This class only contains a reference to the data, not a copy, to avoid copying of the data.
+ */
 
-  UCharBigEndianVec::UCharBigEndianVec(std::vector<unsigned char> const & datavec, 
+class UCharBigEndianVec
+{
+private:
+
+    /** A reference to the data vector.
+     *  Can only be accessed through the GetNNbitWord() functions.
+     */
+    std::vector<unsigned char> const & _bytedata;
+
+protected:
+    bool _altrowordsreversed;
+
+public:
+    /** The constructor. 
+     *  It reqires a reference of the actual data vector.
+     */
+  UCharBigEndianVec(std::vector<unsigned char> const & datavec, bool altrowordsreversed);
+
+    /// size in 32 bit words
+    size_t Size(){ return _bytedata.size() / 4 ; }
+    
+
+    /** Helper function to get a 40 bit word with correct endinanness out of the byte vector.
+     *  The offset32bit is the position of the first 10 bit word within the 32bit stream
+     */
+    unsigned short Get10bitWord(unsigned int index10bit, unsigned int n40bitwords,
+				unsigned int offset32bit) const; 
+
+    /** Helper function to get a 32 bit word with correct endinanness out of the byte vector.
+     */
+    unsigned int Get32bitWord(unsigned int index32bit) const;
+
+    /** Helper function to get a 40 bit word with correct endinanness out of the byte vector.
+     *  The offset32bit is the position of the first 40 bit word within the 32bit stream
+     */
+    unsigned long long int Get40bitWord(unsigned int index40bit, unsigned int n40bitwords, 
+					unsigned int offset32bit) const;
+};
+
+/** Implementation of the DataConverterPlugin to convert an eudaq::Event
+ *  to an lcio::event.
+ *
+ *  The class is implemented as a singleton because it manly
+ *  contains the conversion code, which is in the getLcioEvent()
+ *  function. There has to be one static instance, which is 
+ *  registered at the pluginManager. This is automatically done by the
+ *  inherited constructor of the DataConverterPlugin.
+ */
+
+class AltroConverterPlugin : public DataConverterPlugin
+{
+    
+public:
+    /** Returns the event converted to lcio. This is the working horse and the 
+     *  main part of this plugin.
+     */
+    virtual bool GetLCIOSubEvent( lcio::LCEvent & lcioevent,
+						  eudaq::Event const & eudaqevent ) const;
+
+    /** Returns the event converted to eudaq::StandardEvent.
+     *  Only contains the primitive implementation for the dummy StandardEvent.
+     */
+    virtual bool GetStandardSubEvent( StandardEvent & standardevent,
+				      eudaq::Event const & eudaqevent ) const;
+
+
+    /** Nested helper class: Exception which is thrown in case of bad data block
+     */
+    class BadDataBlockException : public std::exception 
+    {
+     protected:
+	BadDataBlockException(){}
+	std::string message ;
+
+     public:
+	virtual ~BadDataBlockException() throw() {}
+	BadDataBlockException( const std::string& text ){ message = "BadDataBlockException: " + text ;}
+	virtual const char* what() const  throw() { return  message.c_str() ; }
+    };
+
+    /** The empty destructor. Need to add it to make it virtual.
+     */
+    virtual ~AltroConverterPlugin(){}
+
+protected:
+    /** The private constructor. The only time it is called is when the
+     *  one single instance is created, which lives within the object.
+     *  It calls the DataConverterPlugin constructor with the
+     *  accoring event type string. This automatically registers
+     *  the plugin to the plugin manager.
+     */
+    AltroConverterPlugin() : DataConverterPlugin("AltroEvent"){}
+
+
+private:
+    /** The one single instance of the AltroConverterPlugin.
+     *  It has to be created below.
+     */
+    static AltroConverterPlugin const m_instance;
+    
+};
+
+AltroConverterPlugin const AltroConverterPlugin::m_instance;
+
+UCharBigEndianVec::UCharBigEndianVec(std::vector<unsigned char> const & datavec, 
 				       bool altrowordsreversed) :
     _bytedata(datavec) , _altrowordsreversed(altrowordsreversed)
 {
@@ -115,23 +227,16 @@ unsigned short UCharBigEndianVec::Get10bitWord(unsigned int index10bit, unsigned
     
 }
 
-lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqevent ) const
+#if USE_LCIO
+bool AltroConverterPlugin::GetLCIOSubEvent( lcio::LCEvent & lcioevent , eudaq::Event const & eudaqevent) const
 {
     //try to cast the eudaq event to RawDataEvent
-    eudaq::RawDataEvent const *rawdataevent = dynamic_cast<eudaq::RawDataEvent const *>(eudaqevent);
-    if (rawdataevent == 0) //cast failed, throw an exception
-	EUDAQ_THROW(std::string("AltroConverterPlugin::GetLCIOEvent: Error") + 
-		    " given event is not an eudaq::RawDataEvent");
-    
-    //check type of RawDataEvent
-    if (rawdataevent->GetType() != "AltroEvent")
-	EUDAQ_THROW(std::string("AltroConverterPlugin::GetLCIOEvent: Error") + 
-		    " given event is not an AltroEvent");
+    eudaq::RawDataEvent const & rawdataevent = dynamic_cast<eudaq::RawDataEvent const &>(eudaqevent);
 
     // set the flag whether altro words are in reversed order
     // this depends on the format version
     // odd formatversions > 410 are reversed
-    int formatversion = atoi( eudaqevent->GetTag("Data format version","0" ).c_str() );
+    int formatversion = atoi( eudaqevent.GetTag("Data format version","0" ).c_str() );
 
     // note: atoi will return 0 if it fails, so formatversion is 0 if the version was not
     // set or was not an integer. Throw an exception in this case
@@ -154,15 +259,6 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 	altrowordsreversed =false;
     }
     
-
- 
-    lcio::LCEventImpl * lcioevent = new lcio::LCEventImpl;
-//    lcioevent->setEventNumber( eudaqevent->GetEventNumber () ); done later
-    lcioevent->setRunNumber(    eudaqevent->GetRunNumber () );
-    lcioevent->setDetectorName( "TPC with Pads and Altro");
-    lcioevent->setTimeStamp( eudaqevent->GetTimestamp() );
-
-
     lcio::LCCollectionVec * altrocollection = new lcio::LCCollectionVec(lcio::LCIO::TRACKERRAWDATA);
 
     // set the flags that cellID1 should be stored
@@ -173,9 +269,9 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
     try 
     {
       // loop all data blocks
-      for (size_t block = 0 ; block < rawdataevent->NumBlocks(); block++)
+      for (size_t block = 0 ; block < rawdataevent.NumBlocks(); block++)
 	{
-	  std::vector<unsigned char> bytedata = rawdataevent->GetBlockUChar(block);
+	  std::vector<unsigned char> bytedata = rawdataevent.GetBlock(block);
 	  UCharBigEndianVec altrodatavec(bytedata, altrowordsreversed);
 	  
 	  // interpret the byte sequence
@@ -209,13 +305,11 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 	  if (headerlength > 4)
 	    tlu_eventnumber = altrodatavec.Get32bitWord(6);
 	  if (tlu_eventnumber != 0)
-	    {
-	      lcioevent->setEventNumber( tlu_eventnumber  );
-	    }
-	  else // tlu event number is not set, use the software number
-	    {
-	      lcioevent->setEventNumber( eudaqevent->GetEventNumber () );
-	    } 
+	  {
+	      // check consistency
+	      // if ( lcioevent.getEventNumber() != tlu_eventnumber  )
+	      // what to do ?
+	  }
 	  
 	  // the start position of the rcu block in 32bit bords
 	  // the two extra words are the event length and the header length, which are not counted
@@ -342,7 +436,7 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
 		  
 		  //if (channel_is_broken) 
 		  //  {
-		  //    std::cout << "skipping broken altro block on channel " << channelnumber << " in event " << lcioevent->getEventNumber() << std::endl;
+		  //    std::cout << "skipping broken altro block on channel " << channelnumber << " in event " << lcioevent.getEventNumber() << std::endl;
 		  //  }
 		  //else // alto block is ok process it
 		  {
@@ -436,12 +530,11 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
     }// try
     catch (BadDataBlockException &e)
     {
-      std::cout << "Event " <<  lcioevent->getEventNumber() << " contains bad data block, skipping it " 
+      std::cout << "Event " <<  lcioevent.getEventNumber() << " contains bad data block, skipping it " 
 		<< e.what()
 		<< std::endl;
 	delete altrocollection;
-	delete lcioevent;
-	return 0;
+	return false;
     }
 
     // If the collection is empty, delete the empty collection and event
@@ -449,22 +542,27 @@ lcio::LCEvent * AltroConverterPlugin::GetLCIOEvent( eudaq::Event const * eudaqev
     if ( altrocollection->getNumberOfElements() == 0 )
     {
 	delete altrocollection;
-	delete lcioevent;
-	return 0;
+	return false;
     }
     
     // If the collection is not empty, add the collection to the event and return the event
-    lcioevent->addCollection(altrocollection,"AltroRawData");
-    return lcioevent;
+    lcioevent.addCollection(altrocollection,"AltroRawData");
+    return true;
 }
+#else // if USE_LCIO
+bool AltroConverterPlugin::GetLCIOSubEvent( lcio::LCEvent & , eudaq::Event const & ) const
+{
+    return false;
+}
+#endif // IF USE_LCIO
 
-StandardEvent * AltroConverterPlugin::GetStandardEvent( eudaq::Event const * ) const
+bool AltroConverterPlugin::GetStandardSubEvent( StandardEvent &, eudaq::Event const & ) const
 {
 //    StandardEvent * se = new StandardEvent;
 //    se->b = eudaqevent->GetEventNumber ();
 //
 //    return se;
-  return 0;
+    return false;
 }
 
 } //namespace eudaq
