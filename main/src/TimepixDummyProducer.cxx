@@ -89,7 +89,7 @@ void TimepixDummyProducer::SetRunNumber(unsigned int runnumber)
 
 void TimepixDummyProducer::Event(unsigned short *timepixdata)
 {
-    eudaq::RawDataEvent ev("TimepixEvent",GetRunNumber(), GetIncreaseEventNumber() );
+    eudaq::RawDataEvent ev("Timepix",GetRunNumber(), GetIncreaseEventNumber() );
 
     // a 128 kB data block, in this the data is stored in little endian
     unsigned char serialdatablock[131072];
@@ -140,13 +140,13 @@ void TimepixDummyProducer::OnStartRun(unsigned param)
 {
     SetRunNumber( param );
     SetEventNumber( 1 ); // has to be 1 because BORE is event 0 :-(
-    SendEvent(eudaq::RawDataEvent::BORE( "TimepixEvent", param )); // send param instead of GetRunNumber
+    SendEvent(eudaq::RawDataEvent::BORE( "Timepix", param )); // send param instead of GetRunNumber
     std::cout << "Start Run: " << param << std::endl;
 }
 
 void TimepixDummyProducer::OnStopRun()
 {
-    SendEvent(eudaq::RawDataEvent::EORE("TimepixEvent", GetRunNumber(), GetEventNumber()));
+    SendEvent(eudaq::RawDataEvent::EORE("Timepix", GetRunNumber(), GetEventNumber()));
     std::cout << "Stop Run" << std::endl;
 }
  
