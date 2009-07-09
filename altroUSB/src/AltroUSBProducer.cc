@@ -162,6 +162,8 @@ void AltroUSBProducer::OnConfigure(const eudaq::Configuration & param)
 	return;
     }
 
+    SetStatus(eudaq::Status::LVL_WARN, "Wait while configuring ...");    
+
     // get the file names from the config
     std::string configdaqfilename   =  param.Get("ConfigDaq",   CONFIG_DAQ);
     std::string configaltrofilename =  param.Get("ConfigAltro", CONFIG_ALTRO);
@@ -254,6 +256,7 @@ void AltroUSBProducer::OnStartRun(unsigned param)
 	return;
     }
     
+    SetStatus(eudaq::Status::LVL_WARN, "Wait until run has started...");    
 
     SetRunNumber( param );
     SetEventNumber( 0 ); // has to be 1 because BORE is event 0 :-(
@@ -282,6 +285,9 @@ void AltroUSBProducer::OnStopRun()
 	SetStatus(eudaq::Status::LVL_WARN, "Cannot stop run, no run active");	
 	return;
     }
+
+    SetStatus(eudaq::Status::LVL_WARN, "Wait until run has stopped...");    
+
 
     // Tell the main loop to stop the run
     CommandPush( STOP_RUN );

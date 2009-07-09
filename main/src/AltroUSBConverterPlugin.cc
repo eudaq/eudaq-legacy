@@ -42,7 +42,7 @@ public:
 
     /// The number of 40 bit words (Altro words)
     // There are always 64 bits which hold a 40 bit word
-    size_t Size(){ return _bytedata.size() / 8 ; }
+    size_t Size() const { return _bytedata.size() / 8 ; };
     
 
     /** Helper function to get a 40 bit word out of the byte vector.
@@ -107,6 +107,8 @@ protected:
      *  the plugin to the plugin manager.
      */
     AltroUSBConverterPlugin() : DataConverterPlugin("AltroUSB"){}
+
+    void DumpDataBlock(UCharAltroUSBVec const & rawdatavec) const;
 
 
 private:
@@ -191,9 +193,13 @@ bool AltroUSBConverterPlugin::GetLCIOSubEvent( lcio::LCEvent & lcioevent , eudaq
 	for (size_t block = 0 ; block < rawdataevent.NumBlocks(); block++) 
 	{
 	    std::vector<unsigned char> bytedata = rawdataevent.GetBlock(block);
+	    std::cout << "Raw block has "<< bytedata.size() << " bytes"<<std::endl;
 	    UCharAltroUSBVec altrodatavec(bytedata);
 
 	    int altrotrailerposition=altrodatavec.Size() - 1;
+	    std::cout << "Altro block has " << altrodatavec.Size() << " 40bit words"<< std::endl;
+	    std::cout << "Last altro word is 0x" << std::hex <<altrodatavec.Get40bitWord(altrotrailerposition)
+		      << std::dec << std::endl;
 	    
 	    // helper variable to detect endless loops
 	    int previous_altrotrailer = -1;
@@ -216,6 +222,11 @@ bool AltroUSBConverterPlugin::GetLCIOSubEvent( lcio::LCEvent & lcioevent , eudaq
 		// test if we realy have the altro trailer word
 		if ( (altrotrailer & 0xFFFC00F000ULL) != 0xAAA800A000ULL )
 		{
+		    std::cout << "Altro trailer is 0x"<< std::hex 
+			      << altrotrailer << ", signature "
+			      <<  (altrotrailer & 0xFFFC00F000ULL)
+			      << std::dec << std::endl;
+		    DumpDataBlock(altrodatavec);
 		    throw BadDataBlockException("Invalid Altro trailer word");
 		}
 		
@@ -341,6 +352,18 @@ bool AltroUSBConverterPlugin::GetStandardSubEvent( StandardEvent &, eudaq::Event
 //
 //    return se;
     return false;
+}
+
+void AltroUSBConverterPlugin::DumpDataBlock( UCharAltroUSBVec const & rawdatavec ) const
+{
+    for (size_t i=0; i<rawdatavec.Size(); i++)
+    {
+	std::cout << i << "\t 0x" << std::hex << rawdatavec.Get40bitWord(i)
+		  << "\t 0x"<< rawdatavec.Get10bitWord(4*i)
+		  << "\t 0x"<< rawdatavec.Get10bitWord(4*i+1)
+		  << "\t 0x"<< rawdatavec.Get10bitWord(4*i+2)
+		  << "\t 0x"<< rawdatavec.Get10bitWord(4*i+3) << std::dec << std::endl;
+    }
 }
 
 } //namespace eudaq
