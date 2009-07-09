@@ -32,6 +32,7 @@ namespace eudaq {
     static PluginManager & GetInstance();
 
     static void Initialize(const DetectorEvent &);
+    static lcio::LCRunHeader * GetLCRunHeader(const DetectorEvent &);
     static StandardEvent ConvertToStandard(const DetectorEvent &);
     static lcio::LCEvent * ConvertToLCIO(const DetectorEvent &);
 

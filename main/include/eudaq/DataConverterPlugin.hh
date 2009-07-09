@@ -3,7 +3,7 @@
 
 #include "eudaq/StandardEvent.hh"
 
-namespace EVENT { class LCEvent; }
+namespace EVENT { class LCEvent; class LCRunHeader; }
 namespace lcio { using namespace EVENT; }
 
 #include <string>
@@ -29,6 +29,8 @@ namespace eudaq{
     typedef std::pair<unsigned, std::string> t_eventid;
 
     virtual void Initialize(eudaq::Event const &, eudaq::Configuration const &) {}
+
+    virtual void GetLCIORunHeader(lcio::LCRunHeader &, eudaq::Event const &, eudaq::Configuration const &) const {}
 
     /** Returns the LCIO version of the event.
      */

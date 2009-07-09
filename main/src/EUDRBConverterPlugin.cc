@@ -2,6 +2,7 @@
 #include "eudaq/Exception.hh"
 #include "eudaq/RawDataEvent.hh"
 #include "eudaq/EUDRBEvent.hh"
+#include "eudaq/Configuration.hh"
 #include "eudaq/Logger.hh"
 
 #if USE_LCIO
@@ -22,6 +23,8 @@
 #  include "EUTelEventImpl.h"
 #  include "EUTelSparseDataImpl.h"
 #  include "EUTelSimpleSparsePixel.h"
+#  include "EUTelRunHeaderImpl.h"
+using eutelescope::EUTELESCOPE;
 #endif
 
 #include <iostream>
@@ -129,6 +132,7 @@ namespace eudaq {
       if (id >= m_info.size() || m_info[id].m_version < 1) EUDAQ_THROW("Unrecognised ID ("+to_string(id)+", num="+to_string(m_info.size())+") converting EUDRB event");
       return m_info[id];
     }
+    void ConvertLCIOHeader(lcio::LCRunHeader & header, eudaq::Event const & bore, eudaq::Configuration const & conf) const;
     bool ConvertStandard(StandardEvent & stdEvent, const Event & eudaqEvent) const;
     StandardPlane ConvertPlane(const std::vector<unsigned char> & data, unsigned id) const {
       const BoardInfo & info = GetInfo(id);
@@ -188,7 +192,11 @@ namespace eudaq {
       return ConvertStandard(result, source);
     }
 
-#if USE_LCIO
+#if USE_LCIO && USE_EUTELESCOPE
+    virtual void GetLCIORunHeader(lcio::LCRunHeader & header, eudaq::Event const & bore, eudaq::Configuration const & conf) const {
+      return ConvertLCIOHeader(header, bore, conf);
+    }
+
     virtual bool GetLCIOSubEvent(lcio::LCEvent & lcioEvent, const Event & eudaqEvent) const {
       return ConvertLCIO(lcioEvent, eudaqEvent);
     }
@@ -212,7 +220,11 @@ namespace eudaq {
       return ConvertStandard(result, source);
     }
 
-#if USE_LCIO
+#if USE_LCIO && USE_EUTELESCOPE
+    virtual void GetLCIORunHeader(lcio::LCRunHeader & header, eudaq::Event const & bore, eudaq::Configuration const & conf) const {
+      return ConvertLCIOHeader(header, bore, conf);
+    }
+
     virtual bool GetLCIOSubEvent(lcio::LCEvent & lcioEvent, const Event & eudaqEvent) const {
       return ConvertLCIO(lcioEvent, eudaqEvent);
     }
@@ -322,7 +334,28 @@ namespace eudaq {
     }
   }
 
-#if USE_LCIO
+#if USE_LCIO && USE_EUTELESCOPE
+
+  void EUDRBConverterBase::ConvertLCIOHeader(lcio::LCRunHeader & header, eudaq::Event const & bore, eudaq::Configuration const & /*conf*/) const {
+    eutelescope::EUTelRunHeaderImpl runHeader(&header);
+    runHeader.setDAQHWName(EUTELESCOPE::EUDRB);
+    runHeader.setEUDRBMode(bore.GetTag("MODE"));
+    runHeader.setEUDRBDet(bore.GetTag("DET"));
+    unsigned numplanes = bore.GetTag("BOARDS", 0);
+    runHeader.setNoOfDetector(numplanes);
+    std::vector<int> xMin(numplanes, 0), xMax(numplanes, 255), yMin(numplanes, 0), yMax(numplanes, 255);
+    for (unsigned i = 0; i < numplanes; ++i) {
+      const int id = bore.GetTag("ID" + to_string(i), i);
+      const BoardInfo & info = GetInfo(id);
+      xMax[i] = info.Sensor().width - 1;
+      yMax[i] = info.Sensor().height - 1;
+    }
+    runHeader.setMinX(xMin);
+    runHeader.setMaxX(xMax);
+    runHeader.setMinY(yMin);
+    runHeader.setMaxY(yMax);
+  }
+
   bool EUDRBConverterBase::ConvertLCIO(lcio::LCEvent & result, const Event & source) const {
 
     if (source.IsBORE()) {
@@ -333,8 +366,6 @@ namespace eudaq {
       return true;
     }
     // If we get here it must be a data event
-
-#if USE_EUTELESCOPE
 
     result.parameters().setValue( eutelescope::EUTELESCOPE::EVENTTYPE, eutelescope::kDE );
 
@@ -607,11 +638,6 @@ namespace eudaq {
     }
 
     return true;
-#else
-    (void)result;
-    EUDAQ_ERROR("EUDAQ was not compiled with EUTelescope support: cannot convert EUDRB event to LCIO format");
-    return false;
-#endif
   }
 #endif
 

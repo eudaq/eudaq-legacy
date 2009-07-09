@@ -5,6 +5,13 @@
 #if USE_LCIO
 #  include "lcio.h"
 #  include "IMPL/LCEventImpl.h"
+#  include "IMPL/LCRunHeaderImpl.h"
+#endif
+
+#if USE_EUTELESCOPE
+#  include "EUTELESCOPE.h"
+#  include "EUTelRunHeaderImpl.h"
+using eutelescope::EUTELESCOPE;
 #endif
 
 //#include <iostream>
@@ -46,6 +53,31 @@ namespace eudaq {
       GetInstance().GetPlugin(subev).Initialize(subev, conf);
     }
   }
+
+#if USE_LCIO && USE_EUTELESCOPE
+  lcio::LCRunHeader * PluginManager::GetLCRunHeader(const DetectorEvent & bore) {
+    IMPL::LCRunHeaderImpl * lcHeader = new IMPL::LCRunHeaderImpl;
+    lcHeader->setRunNumber(bore.GetRunNumber());
+    lcHeader->setDetectorName("EUTelescope");
+    eutelescope::EUTelRunHeaderImpl runHeader(lcHeader);
+    runHeader.setDateTime();
+    runHeader.setDataType(EUTELESCOPE::DAQDATA);
+    runHeader.setDAQSWName(EUTELESCOPE::EUDAQ);
+
+    const eudaq::Configuration conf(bore.GetTag("CONFIG"));
+    runHeader.setGeoID(conf.Get("GeoID", 0));
+
+    for (size_t i = 0; i < bore.NumEvents(); ++i) {
+      const eudaq::Event & subev = *bore.GetEvent(i);
+      GetInstance().GetPlugin(subev).GetLCIORunHeader(*lcHeader, subev, conf);
+    }
+    return lcHeader;
+  }
+#else
+  lcio::LCRunHeader * PluginManager::GetLCRunHeader(const DetectorEvent &) {
+    return 0;
+  }
+#endif
 
   StandardEvent PluginManager::ConvertToStandard(const DetectorEvent & dev) {
     StandardEvent event(dev.GetRunNumber(), dev.GetEventNumber(), dev.GetTimestamp());
