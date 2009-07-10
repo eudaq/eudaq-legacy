@@ -10,16 +10,18 @@ DESTHOST=mvme6100
 DESTPATH=eudaq/pedestal
 LASTFILE=pedestal.dat
 
-RUNNUM=$1
-TMP=0000000000
-RUNNUM0=${TMP:0:$((${#RRUNNUM} > 6 ? 0 : 6 - ${#RUNNUM}))}${RUNNUM}
-
 if [ $# != 1 ]; then
   echo "usage $0 runnumber"
   echo "Converts a run, calculates pedestals, uploads for use in the DAQ, and updates the latest pedestal setting"
   echo "You should make sure you have an ssh key set up to allow you to log into ${SRCUSER}@${SRCHOST} without a password"
   exit 1
 fi
+
+RUNNUM=$1
+# Some zeroes, for padding
+TMP=000000
+# Zero-padded run number, for the pedestal file names
+RUNNUM0=${TMP:0:$((${#RRUNNUM} > 6 ? 0 : 6 - ${#RUNNUM}))}${RUNNUM}
 
 echo "Converting run ${RUNNUM}"
 ssh -x ${SRCUSER}@${SRCHOST} "cd ${SCRIPTPATH} && source ${ENVFILE} && ./submit-converter ${RUNNUM}" || exit 1
