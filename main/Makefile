@@ -24,6 +24,10 @@ ifeq ($(PLATFORM),WIN32)
 EXTERNAL_LIBS += Ws2_32
 endif
 
+ifeq ($(PLATFORM),MINGW)
+EXTERNAL_LIBS += Ws2_32
+endif
+
 default: exe
 
 

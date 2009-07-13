@@ -5,6 +5,9 @@
 #include "eudaq/OptionParser.hh"
 #include "fortis/FORTIS.hh"
 
+#include <windows.h>
+// #include <stdio.h>
+
 #include <iostream>
 #include <ostream>
 #include <fstream>
@@ -45,6 +48,10 @@ public:
 
   void Process() {
 
+	DWORD dwRead;
+	unsigned int words_read;
+	unsigned int chunk_count ; 
+	
     // we always want to be sensitive to data from the FORTIS.... which can arrive any time after configuration....
     if (!configured) { // If we aren't configured just sleep for a while and return
       eudaq::mSleep(1);
@@ -57,15 +64,28 @@ public:
     try {
 
       m_buffer_number = ( ++m_buffer_number ) % 2; // alternate between buffers...
+	  ////
+	words_read = 0;
+    chunk_count = 0;
+	
+    while ( words_read < m_num_pixels_per_frame ) {
 
-      m_rawData_pointer = reinterpret_cast<char *>(&m_frameBuffer[m_buffer_number][0]); // read into buffer number m_buffer_number
-      if (  m_FORTIS_Data.good() ) {
-	m_FORTIS_Data.read( m_rawData_pointer , sizeof(short)*m_num_pixels_per_frame );
-      } else {
-	EUDAQ_THROW("Problem reading FORTIS data from input pipe");
-      }
+		ReadFile( m_FORTIS_Data , &m_frameBuffer[m_buffer_number][words_read], 
+				 (m_num_bytes_per_frame - words_read*sizeof(short) ), 
+				 &dwRead, NULL);
+		words_read = words_read + ( dwRead / sizeof(short) ); // gamble that data is always read in even number of shorts....
+		assert ( (dwRead %2) == 0 ); // "Number of bytes read not an even number ..."
+		chunk_count++;
+	
+		std::cout << "bytes read = " << dwRead << " word pointer " << words_read << std::endl;
+		
+		if ( dwRead == 0 ) { EUDAQ_THROW("Problem reading FORTIS data from input pipe"); }
 
-      std::cout << "Read block of data ..."<< std::endl;
+    }
+
+	m_currentFrame = m_frameBuffer[m_buffer_number][0];
+    std::cout << "Read  frame number = " << m_currentFrame << ". chunk count = " << chunk_count << std::endl ;
+
 
     }  catch (const std::exception & e) {
       printf("Caught exception: %s\n", e.what());
@@ -92,7 +112,7 @@ public:
     unsigned int word_counter ;
 
     // If DEBUG flag is set then print out the frame...
-    // #define DEBUG 1
+// #define DEBUG 1
 #if DEBUG
 
     for (row_counter=0; row_counter < m_NumRows ; row_counter++) {
@@ -102,7 +122,7 @@ public:
       
       for (word_counter =0; word_counter < words_per_row ; word_counter++) {
 
-	std::cout << hex << m_frameBuffer[m_buffer_number][word_counter + (words_per_row)*row_counter ] << "\t" ;
+	std::cout << hex << m_frameBuffer[m_buffer_number][word_counter + (words_per_row)*row_counter ]) << "\t" ;
       }
 
     std::cout << dec << std::endl;      
@@ -110,24 +130,25 @@ public:
 
 #endif
 
-    m_currentFrame = m_frameBuffer[m_buffer_number][0];
-
     if (  m_triggers_pending > 0 ) { // We have triggers pending from a previous frame. 
                                      // Append this frame to the previous one and send out event....
 
       // look the other way while I do something really inefficient....
       int frame;
 
-      for ( frame = 0; frame<2 ; frame++ ) {
+      for ( frame = 0; frame<2 ; frame++ ) { // glue two sucessive frames together in the correct order....
 
 	int buffer_number = (m_buffer_number + frame + 1 )%2; // point to the previous frame first.
 	for (word_counter = 0 ; word_counter < m_num_pixels_per_frame ; word_counter++) {
 
-	  m_rawData[frame*m_num_pixels_per_frame + word_counter] =  m_frameBuffer[buffer_number][word_counter] ;
-	}
+		// m_rawData_pointer = reinterpret_cast<unsigned short *>(&m_frameBuffer[buffer_number][0]); // point into correct buffer and recast to unsigned short.
+
+		//m_rawData[frame*m_num_pixels_per_frame + word_counter] =  m_rawData_pointer[word_counter];
+		m_rawData[frame*m_num_pixels_per_frame + word_counter] =  m_frameBuffer[buffer_number][word_counter];
+	  }
       }
     
-      std::cout << "Sending Event number " << m_ev << " , frame number " << m_currentFrame << std::endl;
+      std::cout << "Sending Event number " << m_ev << " , frame number from current_frame = " << m_currentFrame << " frame number from raw_data = " << m_rawData[0] << std::endl;
  
        RawDataEvent ev(FORTIS_DATATYPE_NAME, m_run, m_ev); // create an instance of the RawDataEvent with FORTIS-ID
        ev.AddBlock(evtModID , m_rawData); // add the raw data block to the event
@@ -151,8 +172,10 @@ public:
     m_triggers_pending = 0; // this shouldn't be necessary....
 
     // Loop through looking for triggers ...
+	m_rawData_pointer = reinterpret_cast<unsigned short *>(&m_frameBuffer[m_buffer_number][0]);
     for ( row_counter=0; row_counter < m_NumRows ; row_counter++) {
-      m_triggers_pending = m_triggers_pending + m_frameBuffer[m_buffer_number ][1 + row_counter*words_per_row ];
+      //m_triggers_pending = m_triggers_pending + m_frameBuffer[m_buffer_number ][1 + row_counter*words_per_row ];
+	  m_triggers_pending = m_triggers_pending + m_rawData_pointer[1 + row_counter*words_per_row ];
     }
 
     std::cout << "Found " << m_triggers_pending << " triggers in frame " << m_currentFrame << std::endl;
@@ -181,27 +204,38 @@ public:
       m_NumColumns = m_param.Get("NumColumns", 512) ;
       m_num_pixels_per_frame = ( m_NumColumns + WORDS_IN_ROW_HEADER) *   m_NumRows ;
 
+	  m_num_bytes_per_frame = sizeof(short) * m_num_pixels_per_frame;
+	  
       std::cout << "Number of rows: " <<  m_NumRows << std::endl;
       std::cout << "Number of columns: " <<  m_NumColumns  << std::endl;
       std::cout << "Number of pixels in each frame (including row-headers) = " << m_num_pixels_per_frame << std::endl;
 
-      std::cout << "Starting Command line programme to stream FORTIS data" << std::endl;
-      startExecutable();
+	std::string filename = m_param.Get("NamedPipe","\\\\.\\pipe\\EUDAQPipe") ;
 
-      usleep(1000000);
+	// Open input file ( actually a named pipe... )
+	std::cout << "About to create named pipe. Filename = " << filename << std::endl;
 
-      // Open input file ( actually a named pipe... )
-      std::string filename = m_param.Get("NamedPipe","./fortis_named_pipe") ;
-      std::cout << "Opening named pipe for raw data input. Filename = " << filename << std::endl;
+	m_FORTIS_Data = CreateNamedPipe(
+			  filename.c_str(), 
+			  PIPE_ACCESS_INBOUND,
+			  PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, 
+			  1, m_num_bytes_per_frame , m_num_bytes_per_frame, 0, NULL);
+  
 
-      m_FORTIS_Data.open( filename.c_str() , ios::in | ios::binary );
-      if ( ! m_FORTIS_Data.is_open() ) { EUDAQ_THROW("Unable to open named pipe"); }
+	if ( m_FORTIS_Data == NULL ) { EUDAQ_THROW("Problems creating named pipe"); }
+	
+    std::cout << "Starting Command line programme to stream FORTIS data" << std::endl;
+    startExecutable();
+  
+	std::cout << "Waiting for connection to pipe" << std::endl;
 
-      std::cout << "Opened name pipe " << std::endl;
-
-      m_frameBuffer[0].resize( sizeof(short) * m_num_pixels_per_frame); // set the size of our frame buffer.
-      m_frameBuffer[1].resize( sizeof(short) * m_num_pixels_per_frame); 
-      m_rawData.resize( 2* sizeof(short) * m_num_pixels_per_frame); // set the size of our event(big enough for two frames)...
+	ConnectNamedPipe(m_FORTIS_Data, NULL);
+  
+	std::cout << "Client has connected to pipe" << std::endl;
+      
+      m_frameBuffer[0].resize(  m_num_pixels_per_frame); // set the size of our frame buffer.
+      m_frameBuffer[1].resize(  m_num_pixels_per_frame); 
+      m_rawData.resize( 2 * m_num_pixels_per_frame); // set the size of our event(big enough for two frames)...
 
       configured = true;
 
@@ -286,12 +320,14 @@ public:
 
   virtual void OnTerminate() {
     std::cout << "Terminating..." << std::endl;
-  
-    m_FORTIS_Data.close();
-
+ 
     // Kill the thread with the command-line-programme here ....
     std::string killcommand =  "killall " + m_exeArgs.filename; 
     system(  killcommand.c_str() );
+	
+	DisconnectNamedPipe(m_FORTIS_Data);
+    CloseHandle(m_FORTIS_Data);
+	
     done = true;
   }
 
@@ -314,7 +350,8 @@ private:
 
   
   // PRIVATE MEMBER VARIABLES
-  ifstream m_FORTIS_Data;  ///< Named pipe for receiving FORTIS data
+  HANDLE m_FORTIS_Data;  ///< Named pipe for receiving FORTIS data
+
   DoubleFrame m_frameBuffer; // buffer for two frames
 
   unsigned int m_currentFrame;
@@ -322,10 +359,11 @@ private:
   unsigned int m_triggers_pending;
   unsigned int m_buffer_number  ;
 
-  char * m_rawData_pointer;
+  unsigned short  * m_rawData_pointer;
   unsigned int m_NumRows ;
   unsigned int m_NumColumns;
   unsigned int m_num_pixels_per_frame ;
+  unsigned int m_num_bytes_per_frame ;
 
   pthread_t m_executableThreadId;
   

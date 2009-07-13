@@ -3,19 +3,24 @@ SHELL=/bin/bash -O extglob
 # TODO: Precompiled headers?
 
 UNAME := $(shell uname)
-ifneq ($(findstring CYGWIN,$(UNAME)),)
-  PLATFORM := CYGWIN
-else
-  ifneq ($(findstring Darwin,$(UNAME)),)
-    PLATFORM := MACOSX
+
+ifneq ($(findstring MINGW,$(UNAME)),)
+  PLATFORM := MINGW
+else  
+  ifneq ($(findstring CYGWIN,$(UNAME)),)
+    PLATFORM := CYGWIN
   else
-    ifneq ($(findstring Linux,$(UNAME)),)
-      PLATFORM := LINUX
+    ifneq ($(findstring Darwin,$(UNAME)),)
+      PLATFORM := MACOSX
     else
-      ifeq ("$(UNAME)","")
-        PLATFORM := WIN32
+      ifneq ($(findstring Linux,$(UNAME)),)
+        PLATFORM := LINUX
       else
-        $(error Unknown platform "$(UNAME)", please report this to the developers)
+        ifeq ("$(UNAME)","")
+          PLATFORM := WIN32
+        else
+          $(error Unknown platform "$(UNAME)", please report this to the developers)
+        endif
       endif
     endif
   endif
@@ -83,8 +88,10 @@ MAKE_OPTS := --no-print-directory VERBOSE=$(VERBOSE) OPTIMIZE=$(OPTIMIZE) NODEBU
 CPPFLAGS = -pedantic $(INCLUDES) $(EXTERNAL_CFLAGS)
 
 # Except for Cygwin we want ANSI handling of headers
-ifneq ($(PLATFORM),CYGWIN)
-  CPPFLAGS += -ansi
+ifneq ($(PLATFORM),CYGWIN) 
+  ifneq ($(PLATFORM),MINGW)
+    CPPFLAGS += -ansi
+  endif
 endif
 
 # Extra flags for C compiler
@@ -93,7 +100,9 @@ CFLAGS   = -Wall -W -Wno-long-long -O$(OPTIMIZE) $(CPPFLAGS)
 # Except for Cygwin we want to specify position independent code.
 # With Cygwin this just spits out warnings saying that all code is PIC
 ifneq ($(PLATFORM),CYGWIN)
-  CFLAGS += -fPIC
+  ifneq ($(PLATFORM),MINGW)
+    CFLAGS += -fPIC
+  endif
 endif
 
 # Extra flags for C++ compiler
@@ -128,6 +137,10 @@ ifeq ($(PLATFORM),WIN32)
   LDFLAGS  += -Wl,--enable-auto-import -Wl,--enable-runtime-pseudo-reloc
 endif
 
+ifeq ($(PLATFORM),MINGW)
+  LDFLAGS  += -Wl,--enable-auto-import -Wl,--enable-runtime-pseudo-reloc
+#  EXTERNAL_LIBDIRS += /c/MinGW/Pre-built.2/lib/
+endif
 INCLUDES = -I$(INC) $(EXTERNAL_INCS:%=-I%)
 
 ifeq ($(PLATFORM),MACOSX)
