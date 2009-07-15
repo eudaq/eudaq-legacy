@@ -172,10 +172,16 @@ public:
     m_triggers_pending = 0; // this shouldn't be necessary....
 
     // Loop through looking for triggers ...
-	m_rawData_pointer = reinterpret_cast<unsigned short *>(&m_frameBuffer[m_buffer_number][0]);
     for ( row_counter=0; row_counter < m_NumRows ; row_counter++) {
-      //m_triggers_pending = m_triggers_pending + m_frameBuffer[m_buffer_number ][1 + row_counter*words_per_row ];
-	  m_triggers_pending = m_triggers_pending + m_rawData_pointer[1 + row_counter*words_per_row ];
+	  
+	  // Inject triggers for debugging...
+	  //if ( row_counter == 10 ) {
+		//m_frameBuffer[m_buffer_number ][1 + row_counter*words_per_row ]++;
+	  //}
+	  
+      // m_triggers_pending = m_triggers_pending + ( 0x7FFF & m_frameBuffer[m_buffer_number ][1 + row_counter*words_per_row ] );
+	  // bodge up for now .... max. one trigger per frame.
+	  if ( m_frameBuffer[m_buffer_number ][1 + row_counter*words_per_row ] != 0 ) { m_triggers_pending = 1; }
     }
 
     std::cout << "Found " << m_triggers_pending << " triggers in frame " << m_currentFrame << std::endl;
@@ -321,8 +327,11 @@ public:
   virtual void OnTerminate() {
     std::cout << "Terminating..." << std::endl;
  
+	configured = false ; 
+	
     // Kill the thread with the command-line-programme here ....
-    std::string killcommand =  "killall " + m_exeArgs.filename; 
+    std::string killcommand =  "killall " + m_param.Get("ExecutableProcessName","optodaq");
+	std::cout << "About to kill FORTIS command line programme. Command = " << killcommand << std::endl;
     system(  killcommand.c_str() );
 	
 	DisconnectNamedPipe(m_FORTIS_Data);
@@ -337,8 +346,6 @@ public:
   bool done, started, juststopped , configured;
   eudaq::Configuration  m_param;
 
-  //  std::vector<unsigned short> m_rawData; // buffer for raw data frames. 
-  //  std::vector<char> m_rawData; // buffer for raw data frames. 
   std::vector<unsigned short> m_rawData; // buffer for raw data frames. 
 
 
