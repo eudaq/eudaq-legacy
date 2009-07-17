@@ -133,39 +133,39 @@ public:
     if (  m_triggers_pending > 0 ) { // We have triggers pending from a previous frame. 
                                      // Append this frame to the previous one and send out event....
 
-      // look the other way while I do something really inefficient....
-      int frame;
+		// look the other way while I do something really inefficient....
+		int frame;
 
-      for ( frame = 0; frame<2 ; frame++ ) { // glue two sucessive frames together in the correct order....
+		for ( frame = 0; frame<2 ; frame++ ) { // glue two sucessive frames together in the correct order....
 
-	int buffer_number = (m_buffer_number + frame + 1 )%2; // point to the previous frame first.
-	for (word_counter = 0 ; word_counter < m_num_pixels_per_frame ; word_counter++) {
-
-		// m_rawData_pointer = reinterpret_cast<unsigned short *>(&m_frameBuffer[buffer_number][0]); // point into correct buffer and recast to unsigned short.
-
-		//m_rawData[frame*m_num_pixels_per_frame + word_counter] =  m_rawData_pointer[word_counter];
-		m_rawData[frame*m_num_pixels_per_frame + word_counter] =  m_frameBuffer[buffer_number][word_counter];
-	  }
-      }
+		int buffer_number = (m_buffer_number + frame + 1 )%2; // point to the previous frame first.
+		for (word_counter = 0 ; word_counter < m_num_pixels_per_frame ; word_counter++) {
+			m_rawData[frame*m_num_pixels_per_frame + word_counter] =  m_frameBuffer[buffer_number][word_counter];
+			}
+		}
     
-      std::cout << "Sending Event number " << m_ev << " , frame number from current_frame = " << m_currentFrame << " frame number from raw_data = " << m_rawData[0] << std::endl;
+		std::cout << "Sending Event number " << m_ev << " , frame number from current_frame = " << m_currentFrame << " frame number from raw_data = " << m_rawData[0] << std::endl;
  
-       RawDataEvent ev(FORTIS_DATATYPE_NAME, m_run, m_ev); // create an instance of the RawDataEvent with FORTIS-ID
-       ev.AddBlock(evtModID , m_rawData); // add the raw data block to the event
-       SendEvent( ev ); // send the 2-frame data to the data-collector
+		RawDataEvent ev(FORTIS_DATATYPE_NAME, m_run, m_ev); // create an instance of the RawDataEvent with FORTIS-ID
+	   
+		// std::cout << "Created RawDataEvent. About to add block" << std::endl; //debug
+		ev.AddBlock(evtModID , m_rawData); // add the raw data block to the event
+	   
+		// std::cout << "Added block. About to call SendEvent" << std::endl; //debug
+		SendEvent( ev ); // send the 2-frame data to the data-collector
 
-       ++m_ev; // increment the internal event counter.
-       --m_triggers_pending; // decrement the number of triggers to send out...
+		++m_ev; // increment the internal event counter.
+		--m_triggers_pending; // decrement the number of triggers to send out...
 
-       while ( m_triggers_pending > 0 ) {
+		while ( m_triggers_pending > 0 ) {
 
-	 std::cout << "Sending EMPTY Event number " << m_ev << std::endl;
+			std::cout << "Sending EMPTY Event number " << m_ev << std::endl;
 
-	 RawDataEvent ev(FORTIS_DATATYPE_NAME, m_run, m_ev);
-	 SendEvent( ev );
-	 ++m_ev; // increment the internal event counter.
-	 --m_triggers_pending; // decrement the number of triggers to send out...
-       }
+			RawDataEvent ev(FORTIS_DATATYPE_NAME, m_run, m_ev);
+			SendEvent( ev );
+			++m_ev; // increment the internal event counter.
+			--m_triggers_pending; // decrement the number of triggers to send out...
+		}
 
     }
 
@@ -173,11 +173,6 @@ public:
 
     // Loop through looking for triggers ...
     for ( row_counter=0; row_counter < m_NumRows ; row_counter++) {
-	  
-	  // Inject triggers for debugging...
-	  //if ( row_counter == 10 ) {
-		//m_frameBuffer[m_buffer_number ][1 + row_counter*words_per_row ]++;
-	  //}
 	  
       // m_triggers_pending = m_triggers_pending + ( 0x7FFF & m_frameBuffer[m_buffer_number ][1 + row_counter*words_per_row ] );
 	  // bodge up for now .... max. one trigger per frame.
@@ -203,60 +198,61 @@ public:
 
 
     try {
-      std::cout << "Configuring (" << param.Name() << ")..." << std::endl;
+		std::cout << "Configuring (" << param.Name() << ")..." << std::endl;
 
-      // put our configuration stuff in here...
-      m_NumRows = m_param.Get("NumRows", 512) ;
-      m_NumColumns = m_param.Get("NumColumns", 512) ;
-      m_num_pixels_per_frame = ( m_NumColumns + WORDS_IN_ROW_HEADER) *   m_NumRows ;
+		// put our configuration stuff in here...
+		m_NumRows = m_param.Get("NumRows", 512) ;
+		m_NumColumns = m_param.Get("NumColumns", 512) ;
+		m_num_pixels_per_frame = ( m_NumColumns + WORDS_IN_ROW_HEADER) *   m_NumRows ;
 
-	  m_num_bytes_per_frame = sizeof(short) * m_num_pixels_per_frame;
+		m_num_bytes_per_frame = sizeof(short) * m_num_pixels_per_frame;
 	  
-      std::cout << "Number of rows: " <<  m_NumRows << std::endl;
-      std::cout << "Number of columns: " <<  m_NumColumns  << std::endl;
-      std::cout << "Number of pixels in each frame (including row-headers) = " << m_num_pixels_per_frame << std::endl;
+		std::cout << "Number of rows: " <<  m_NumRows << std::endl;
+		std::cout << "Number of columns: " <<  m_NumColumns  << std::endl;
+		std::cout << "Number of pixels in each frame (including row-headers) = " << m_num_pixels_per_frame << std::endl;
 
-	std::string filename = m_param.Get("NamedPipe","\\\\.\\pipe\\EUDAQPipe") ;
+		std::string filename = m_param.Get("NamedPipe","\\\\.\\pipe\\EUDAQPipe") ;
 
-	// Open input file ( actually a named pipe... )
-	std::cout << "About to create named pipe. Filename = " << filename << std::endl;
+		// Open input file ( actually a named pipe... )
+		std::cout << "About to create named pipe. Filename = " << filename << std::endl;
 
-	m_FORTIS_Data = CreateNamedPipe(
+		m_FORTIS_Data = CreateNamedPipe(
 			  filename.c_str(), 
 			  PIPE_ACCESS_INBOUND,
 			  PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, 
 			  1, m_num_bytes_per_frame , m_num_bytes_per_frame, 0, NULL);
   
 
-	if ( m_FORTIS_Data == NULL ) { EUDAQ_THROW("Problems creating named pipe"); }
+		if ( m_FORTIS_Data == NULL ) { EUDAQ_THROW("Problems creating named pipe"); }
 	
-    std::cout << "Starting Command line programme to stream FORTIS data" << std::endl;
-    startExecutable();
+		std::cout << "Starting Command line programme to stream FORTIS data" << std::endl;
+		startExecutable();
   
-	std::cout << "Waiting for connection to pipe" << std::endl;
+		std::cout << "Waiting for connection to pipe" << std::endl;
 
-	ConnectNamedPipe(m_FORTIS_Data, NULL);
+		ConnectNamedPipe(m_FORTIS_Data, NULL);
   
-	std::cout << "Client has connected to pipe" << std::endl;
+		std::cout << "Client has connected to pipe" << std::endl;
       
-      m_frameBuffer[0].resize(  m_num_pixels_per_frame); // set the size of our frame buffer.
-      m_frameBuffer[1].resize(  m_num_pixels_per_frame); 
-      m_rawData.resize( 2 * m_num_pixels_per_frame); // set the size of our event(big enough for two frames)...
+		m_frameBuffer[0].resize(  m_num_pixels_per_frame); // set the size of our frame buffer.
+		m_frameBuffer[1].resize(  m_num_pixels_per_frame); 
+		m_rawData.resize( 2 * m_num_pixels_per_frame); // set the size of our event(big enough for two frames)...
 
-      configured = true;
+		configured = true;
 
-      std::cout << "...Configured (" << param.Name() << ")" << std::endl;
-      EUDAQ_INFO("Configured (" + param.Name() + ")");
-      SetStatus(eudaq::Status::LVL_OK, "Configured (" + param.Name() + ")");
+		std::cout << "...Configured (" << param.Name() << ")" << std::endl;
+		EUDAQ_INFO("Configured (" + param.Name() + ")");
+		SetStatus(eudaq::Status::LVL_OK, "Configured (" + param.Name() + ")");
+		
     } catch (const std::exception & e) {
-      printf("Caught exception: %s\n", e.what());
-      SetStatus(eudaq::Status::LVL_ERROR, "Configuration Error");
+		printf("Caught exception: %s\n", e.what());
+		SetStatus(eudaq::Status::LVL_ERROR, "Configuration Error");
     } catch (char * str) {
-      printf("Exception: %s\n" , str);
-      SetStatus(eudaq::Status::LVL_ERROR, "Configuration Error");
+		printf("Exception: %s\n" , str);
+		SetStatus(eudaq::Status::LVL_ERROR, "Configuration Error");
     } catch (...) {
-      printf("Unknown exception\n");
-      SetStatus(eudaq::Status::LVL_ERROR, "Configuration Error");
+		printf("Unknown exception\n");
+		SetStatus(eudaq::Status::LVL_ERROR, "Configuration Error");
     }
   }
 
@@ -330,9 +326,8 @@ public:
 	configured = false ; 
 	
     // Kill the thread with the command-line-programme here ....
-    std::string killcommand =  "killall " + m_param.Get("ExecutableProcessName","optodaq");
-	std::cout << "About to kill FORTIS command line programme. Command = " << killcommand << std::endl;
-    system(  killcommand.c_str() );
+	std::cout << "About to kill FORTIS command line programme. Command = " << m_exeArgs.killcommand << std::endl;
+    system(  m_exeArgs.killcommand.c_str() );
 	
 	DisconnectNamedPipe(m_FORTIS_Data);
     CloseHandle(m_FORTIS_Data);
@@ -382,7 +377,8 @@ private:
   void startExecutable() {
     // ExecutableArgs exeArgs;
     m_exeArgs.dir = m_param.Get("ExecutableDirectory","./");
-    m_exeArgs.filename  = m_param.Get("ExecutableFilename","stream_exe") ;
+    m_exeArgs.filename = m_param.Get("ExecutableFilename","stream_exe") ;
+	m_exeArgs.killcommand =  "/bin/ps -W | /bin/awk  '/" + m_param.Get("ExecutableProcessName","optodaqV.exe") + "/{print $1}' | /bin/xargs /bin/kill -f"; 
     m_exeArgs.args = m_param.Get("ExecutableArgs","");
 
     unsigned threadCreateResult = pthread_create(&m_executableThreadId, NULL, &startExecutableThread, (void*)&m_exeArgs);
