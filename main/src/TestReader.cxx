@@ -42,28 +42,29 @@ bool DoEvent(unsigned ndata, const eudaq::DetectorEvent & dev, bool do_process, 
   if (do_zs) do_display = false;
   //std::cout << "DEBUG " << ndata << ", " << do_display << ", " << do_zs << std::endl;
   if (do_process || do_display || do_dump || do_zs) {
-    const StandardEvent & sev = eudaq::PluginManager::ConvertToStandard(dev);
     if (do_display) {
-      std::cout << sev << std::endl;
+      std::cout << dev << std::endl;
     }
-    unsigned boardnum = 0;
-    for (size_t i = 0; i < sev.NumPlanes(); ++i) {
-      const eudaq::StandardPlane & plane = sev.GetPlane(i);
-      //if (do_display) std::cout << " Plane: " << plane << std::endl;
-      //std::cout << "DEBUG: zs" << std::endl;
-      if (do_process || do_zs) {
+    if (do_process) {
+      unsigned boardnum = 0;
+      const StandardEvent & sev = eudaq::PluginManager::ConvertToStandard(dev);
+      if (do_display) std::cout << "Standard Event: " << sev << std::endl;
+      for (size_t i = 0; i < sev.NumPlanes(); ++i) {
+        const eudaq::StandardPlane & plane = sev.GetPlane(i);
+        //std::cout << "DEBUG: zs" << std::endl;
         if (do_zs && plane.m_pix.size() == 1) {
+          std::cout << "  Plane: " << plane << std::endl;
           for (size_t p = 0; p < plane.m_pix[0].size(); ++p) {
             static const char tab = '\t';
-            std::cout << ndata << tab << boardnum << tab << plane.m_x[p] << tab << plane.m_y[p] << tab << plane.m_pix[0][p] << std::endl;
+            std::cout << "    " << ndata << tab << boardnum << tab << plane.m_x[p] << tab << plane.m_y[p] << tab << plane.m_pix[0][p] << std::endl;
           }
         }
-      }
 //       if (do_dump) {
 //         std::ofstream file(("board" + to_string(boardnum) + ".dat").c_str());
 //         file.write(reinterpret_cast<const char*>(brd.GetData()-8), brd.DataSize()+16);
 //       }
-      boardnum++;
+        boardnum++;
+      }
     }
   }
   return do_display;
