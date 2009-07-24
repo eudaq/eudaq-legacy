@@ -56,7 +56,7 @@ namespace eudaq {
 
             plane.m_x[i] =ix;
             plane.m_y[i] =iy;
-            plane.m_pix[0][i] = (getlittleendian<unsigned>(&data[3 + j])) & 0xffff;
+            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
 
 
             /*
@@ -78,7 +78,7 @@ namespace eudaq {
 
             plane.m_x[i] =ix;
             plane.m_y[i] =iy;
-            plane.m_pix[0][i] = (getlittleendian<unsigned>(&data[3 + j])) & 0xffff;
+            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
 
 
 
@@ -93,7 +93,7 @@ namespace eudaq {
 
             plane.m_x[i] =ix;
             plane.m_y[i] =iy;
-            plane.m_pix[0][i] = (getlittleendian<unsigned>(&data[3 + j])) & 0xffff;
+            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
 
 
             // 4. D, ramzelle 3 --> row 0, col 1
@@ -108,7 +108,7 @@ namespace eudaq {
 
             plane.m_x[i] =ix;
             plane.m_y[i] =iy;
-            plane.m_pix[0][i] = (getlittleendian<unsigned>(&data[3 + j])) & 0xffff;
+            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
 
 
 
@@ -124,7 +124,7 @@ namespace eudaq {
 
             plane.m_x[i] =ix;
             plane.m_y[i] =iy;
-            plane.m_pix[0][i] = (getlittleendian<unsigned>(&data[3 + j])) & 0xffff;
+            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
 
             // 6. D, ramzelle 5 --> row 1, col 0
             //DepfetFrame[col][(readout_gate*2) +1 -odderon] = RAM_A[(frame*64*128) + (gate*128) + (col*4) +5];
@@ -137,7 +137,7 @@ namespace eudaq {
 
             plane.m_x[i] =ix;
             plane.m_y[i] =iy;
-            plane.m_pix[0][i] = (getlittleendian<unsigned>(&data[3 + j])) & 0xffff;
+            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
 
 
             // 7. U, ramzelle 6 --> row 0, col 62
@@ -152,7 +152,7 @@ namespace eudaq {
 
             plane.m_x[i] =ix;
             plane.m_y[i] =iy;
-            plane.m_pix[0][i] = (getlittleendian<unsigned>(&data[3 + j])) & 0xffff;
+            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
 
 
             // 8. D, ramzelle 7 --> row 1, col 1
@@ -167,7 +167,7 @@ namespace eudaq {
 
             plane.m_x[i] =ix;
             plane.m_y[i] =iy;
-            plane.m_pix[0][i] = (getlittleendian<unsigned>(&data[3 + j])) & 0xffff;
+            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
 
 
           } // col
