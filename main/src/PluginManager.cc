@@ -82,7 +82,14 @@ namespace eudaq {
   StandardEvent PluginManager::ConvertToStandard(const DetectorEvent & dev) {
     StandardEvent event(dev.GetRunNumber(), dev.GetEventNumber(), dev.GetTimestamp());
     for (size_t i = 0; i < dev.NumEvents(); ++i) {
-      ConvertStandardSubEvent(event, *dev.GetEvent(i));
+      if (dev.GetEvent(i)->GetSubType() == "EUDRB") {
+        ConvertStandardSubEvent(event, *dev.GetEvent(i));
+      }
+    }
+    for (size_t i = 0; i < dev.NumEvents(); ++i) {
+      if (dev.GetEvent(i)->GetSubType() != "EUDRB") {
+        ConvertStandardSubEvent(event, *dev.GetEvent(i));
+      }
     }
     return event;
   }
