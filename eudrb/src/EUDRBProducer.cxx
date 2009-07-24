@@ -96,7 +96,7 @@ public:
       ev.AddBlock(m_idoffset+n_eudrb, &m_buffer[0], number_of_bytes);
       t_add.Stop();
       total_bytes+=(number_of_bytes+7)&~7;
-      if (m_ev % 100 == 0) {
+      if (m_ev < 10 || m_ev % 100 == 0) {
         std::cout << "B" << n_eudrb << ": wait=" << t_wait.uSeconds() << "us, "
                   << "mblt=" << t_mblt.uSeconds() << "us, "
                   << "reset=" << t_reset.uSeconds() << "us, "
@@ -107,16 +107,18 @@ public:
     }
 
     if (total_bytes) {
-      ++m_ev;
       Timer t_send;
       SendEvent(ev);
       t_send.Stop();
       //if (m_ev<10 || m_ev%100==0) printf("*** Event %d of length %ld sent!\n",m_ev, total_bytes);
       n_error=0;
-      std::cout << "EV " << m_ev << ": send=" << t_send.uSeconds() << "us, "
-                << "event=" << t_event.uSeconds() << "us, "
-                << "running=" << t_total.mSeconds() << "ms, "
-                << "bytes=" << total_bytes << "\n" << std::endl;
+      if (m_ev < 10 || m_ev % 100 == 0) {
+        std::cout << "EV " << m_ev << ": send=" << t_send.uSeconds() << "us, "
+                  << "event=" << t_event.uSeconds() << "us, "
+                  << "running=" << t_total.mSeconds() << "ms, "
+                  << "bytes=" << total_bytes << "\n" << std::endl;
+      }
+      ++m_ev;
     }
   }
   virtual void OnConfigure(const eudaq::Configuration & param) {
