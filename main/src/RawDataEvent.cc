@@ -45,6 +45,10 @@ namespace eudaq {
   void RawDataEvent::Print(std::ostream & os) const {
     Event::Print(os);
     os << ", " << m_blocks.size() << " blocks";
+    if (m_type == "EUDRB") {
+      size_t offset = m_blocks[0].data.size() - 7;
+      os << ", tluev=" << (GetByte(0, offset) << 8) + GetByte(0, offset + 1);
+    }
   }
 
   void RawDataEvent::Serialize(Serializer & ser) const {
