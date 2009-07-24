@@ -28,6 +28,7 @@ public:
       //
     }
   virtual void OnConfigure(const eudaq::Configuration & param) {
+    m_idoffset = param.Get("IDOffset", 6);
     data_host = param.Get("DataHost", "silab22a");
     if (host_is_set) {
       if (cmd_host != param.Get("CmdHost", "silab22a") ||
@@ -85,6 +86,7 @@ public:
     unsigned int itrg, itrg_old = -1;
     //eudaq::DEPFETEvent ev(m_run, m_evt+1);
     counted_ptr<eudaq::RawDataEvent> ev;
+    unsigned id = m_idoffset;
     do {   //--- modules of one event loop
       lenevent = BUFSIZE;
       Nmod = REQUEST;
@@ -123,7 +125,7 @@ public:
       if (!ev) {
         ev = new eudaq::RawDataEvent("DEPFET", m_run, itrg);
       }
-      ev->AddBlock(evtModID, buffer, lenevent*4);
+      ev->AddBlock(id++, buffer, lenevent*4);
 
     }  while (Kmod!=(Nmod-1));
     std::cout << "##DEBUG## Reading took " << timer.mSeconds() << "ms" << std::endl;
@@ -142,7 +144,7 @@ public:
   bool done;
 private:
   bool host_is_set, running, firstevent;
-  unsigned m_run, m_evt;
+  unsigned m_run, m_evt, m_idoffset;
   int cmd_port;
   std::string data_host, cmd_host;
 
