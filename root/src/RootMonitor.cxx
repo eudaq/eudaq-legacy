@@ -70,7 +70,7 @@ struct  m_DATA  {
   unsigned short nil : 3;
 };
 
-static const unsigned MAX_BOARDS = 6;
+static const unsigned MAX_BOARDS = 7;
 static const unsigned MAX_SEEDS = 1000;
 static const double DEFAULT_NOISE = 4;
 
@@ -400,6 +400,11 @@ public:
                     num_x_pixels.push_back(1024);
                     num_y_pixels.push_back(1024);
                   }
+                else if(tmpstring == "DET_DEPFET")
+                  {
+                    num_x_pixels.push_back(64);
+                    num_y_pixels.push_back(256);
+                  }
               }
             delete arr;
             //end of splitting
@@ -458,7 +463,8 @@ public:
 
       if(m_board.size() != num_x_pixels.size())
         {
-          std::cout << "mismatch of number of configured boards and displayed boards in online monitor" << std::endl;
+          std::cout << "mismatch of number of configured boards (" << m_board.size()
+                    << ") and displayed boards (" << num_x_pixels.size() << ") in online monitor" << std::endl;
           exit(-1);
         }
       //here the code for the configuration tab starts
@@ -1453,7 +1459,6 @@ public:
           m_depfet_correlation[i]->Reset("");
         }
         for (size_t i = 0; i <m_depfet_correlationy.size(); ++i) {
-          std::cout << "jaaa " << i << std::endl;
           m_depfet_correlationy[i]->Reset("");
         }
         m_depfet_adc->Reset("");
@@ -1848,7 +1853,12 @@ private:
     b.m_hitmap_depfet_corr = new TH2DNew(make_name("EUDET DEPFET HITMAP", board).c_str(), "EUDET DEPFET HITMAP",   264, 0, 264, 256, 0, 256);
     b.m_histoclustery   = new TH1DNew(make_name("ClustYProfile", board).c_str(), "Cluster Y Profile", num_y_pixels, 0, num_y_pixels);
     b.m_historawval     = new TH1DNew(make_name("RawValues",     board).c_str(), "Raw Values",        512, 0, 4096);
-    b.m_histocdsval     = new TH1DNew(make_name("CDSValues",     board).c_str(), "CDS Values",        150, -50, 100);
+    if (num_x_pixels == 64) {
+      // Horrible hack for DEPFET
+      b.m_histocdsval     = new TH1DNew(make_name("CDSValues",     board).c_str(), "CDS Values",        4050, -50, 4000);
+    } else {
+      b.m_histocdsval     = new TH1DNew(make_name("CDSValues",     board).c_str(), "CDS Values",        150, -50, 100);
+    }
     b.m_histonoise     = new TH1DNew(make_name("Noise",     board).c_str(), "Noise",        100, 0, 10);
     b.m_histonoiseeventnr     = new TH1DNew(make_name("NoiseEventNr",     board).c_str(), "NoiseEventNr",        30, 0, 1500);
 
