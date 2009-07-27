@@ -24,16 +24,16 @@ TMP=000000
 RUNNUM0=${TMP:0:$((${#RRUNNUM} > 6 ? 0 : 6 - ${#RUNNUM}))}${RUNNUM}
 
 echo "Converting run ${RUNNUM}"
-ssh -x ${SRCUSER}@${SRCHOST} "cd ${SCRIPTPATH} && source ${ENVFILE} && ./submit-converter ${RUNNUM}" || exit 1
+ssh -x ${SRCUSER}@${SRCHOST} "cd ${SCRIPTPATH} && source ${ENVFILE} && ./submit-converter.py ${RUNNUM}" || exit 1
 
 echo "Calculating pedestals for run ${RUNNUM}"
-ssh -x ${SRCUSER}@${SRCHOST} "cd ${SCRIPTPATH} && source ${ENVFILE} && ./submit-pedestal ${RUNNUM}" || exit 1
+ssh -x ${SRCUSER}@${SRCHOST} "cd ${SCRIPTPATH} && source ${ENVFILE} && ./submit-pedestal.py ${RUNNUM}" || exit 1
 
 # Display some histograms here...
 # Ask if they look OK...
 
 echo "Copying pedestals for run ${RUNNUM}"
-ssh -x ${SRCUSER}@${SRCHOST} "echo scp ${DATAPATH}/db/run${RUNNUM0}-ped-db-* ${DESTHOST}:${DESTPATH}/." || exit 1
+ssh -x ${SRCUSER}@${SRCHOST} "scp ${DATAPATH}/db/run${RUNNUM0}-ped-db-* ${DESTHOST}:${DESTPATH}/." || exit 1
 
 echo "Updating latest pedestal info"
 # Do it via $SRCHOST, because we know ssh keys are set up from there
