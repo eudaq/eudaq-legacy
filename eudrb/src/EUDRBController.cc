@@ -11,7 +11,7 @@ namespace eudaq {
 
     static const char * PEDESTAL_NUMBER_FILE = "../pedestal/pedestal.dat";
 
-    static const char * MODE_NAMES[] = { "NONE", "RAW3", "RAW2", "ZS" };
+    static const char * MODE_NAMES[] = { "NONE", "RAW3", "RAW2", "ZS", "ZS2" };
     static const int NUM_MODES = sizeof MODE_NAMES / sizeof * MODE_NAMES;
     static const char * DET_NAMES[] = { "NONE", "MIMOSA5", "MIMOSTAR2", "MIMOTEL", "MIMOSA18", "MIMOSA26" };
     static const int NUM_DETS = sizeof DET_NAMES / sizeof * DET_NAMES;
@@ -82,10 +82,10 @@ namespace eudaq {
     bool unsync = getpar(param, m_id, "Unsynchronized", true);
     bool internaltiming = (m_id == master) || unsync;
     ResetBoard();
-    unsigned long data = 0;
-    if (m_mode == M_ZS) data |= 0x20;
-    if (internaltiming) data |= 0x2000;
-    m_vmes->Write(0, data);
+    m_ctrlstat = 0;
+    if (m_mode == M_ZS) m_ctrlstat |= 0x20;
+    if (internaltiming) m_ctrlstat |= 0x2000;
+    m_vmes->Write(0, m_ctrlstat);
     unsigned long mimoconf = 0x48d00000;
     if (m_version == 1) {
       if (m_det != D_MIMOTEL) {
@@ -124,23 +124,37 @@ namespace eudaq {
         reg23 |= (0xfff & pdrd) << 16;
         reg6   = 0x3ffff;
       } else {
-        EUDAQ_THROW("Unknown detector type: " + to_string(m_det));
+        EUDAQ_THROW("EUDRB Version 2 does not read " + to_string(m_det));
       }
       m_vmes->Write(0x20, reg01);
       m_vmes->Write(0x24, reg23);
       m_vmes->Write(0x28, reg45);
       m_vmes->Write(0x2c, reg6);
-      m_vmes->Write(0, data);
+      m_vmes->Write(0, m_ctrlstat);
+    } else if (m_version == 3) {
+      if (m_det != D_MIMOSA26) {
+        EUDAQ_THROW("EUDRB Version 3 only reads MIMOSA26 (not " + det + ")");
+      }
+      const unsigned postrstdelay = 0xffff & getpar(param, m_id, "PostResetDelay", 133);
+
+      const unsigned M26param = (64 << 0)    // M26_DelayBeforeBusyRelease
+                              | (64 << 8)    // M26_DelayAfterAckRdOutDone
+                              | (9215 << 16) // M26_FrameSizeMinusOne
+                              | (0 << 30);   // M26_SerialOutModeSelect
+      const unsigned M26sim   = (16 << 0)    // M26SimulatorWordCount
+                              | (9215 << 16) // M26_FrameSizeMinusOne
+                              | (0 << 31);   // M26SimulatorEnable
+      m_vmes->Write(0x30, M26param);
+      m_vmes->Write(0x24, postrstdelay << 16);
+      m_vmes->Write(0x38, M26sim);
     } else {
-      EUDAQ_THROW("Must set Version = 1 or 2 in config file");
+      EUDAQ_THROW("Must set Version = 1-3 in config file");
     }
-    data = 0xd0000001;
-    if (internaltiming) data = 0xd0000000;
-    m_vmes->Write(0x10, data);
+    m_vmes->Write(0x10, internaltiming ? 0xd0000000 : 0xd0000001);
     eudaq::mSleep(1000);
     int marker1 = getpar(param, m_id, "Marker1", -1);
     int marker2 = getpar(param, m_id, "Marker2", -1);
-    if (marker1 >= 0 || marker2 >= 0) {
+    if (m_version < 3 && (marker1 >= 0 || marker2 >= 0)) {
       if (marker1 < 0) marker1 = marker2;
       if (marker2 < 0) marker2 = marker1;
       std::cout << "Setting board " << m_id << " markers to "
@@ -153,8 +167,11 @@ namespace eudaq {
     m_vmes->Write(0x10, mimoconf);
   }
 
-  std::string EUDRBController::ConfigurePedestals(const eudaq::Configuration & param) {
+  std::string EUDRBController::PostConfigure(const eudaq::Configuration & param, int master) {
     std::string fname;
+    if (m_version == 3 && m_mode != M_ZS2) {
+      EUDAQ_THROW("EUDRB Version 3 must run in mode ZS2");
+    }
     if (m_mode == M_ZS) {
       int thresh = getpar(param, m_id, "Thresh", -1);
       int ped = getpar(param, m_id, "Ped", -1);
@@ -195,6 +212,11 @@ namespace eudaq {
       EUDAQ_INFO(msg);
       if (fname == "") fname = to_string(ped) + ":" + to_string(thresh);
     }
+    if (m_version > 2 && m_id == master) {
+      // For M26: Send pulse start to the master, it propagates to the slaves
+      m_vmes->Write(0, m_ctrlstat | 0x80);
+      m_vmes->Write(0, m_ctrlstat);
+    }
     return fname;
   }
 
@@ -207,7 +229,7 @@ namespace eudaq {
   bool EUDRBController::WaitForReady(double timeout) {
     for (eudaq::Timer timer; timer.Seconds() < timeout; /**/) {
       eudaq::mSleep(20);
-      if (m_vmes->Read(0) & 0x02000000) {
+      if (!(m_vmes->Read(0) & 0x02000000)) {
         return true;
       }
     }
@@ -220,13 +242,15 @@ namespace eudaq {
     m_vmes->Write(0, readdata32);
   }
 
-  unsigned long EUDRBController::EventDataReady_size(double timeout) {
+  int EUDRBController::EventDataReady_size(double timeout) {
     unsigned long int i = 0, readdata32 = 0; //, olddata = 0;
     for (eudaq::Timer timer; timer.Seconds() < timeout; /**/) {
       ++i;
-      readdata32 = m_vmes->Read(0x00400004);
+      readdata32 = m_vmes->Read(m_version < 3 ? 0x00400004 : 0x40);
       if (readdata32 & 0x80000000) {
-        return readdata32 & 0xfffff;
+        readdata32 &= 0xfffff;
+        if (readdata32 == 0) return -1;
+        return readdata32;
       }
       if (timer.Seconds() > 0.5) {
         eudaq::mSleep(20);

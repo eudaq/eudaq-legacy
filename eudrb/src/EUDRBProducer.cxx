@@ -58,9 +58,22 @@ public:
         t_total.Restart();
       }
 
-      unsigned long number_of_bytes=datasize*4;
-      //printf("number of bytes = %ld\n",number_of_bytes);
+      size_t blockindex = ev.AddBlock(m_idoffset+n_eudrb);
+
       Timer t_mblt, t_reset;
+      unsigned long number_of_bytes=datasize*4;
+      if (datasize < 0) {
+        if (m_version < 3) {
+          number_of_bytes = 0;
+        } else {
+          m_buffer.resize(4);
+          m_boards[n_eudrb]->ReadEvent(m_buffer);
+          ev.AppendBlock(blockindex, m_buffer);
+          number_of_bytes = 4 * (m_buffer[0] & 0xFFFFF);
+        }
+      }
+
+      //printf("number of bytes = %ld\n",number_of_bytes);
       if (number_of_bytes == 0) {
         printf("Board: %d, Event: %d, empty\n",(int)n_eudrb,m_ev);
         EUDAQ_WARN("Board " + to_string(n_eudrb) +" in Event " + to_string(m_ev) + " empty");
@@ -71,7 +84,7 @@ public:
           EUDAQ_WARN("Board " + to_string(n_eudrb) +" in Event " + to_string(m_ev) + " too big: " + to_string(number_of_bytes));
           badev=true;
         }
-        t_mblt.Restart();
+        //t_mblt.Restart();
         m_buffer.resize(((number_of_bytes+7) & ~7) / 4);
         m_boards[n_eudrb]->ReadEvent(m_buffer);
         t_mblt.Stop();
@@ -79,7 +92,7 @@ public:
 
         // Reset the BUSY on the MASTER after all MBLTs are done
         t_reset.Restart();
-        if ((int)n_eudrb == m_master) { // Master
+        if (m_resetbusy && (int)n_eudrb == m_master) { // Master
           m_boards[n_eudrb]->ResetTriggerBusy();
         }
         t_reset.Stop();
@@ -93,7 +106,7 @@ public:
         }
       }
       Timer t_add;
-      ev.AddBlock(m_idoffset+n_eudrb, &m_buffer[0], number_of_bytes);
+      ev.AppendBlock(blockindex, &m_buffer[0], number_of_bytes);
       t_add.Stop();
       total_bytes+=(number_of_bytes+7)&~7;
       if (m_ev < 10 || m_ev % 100 == 0) {
@@ -127,6 +140,7 @@ public:
       std::cout << "Configuring (" << param.Name() << ")..." << std::endl;
       int numboards = param.Get("NumBoards", 0);
       m_idoffset = param.Get("IDOffset", 0);
+      m_resetbusy = param.Get("ResetBusy", 1);
       m_boards.clear();
       for (int n_eudrb = 0; n_eudrb < numboards; ++n_eudrb) {
         int id = m_idoffset + n_eudrb;
@@ -168,7 +182,7 @@ public:
 
       m_pedfiles.clear();
       for (size_t n_eudrb = 0; n_eudrb < m_boards.size(); n_eudrb++) {
-        m_pedfiles.push_back(m_boards[n_eudrb]->ConfigurePedestals(param));
+        m_pedfiles.push_back(m_boards[n_eudrb]->PostConfigure(param, m_master));
       }
 
       std::cout << "...Configured (" << param.Name() << ")" << std::endl;
@@ -245,28 +259,9 @@ public:
     std::cout << "Terminating..." << std::endl;
     done = true;
   }
-  virtual void OnReset() {
-    SetStatus(eudaq::Status::LVL_OK, "Wait");
-    try {
-      std::cout << "Reset" << std::endl;
-      for (size_t n_eudrb = 0; n_eudrb < m_boards.size(); n_eudrb++) {
-        m_boards[n_eudrb]->ResetBoard();
-      }
-      for (size_t n_eudrb = 0; n_eudrb < m_boards.size(); n_eudrb++) {
-        m_boards[n_eudrb]->WaitForReady();
-      }
-      SetStatus(eudaq::Status::LVL_OK, "Reset");
-    } catch (const std::exception & e) {
-      printf("Caught exception: %s\n", e.what());
-      SetStatus(eudaq::Status::LVL_ERROR, "Reset Error");
-    } catch (...) {
-      printf("Unknown exception\n");
-      SetStatus(eudaq::Status::LVL_ERROR, "Reset Error");
-    }
-  }
 
   unsigned m_run, m_ev;
-  bool done, started, juststopped;
+  bool done, started, juststopped, m_resetbusy;
   int n_error;
   std::vector<unsigned long> m_buffer;
   std::vector<counted_ptr<EUDRBController> > m_boards;
