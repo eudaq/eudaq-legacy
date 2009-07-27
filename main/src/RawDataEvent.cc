@@ -16,6 +16,9 @@ namespace eudaq {
     ser.write(data);
   }
 
+  void RawDataEvent::block_t::Append(const RawDataEvent::data_t & d) {
+    data.insert(data.end(), d.begin(), d.end());
+  }
 
   RawDataEvent::RawDataEvent(std::string type, unsigned run, unsigned event) :
     Event(run, event),
