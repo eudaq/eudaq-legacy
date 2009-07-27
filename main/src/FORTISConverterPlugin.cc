@@ -87,8 +87,8 @@ namespace eudaq {
 
       unsigned int frame_offset = (Frame*nwords) * sizeof (short);
 
-      frame_number[Frame] = getlittleendian<unsigned short>(&data[frame_offset]);
-      std::cout << "frame number , in data = " << Frame << "  " << std::hex << frame_number[Frame] << std::endl;
+      frame_number[Frame] = getlittleendian<unsigned int>(&data[frame_offset]);
+      std::cout << "frame in data = " << std::hex << frame_number[Frame] << std::dec << std::endl;
 
       for (size_t Row = 0; Row < m_NumRows; ++Row) {
 
