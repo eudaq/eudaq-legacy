@@ -72,7 +72,7 @@ namespace eudaq {
 
   struct BoardInfo {
     enum E_DET  { DET_NONE = -1, DET_MIMOSTAR2, DET_MIMOTEL, DET_MIMOTEL_NEWORDER, DET_MIMOSA18, DET_MIMOSA5, DET_MIMOSA26 };
-    enum E_MODE { MODE_NONE = -1, MODE_ZS, MODE_RAW1, MODE_RAW2, MODE_RAW3 };
+    enum E_MODE { MODE_NONE = -1, MODE_ZS, MODE_ZS2, MODE_RAW1, MODE_RAW2, MODE_RAW3 };
     BoardInfo() : m_version(0), m_det(DET_MIMOTEL), m_mode(MODE_RAW3) {}
     BoardInfo(const Event & ev, int brd)
       : m_version(0), m_det(DET_NONE), m_mode(MODE_NONE)
@@ -92,6 +92,7 @@ namespace eudaq {
         if (mode == "") mode = ev.GetTag("MODE", "RAW3");
 
         if (mode == "ZS") m_mode = MODE_ZS;
+        else if (mode == "ZS2") m_mode = MODE_ZS2;
         else if (mode == "RAW2") m_mode = MODE_RAW2;
         else if (mode == "RAW3") m_mode = MODE_RAW3;
         else EUDAQ_THROW("Unknown mode in EUDRBConverterPlugin: " + mode);

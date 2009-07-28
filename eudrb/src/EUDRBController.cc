@@ -223,6 +223,7 @@ namespace eudaq {
       m_vmes->Write(0, m_ctrlstat);
       eudaq::mSleep(100);
     }
+    std::cout << "Version = " << m_version << std::endl;
     std::cout << "FuncCtrlStat = " << eudaq::hexdec(m_vmes->Read(0)) << std::endl;
     return fname;
   }
@@ -230,17 +231,9 @@ namespace eudaq {
   void EUDRBController::ResetBoard() {
     unsigned long readdata32 = m_vmes->Read(0);
     m_vmes->Write(0, readdata32 | 0x80000000);
+    eudaq::mSleep(100);
     m_vmes->Write(0, readdata32 &~0x80000000);
-  }
-
-  bool EUDRBController::WaitForReady(double timeout) {
-    for (eudaq::Timer timer; timer.Seconds() < timeout; /**/) {
-      eudaq::mSleep(20);
-      if (!(m_vmes->Read(0) & 0x02000000)) {
-        return true;
-      }
-    }
-    return false;
+    eudaq::mSleep(100);
   }
 
   void EUDRBController::ResetTriggerProc() {
@@ -249,15 +242,40 @@ namespace eudaq {
     m_vmes->Write(0, readdata32);
   }
 
+  bool EUDRBController::WaitForReady(double timeout) {
+    for (eudaq::Timer timer; timer.Seconds() < timeout; /**/) {
+      eudaq::mSleep(200);
+      if (!(m_vmes->Read(0) & 0x02000000)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool EUDRBController::EventDataReady(double timeout) {
+    if (m_version < 3) EUDAQ_THROW("EventDataReady only works wth FW >= 3");
+    unsigned long i = 0;
+    for (eudaq::Timer timer; timer.Seconds() < timeout; /**/) {
+      ++i;
+      if (m_vmes->Read(0x40) & 0x80000000) {
+        return true;
+      }
+      if (timer.Seconds() > 0.5) {
+        eudaq::mSleep(20);
+      }
+    }
+    printf("Ready wait timed out after 1 second (%ld cycles)\n",i);
+    return false;
+  }
+
   int EUDRBController::EventDataReady_size(double timeout) {
+    if (m_version >= 3) EUDAQ_THROW("EventDataReady_size only works wth FW >= 3");
     unsigned long int i = 0, readdata32 = 0; //, olddata = 0;
     for (eudaq::Timer timer; timer.Seconds() < timeout; /**/) {
       ++i;
       readdata32 = m_vmes->Read(m_version < 3 ? 0x00400004 : 0x40);
       if (readdata32 & 0x80000000) {
-        readdata32 &= 0xfffff;
-        if (readdata32 == 0) return -1;
-        return readdata32;
+        return readdata32 & 0xfffff;
       }
       if (timer.Seconds() > 0.5) {
         eudaq::mSleep(20);

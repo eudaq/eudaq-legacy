@@ -26,7 +26,8 @@ namespace eudaq {
     void ResetBoard();
     bool WaitForReady(double timeout = 20.0);
     void LoadPedestals(const pedestal_t & peds);
-    int EventDataReady_size(double timeout = 1.0); /// Returns 0 on timeout, else event size, or -1 if size unknown
+    bool EventDataReady(double timeout = 1.0); /// Returns false on timeout, else true
+    int  EventDataReady_size(double timeout = 1.0); /// Returns 0 on timeout, else event size
     void ReadEvent(std::vector<unsigned long> &);
     void ResetTriggerBusy();
     static int ModeNum(const std::string & mode);
