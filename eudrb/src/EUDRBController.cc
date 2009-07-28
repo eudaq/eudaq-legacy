@@ -218,13 +218,15 @@ namespace eudaq {
     }
     if (m_version > 2 && m_id == master) {
       // For M26: Send pulse start to the master, it propagates to the slaves
+      std::cout << "Sending start pulse to board " << m_id << std::endl;
       m_vmes->Write(0, m_ctrlstat | 0x80);
       eudaq::mSleep(100);
       m_vmes->Write(0, m_ctrlstat);
       eudaq::mSleep(100);
     }
-    std::cout << "Version = " << m_version << std::endl;
-    std::cout << "FuncCtrlStat = " << eudaq::hexdec(m_vmes->Read(0)) << std::endl;
+    unsigned fcs = m_vmes->Read(0);
+    std::cout << "Version = " << m_version << "\n"
+              << "FuncCtrlStat = " << eudaq::hexdec(fcs) << std::endl;
     return fname;
   }
 

@@ -59,6 +59,9 @@ public:
       bool unsync = param.Get("Unsynchronized", 0);
       std::cout << "Running in " << (unsync ? "UNSYNCHRONIZED" : "synchronized") << " mode" << std::endl;
       m_master = param.Get("Master", -1);
+      std::cout << "Pausing while TLU gets configured..." << std::endl;
+      eudaq::mSleep(1000);
+      std::cout << "OK, let's continue." << std::endl;
       if (m_master < 0) m_master += numboards;
       for (int n_eudrb = 0; n_eudrb < numboards; ++n_eudrb) {
         m_boards[n_eudrb]->Configure(param, m_master);
@@ -67,8 +70,8 @@ public:
 
       bool ok = true;
       for (size_t n_eudrb = 0; n_eudrb < m_boards.size(); n_eudrb++) {
-        // give the first board ~20 seconds, then only wait 1 extra second for each other board
-        ok &= m_boards[n_eudrb]->WaitForReady((n_eudrb == 0) ? 20.0 : 1.0);
+        // give the first board ~20 seconds, then only wait 2 extra seconds for each other board
+        ok &= m_boards[n_eudrb]->WaitForReady((n_eudrb == 0) ? 20.0 : 2.0);
       }
 
       std::cout << (ok ? "OK" : "*** Timeout ***") << std::endl;
