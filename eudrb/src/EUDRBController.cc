@@ -145,8 +145,11 @@ namespace eudaq {
                               | (9215 << 16) // M26_FrameSizeMinusOne
                               | (0 << 31);   // M26SimulatorEnable
       m_vmes->Write(0x30, M26param);
+      eudaq::mSleep(100);
       m_vmes->Write(0x24, postrstdelay << 16);
+      eudaq::mSleep(100);
       m_vmes->Write(0x38, M26sim);
+      eudaq::mSleep(100);
     } else {
       EUDAQ_THROW("Must set Version = 1-3 in config file");
     }
@@ -165,6 +168,7 @@ namespace eudaq {
       eudaq::mSleep(1000);
     }
     m_vmes->Write(0x10, mimoconf);
+    eudaq::mSleep(100);
   }
 
   std::string EUDRBController::PostConfigure(const eudaq::Configuration & param, int master) {
@@ -215,8 +219,11 @@ namespace eudaq {
     if (m_version > 2 && m_id == master) {
       // For M26: Send pulse start to the master, it propagates to the slaves
       m_vmes->Write(0, m_ctrlstat | 0x80);
+      eudaq::mSleep(100);
       m_vmes->Write(0, m_ctrlstat);
+      eudaq::mSleep(100);
     }
+    std::cout << "FuncCtrlStat = " << eudaq::hexdec(m_vmes->Read(0)) << std::endl;
     return fname;
   }
 
