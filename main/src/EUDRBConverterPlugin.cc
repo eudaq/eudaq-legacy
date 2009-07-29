@@ -142,7 +142,9 @@ namespace eudaq {
       plane.m_xsize = info.Sensor().width;
       plane.m_ysize = info.Sensor().height;
       plane.m_pivotpixel = ((data[5] & 0x3) << 16) | (data[6] << 8) | data[7];
-      if (info.m_mode == BoardInfo::MODE_ZS) {
+      if (info.m_mode == BoardInfo::MODE_ZS2) {
+        ConvertZS2(plane, data, info);
+      } else if (info.m_mode == BoardInfo::MODE_ZS) {
         ConvertZS(plane, data, info);
       } else {
         ConvertRaw(plane, data, info);
@@ -150,6 +152,7 @@ namespace eudaq {
       plane.m_flags |= StandardPlane::FLAG_NEGATIVE;
       return plane;
     }
+    static void ConvertZS2(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info);
     static void ConvertZS(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info);
     static void ConvertRaw(StandardPlane & plane, const std::vector<unsigned char> & data, const BoardInfo & info);
     bool ConvertLCIO(lcio::LCEvent & lcioEvent, const Event & eudaqEvent) const;
@@ -255,6 +258,98 @@ namespace eudaq {
     }
     return true;
   }
+
+#define GET(o) getbigendian<unsigned>(&alldata[(o)*4])
+  void EUDRBConverterBase::ConvertZS2(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info) {
+    static const bool dbg = false;
+    //static int debugcount = 0;
+    //debugcount++;
+    //if (0 && debugcount <= 6) { // Outputs raw data in Angelo's text format (Now implemented in FileWriterMimoloop)
+    //  std::cerr << "BaseAddress: " << to_hex(getbigendian<unsigned>(&alldata[0]) & 0xff000000 | 0x00400000) << std::endl;
+    //  for (size_t i = 0; i < alldata.size()-3; i += 4) {
+    //    std::cerr << to_hex(i/4+1) << " : " << to_hex(getbigendian<unsigned>(&alldata[i]), 0) << std::endl;
+    //  }
+    //}
+    if (dbg) std::cout << "DataSize = " << alldata.size() << std::endl;
+    if (alldata.size() < 64) EUDAQ_THROW("Bad data packet (only " + to_string(alldata.size()) + " bytes)");
+    unsigned offset = 0, word = GET(offset);
+    if (dbg) std::cout << "BaseAddress = " << to_hex(word & 0xff000000 | 0x00400000) << std::endl;
+    unsigned wordcount = word & 0xffffff;
+    if (dbg) std::cout << "WordCount = " << wordcount << std::endl;
+    if (wordcount*4 + 16 != alldata.size()) EUDAQ_THROW("Bad wordcount (" + to_string(wordcount) +
+                                                          ", bytes=" + to_string(alldata.size()) + ")");
+    word = GET(offset=4);
+    if (dbg) std::cout << "LocalEventNumber = " << (word>>8 & 0xffff) << std::endl;
+    if (dbg) std::cout << "FrameNumberAtTrigger = " << (word & 0xff) << std::endl;
+    word = GET(offset=5);
+    if (dbg) std::cout << "PixelAddressAtTrigger = " << hexdec(word & 0x3ffff, 0) << std::endl;
+    unsigned wordremain = wordcount-12;
+
+    for (int frame = 1; frame <= 2; ++frame) {
+      word = GET(offset += 2);
+      if (dbg) std::cout << "M26FrameCounter_" << frame << " = " << hexdec(word, 0) << std::endl;
+      word = GET(++offset);
+      unsigned count = word & 0xffff;
+      if (dbg) std::cout << "M26WordCount_" << frame << " = " << hexdec(count, 0) << std::endl;
+      if (count > wordremain) EUDAQ_THROW("Bad M26 word count (" + to_string(count) + ", remain=" +
+                                           to_string(wordremain) + ", total=" + to_string(wordcount) + ")");
+      wordremain -= count;
+      std::vector<unsigned short> vec;
+      // read pixel data
+      for (size_t i = 0; i < count; ++i) {
+        word = GET(++offset);
+        vec.push_back(word & 0xffff);
+        vec.push_back(word>>16 & 0xffff);
+      }
+      unsigned npixels = 0;
+      for (size_t i = 0; i < vec.size(); ++i) {
+      //  std::cout << "  " << i << " : " << hexdec(vec[i]) << std::endl;
+        if (i == vec.size() - 1) break;
+        unsigned numstates = vec[i] & 0xf;
+        unsigned row = vec[i]>>4 & 0x7ff;
+        if (dbg) std::cout << "Hit line " << (vec[i] & 0x8000 ? "* " : ". ") << row
+                           << ", states " << numstates << ":";
+        for (unsigned s = 0; s < numstates; ++s) {
+          unsigned v = vec[++i];
+          unsigned column = v>>2 & 0x7ff;
+          unsigned num = v & 3;
+          if (dbg) std::cout << (s ? "," : " ") << column;
+          if (dbg) if (v&3 > 0) std::cout << "-" << (column + num);
+          npixels += num + 1;
+        }
+        if (dbg) std::cout << std::endl;
+      }
+      if (dbg) std::cout << "Total pixels = " << npixels << std::endl;
+      unsigned n = 0;
+      if (frame == 1) {
+        plane.SetSizeZS(info.Sensor().width, info.Sensor().height, npixels);
+        for (size_t i = 0; i < vec.size(); ++i) {
+          if (i == vec.size() - 1) break;
+          unsigned numstates = vec[i] & 0xf;
+          unsigned row = vec[i]>>4 & 0x7ff;
+          for (unsigned s = 0; s < numstates; ++s) {
+            unsigned v = vec[++i];
+            unsigned column = v>>2 & 0x7ff;
+            unsigned num = v & 3;
+            for (unsigned j = 0; j < num+1; ++j) {
+              plane.m_x[n] = column+j;
+              plane.m_y[n] = row;
+              plane.m_pix[0][n] = 1;
+            }
+          }
+        }
+      }
+      ++offset;
+    }
+    word = GET(++offset);
+    if (dbg) std::cout << "TLUEventNumber = " << hexdec(word>>8 & 0xffff, 0) << std::endl;
+    if (dbg) std::cout << "NumFramesAtTrigger = " << hexdec(word & 0xff, 0) << std::endl;
+    word = GET(++offset);
+    if (dbg) std::cout << "EventWordCount = " << hexdec(word & 0x7ffff, 0) << std::endl;
+
+    if (dbg) std::cout << "****************" << std::endl;
+  }
+#undef GET
 
   void EUDRBConverterBase::ConvertZS(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info) {
     unsigned headersize = 8, trailersize = 8;
