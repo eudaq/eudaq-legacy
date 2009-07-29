@@ -20,7 +20,8 @@ using eudaq::Timer;
 inline bool doprint(int n) {
   if (n < 10) return true;
   if (n < 100 && n%10 == 0) return true;
-  if (n % 100 == 0) return true;
+  if (n < 1000 && n%100 == 0) return true;
+  if (n%1000 == 0) return true;
   return false;
 }
 
