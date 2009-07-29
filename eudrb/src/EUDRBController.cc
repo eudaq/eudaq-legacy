@@ -144,10 +144,13 @@ namespace eudaq {
       const unsigned M26sim   = (16 << 0)    // M26SimulatorWordCount
                               | (9215 << 16) // M26_FrameSizeMinusOne
                               | (0 << 31);   // M26SimulatorEnable
+      std::cout << "Setting M26param " << hexdec(M26param) << std::endl;
       m_vmes->Write(0x30, M26param);
       eudaq::mSleep(100);
       m_vmes->Write(0x24, postrstdelay << 16);
+      std::cout << "Setting PostResetDelay " << hexdec(postrstdelay) << std::endl;
       eudaq::mSleep(100);
+      std::cout << "Setting M26sim " << hexdec(M26sim) << std::endl;
       m_vmes->Write(0x38, M26sim);
       eudaq::mSleep(100);
     } else {
