@@ -143,7 +143,7 @@ namespace eudaq {
 
   template <typename T>
   inline std::ostream & operator << (std::ostream & os, const hexdec_t<T> & h) {
-    return os << h.m_val << " (0x" << to_hex(h.m_val, h.m_dig) << ")";
+    return os << "0x" << to_hex(h.m_val, h.m_dig) << " (" << h.m_val << ")";
   }
 
   template <>
