@@ -19,6 +19,7 @@
 #  include "EUTELESCOPE.h"
 #  include "EUTelMimoTelDetector.h"
 #  include "EUTelMimosa18Detector.h"
+#  include "EUTelMimosa26Detector.h"
 #  include "EUTelSetupDescription.h"
 #  include "EUTelEventImpl.h"
 #  include "EUTelSparseDataImpl.h"
