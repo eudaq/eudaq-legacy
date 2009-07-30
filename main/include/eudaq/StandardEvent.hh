@@ -29,6 +29,7 @@ namespace eudaq {
     void SetSizeRaw(unsigned w, unsigned h, unsigned frames = 1, bool withpivot = false);
     void SetSizeRaw(unsigned w, unsigned h, bool withpivot) { SetSizeRaw(w, h, 1, withpivot); }
     void SetSizeZS(unsigned w, unsigned h, unsigned npix, unsigned frames = 1, bool withpivot = false);
+    void PushPixel(unsigned x, unsigned y, unsigned p);
     void Print(std::ostream &) const;
 
     std::string m_type, m_sensor;

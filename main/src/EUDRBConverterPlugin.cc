@@ -72,7 +72,7 @@ namespace eudaq {
 
   struct BoardInfo {
     enum E_DET  { DET_NONE = -1, DET_MIMOSTAR2, DET_MIMOTEL, DET_MIMOTEL_NEWORDER, DET_MIMOSA18, DET_MIMOSA5, DET_MIMOSA26 };
-    enum E_MODE { MODE_NONE = -1, MODE_ZS, MODE_ZS2, MODE_RAW1, MODE_RAW2, MODE_RAW3 };
+    enum E_MODE { MODE_NONE = -1, MODE_ZS, MODE_RAW1, MODE_RAW2, MODE_RAW3, MODE_ZS2 };
     BoardInfo() : m_version(0), m_det(DET_MIMOTEL), m_mode(MODE_RAW3) {}
     BoardInfo(const Event & ev, int brd)
       : m_version(0), m_det(DET_NONE), m_mode(MODE_NONE)
@@ -302,6 +302,7 @@ namespace eudaq {
         vec.push_back(word>>16 & 0xffff);
       }
       unsigned npixels = 0;
+      plane.SetSizeZS(info.Sensor().width, info.Sensor().height, 0);
       for (size_t i = 0; i < vec.size(); ++i) {
       //  std::cout << "  " << i << " : " << hexdec(vec[i]) << std::endl;
         if (i == vec.size() - 1) break;
@@ -315,30 +316,14 @@ namespace eudaq {
           unsigned num = v & 3;
           if (dbg) std::cout << (s ? "," : " ") << column;
           if (dbg) if (v&3 > 0) std::cout << "-" << (column + num);
+          for (unsigned j = 0; j < num+1; ++j) {
+            plane.PushPixel(column+j, row, 1);
+          }
           npixels += num + 1;
         }
         if (dbg) std::cout << std::endl;
       }
       if (dbg) std::cout << "Total pixels = " << npixels << std::endl;
-      unsigned n = 0;
-      if (frame == 1) {
-        plane.SetSizeZS(info.Sensor().width, info.Sensor().height, npixels);
-        for (size_t i = 0; i < vec.size(); ++i) {
-          if (i == vec.size() - 1) break;
-          unsigned numstates = vec[i] & 0xf;
-          unsigned row = vec[i]>>4 & 0x7ff;
-          for (unsigned s = 0; s < numstates; ++s) {
-            unsigned v = vec[++i];
-            unsigned column = v>>2 & 0x7ff;
-            unsigned num = v & 3;
-            for (unsigned j = 0; j < num+1; ++j) {
-              plane.m_x[n] = column+j;
-              plane.m_y[n] = row;
-              plane.m_pix[0][n] = 1;
-            }
-          }
-        }
-      }
       ++offset;
     }
     word = GET(++offset);
@@ -505,6 +490,14 @@ namespace eudaq {
         currentDetector = new eutelescope::EUTelMimosa18Detector;
         std::string mode;
         plane.IsZS() ? mode = "ZS" : mode = "RAW2";
+        currentDetector->setMode( mode );
+        if ( result.getEventNumber() == 0 ) {
+          setupDescription.push_back( new eutelescope::EUTelSetupDescription( currentDetector ));
+        }
+      } else if ( plane.m_sensor == "MIMOSA26" ) {
+
+        currentDetector = new eutelescope::EUTelMimosa26Detector;
+        std::string mode = "ZS2";
         currentDetector->setMode( mode );
         if ( result.getEventNumber() == 0 ) {
           setupDescription.push_back( new eutelescope::EUTelSetupDescription( currentDetector ));

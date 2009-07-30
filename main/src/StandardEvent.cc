@@ -69,6 +69,12 @@ namespace eudaq {
     }
   }
 
+  void StandardPlane::PushPixel(unsigned x, unsigned y, unsigned p) {
+    m_x.push_back(x);
+    m_y.push_back(y);
+    m_pix[0].push_back(p);
+  }
+
   StandardEvent::StandardEvent(unsigned run, unsigned evnum, unsigned long long timestamp)
     : Event(run, evnum, timestamp)
   {
