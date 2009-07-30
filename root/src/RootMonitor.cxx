@@ -70,7 +70,7 @@ struct  m_DATA  {
   unsigned short nil : 3;
 };
 
-static const unsigned MAX_BOARDS = 7;
+static const unsigned MAX_BOARDS = 9;
 static const unsigned MAX_SEEDS = 1000;
 static const double DEFAULT_NOISE = 4;
 
@@ -389,6 +389,12 @@ public:
                   {
                     num_x_pixels.push_back(264);
                     num_y_pixels.push_back(256);
+                  }
+
+                else if(tmpstring == "DET_MIMOSA26")
+                  {
+                    num_x_pixels.push_back(1152);
+                    num_y_pixels.push_back(576);
                   }
                 else if(tmpstring == "DET_MIMOSA18")
                   {
