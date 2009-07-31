@@ -655,13 +655,23 @@ namespace eudaq {
     if ( result.getEventNumber() == 0 ) {
 
       // do this only in the first event
-      std::auto_ptr< lcio::LCCollectionVec > eudrbSetupCollection( new LCCollectionVec ( lcio::LCIO::LCGENERICOBJECT) );
+
+      LCCollectionVec * eudrbSetupCollection = NULL;
+      bool eudrbSetupExists = false;
+      try { 
+        eudrbSetupCollection = static_cast< LCCollectionVec* > ( result.getCollection( "eudrbSetup" ) ) ;
+        eudrbSetupExists = true;
+      } catch (...) {
+        eudrbSetupCollection = new LCCollectionVec( lcio::LCIO::LCGENERICOBJECT );
+      }
 
       for ( size_t iPlane = 0 ; iPlane < setupDescription.size() ; ++iPlane ) {
         eudrbSetupCollection->push_back( setupDescription.at( iPlane ) );
       }
 
-      result.addCollection( eudrbSetupCollection.release(), "eudrbSetup" );
+      if (!eudrbSetupExists) {
+        result.addCollection( eudrbSetupCollection, "eudrbSetup" );
+      }
     }
 
     // check if all the boards where running in synchronous mode or
