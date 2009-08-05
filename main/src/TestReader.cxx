@@ -51,14 +51,25 @@ bool DoEvent(unsigned ndata, const eudaq::DetectorEvent & dev, bool do_process, 
       if (do_display) std::cout << "Standard Event: " << sev << std::endl;
       for (size_t i = 0; i < sev.NumPlanes(); ++i) {
         const eudaq::StandardPlane & plane = sev.GetPlane(i);
-        //std::cout << "DEBUG: zs" << std::endl;
-        if (do_zs && plane.m_pix.size() == 1) {
-          std::cout << "  Plane: " << plane << std::endl;
-          for (size_t p = 0; p < plane.m_pix[0].size(); ++p) {
-            static const char tab = '\t';
-            std::cout << "    " << ndata << tab << boardnum << tab << plane.m_x[p] << tab << plane.m_y[p] << tab << plane.m_pix[0][p] << std::endl;
+        std::vector<double> cds = plane.GetPixels<double>();
+        //std::cout << "DBG " << eudaq::hexdec(plane.m_flags);
+        bool bad = false;
+        for (size_t i = 0; i < cds.size(); ++i) {
+          //if (i < 10) std::cout << ", " << /*plane.m_pix[0][i] << ";" <<*/ cds[i];
+          if (plane.m_flags & eudaq::StandardPlane::FLAG_DIFFCOORDS && cds[i] != 1) {
+            bad = true;
           }
         }
+        //std::cout << (bad ? "***" : "") << std::endl;
+        if (bad) std::cout << "***" << std::endl;
+        //std::cout << "DEBUG: zs" << std::endl;
+        // if (do_zs && plane.m_pix.size() == 1) {
+        //   std::cout << "  Plane: " << plane << std::endl;
+        //   for (size_t p = 0; p < plane.m_pix[0].size(); ++p) {
+        //     static const char tab = '\t';
+        //     std::cout << "    " << ndata << tab << boardnum << tab << plane.m_x[p] << tab << plane.m_y[p] << tab << plane.m_pix[0][p] << std::endl;
+        //   }
+        // }
 //       if (do_dump) {
 //         std::ofstream file(("board" + to_string(boardnum) + ".dat").c_str());
 //         file.write(reinterpret_cast<const char*>(brd.GetData()-8), brd.DataSize()+16);
