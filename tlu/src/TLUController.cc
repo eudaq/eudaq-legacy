@@ -140,6 +140,7 @@ namespace tlu {
     m_triggernum(0),
     m_timestamp(0),
     m_oldbuf(0),
+    m_old_timestamp0(0),
     m_particles(0),
     m_lasttime(0),
     m_errorhandler(errorhandler),
@@ -566,36 +567,65 @@ namespace tlu {
   unsigned long long * TLUController::ReadBlock(unsigned entries) {
     if (!entries) return 0;
 
-    unsigned long long buffer[4096]; // should be m_addr->TLU_BUFFER_DEPTH
     if (m_addr->TLU_BUFFER_DEPTH > 4096) EUDAQ_THROW("Buffer size error");
-    for (unsigned i = 0; i < m_addr->TLU_BUFFER_DEPTH; ++i) {
-      buffer[i] = m_oldbuf[i];
-    }
 
     int result = ZESTSC1_SUCCESS;
-    for (int tries = 0; tries < 3; ++tries) {
-      // Request block transfer from TLU
-      usleep(10);
-      WriteRegister(m_addr->TLU_INITIATE_READOUT_ADDRESS, 0xFF);
-      //usleep(10);
-      result = ZestSC1ReadData(m_handle, buffer, sizeof buffer);
+
+    unsigned long long buffer[4096]; // should really be dynamically sized...
+
+    // first check DMA status. If it isn't zero then something has gone wrong.
+    if ( ReadRegister8(m_addr->TLU_DMA_STATUS_ADDRESS) != 0 ) {
+      EUDAQ_THROW("DMA status not zero before starting transfer");
+    }
+
+    WriteRegister(m_addr->TLU_INITIATE_READOUT_ADDRESS, 0xFF);
+    usleep(10);
+
+    if ( ReadRegister8(m_addr->TLU_DMA_STATUS_ADDRESS) != 1 ) {
+      EUDAQ_THROW("DMA status not one after requesting transfer");
+    }
+
+    // unsigned int bytes_to_transfer = (entries * 8)/512;
+    // bytes_to_transfer = ( bytes_to_transfer + 1 ) * 512; // transfer a whole number of 256 word blocks.
+    unsigned int bytes_to_transfer = sizeof(buffer);
+
+    // if ( bytes_to_transfer >= sizeof(long long)*(m_addr->TLU_BUFFER_DEPTH) ) { bytes_to_transfer = sizeof(long long)*4096; }
+
+    std::cout <<"about to read block. Bytes to transfer = " << bytes_to_transfer << std::endl;
+    result = ZestSC1ReadData(m_handle, buffer, bytes_to_transfer );
+    std::cout <<"read block. " << std::endl;
 
 #if TLUDEBUG
-      char * errmsg = 0;
-      ZestSC1GetErrorMessage(static_cast<ZESTSC1_STATUS>(result), &errmsg);
-      std::cout << (result == ZESTSC1_SUCCESS ? "" : "#### Warning: ") << errmsg << std::endl;
+    char * errmsg = 0;
+    ZestSC1GetErrorMessage(static_cast<ZESTSC1_STATUS>(result), &errmsg);
+    std::cout << (result == ZESTSC1_SUCCESS ? "" : "#### Warning: ") << errmsg << std::endl;
 #endif
-      if (result == ZESTSC1_SUCCESS && buffer[entries-1] != m_oldbuf[entries-1]) {
-        for (unsigned i = 0; i < m_addr->TLU_BUFFER_DEPTH; ++i) {
-          m_oldbuf[i] = buffer[i];
-        }
-        usbtrace("BR", 0, buffer, m_addr->TLU_BUFFER_DEPTH, result);
-        return m_oldbuf;
-      }
+
+    //    if (result != ZESTSC1_SUCCESS ) {
+    //  EUDAQ_THROW("Problems with block transfer");
+    // }
+
+    WriteRegister(m_addr->TLU_RESET_REGISTER_ADDRESS, 1<<(m_addr->TLU_DMA_CONTROLLER_RESET_BIT) );
+    if ( ReadRegister8(m_addr->TLU_DMA_STATUS_ADDRESS) != 0 ) {
+      EUDAQ_THROW("DMA status not zero after resetting DMA controller");
     }
-    usbtrace("bR", 0, buffer, m_addr->TLU_BUFFER_DEPTH, result);
-    std::cout << (buffer[0] == m_oldbuf[0] ? "*" : "#") << std::flush;
-    return 0;
+
+    //if (( m_old_timestamp0 != 0 ) && ( m_old_timestamp0 == m_oldbuf[0] )) {
+if (( m_old_timestamp0 != 0 ) && ( m_old_timestamp0 == buffer[0] )) {
+      std::cout << "Error - timestamp[0] is unchanged: " << m_oldbuf[0] << std::endl;
+      EUDAQ_THROW("Error - transferred same timestamp twice");
+      }
+
+//    m_old_timestamp0 = m_oldbuf[0];
+    m_old_timestamp0 = buffer[0];
+
+    for (unsigned i =0 ; i < m_addr->TLU_BUFFER_DEPTH; i++ ){
+      m_oldbuf[i] = buffer[i];
+    }
+
+    usbtrace("BR", 0, m_oldbuf, m_addr->TLU_BUFFER_DEPTH, result);
+    return m_oldbuf;
+
   }
 
   void TLUController::Print(std::ostream &out, bool timestamps) const {

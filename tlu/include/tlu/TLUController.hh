@@ -154,6 +154,7 @@ namespace tlu {
     unsigned long long m_timestamp;
     std::vector<TLUEntry> m_buffer;
     unsigned long long * m_oldbuf;
+    unsigned long long m_old_timestamp0;
     unsigned m_scalers[TLU_TRIGGER_INPUTS];
     unsigned m_particles;
     mutable unsigned long long m_lasttime;
