@@ -39,168 +39,42 @@ namespace eudaq {
 #endif
 
     StandardPlane ConvertPlane(const std::vector<unsigned char> & data, unsigned id) const {
-      StandardPlane plane(id, "DEPFET", "?");
-      //     plane.m_tluevent = getlittleendian<unsigned>(&data[4]);
-      plane.m_tluevent = getlittleendian<unsigned>(&data[4]);
+      StandardPlane plane(id, "DEPFET", "");
+      plane.SetTLUEvent(getlittleendian<unsigned>(&data[4]));
       int Startgate=(getlittleendian<unsigned>(&data[8])>>10) & 0x7f;
       int DevType=(getlittleendian<unsigned>(&data[0])>>28) & 0xf;
       //  printf("TLU=%d Startgate=%d DevType=0x%x \n",plane.m_tluevent,Startgate,DevType);
-      int ix,iy,i,j;
-      if(DevType==0x3) {
+      if (DevType==0x3) {
         plane.SetSizeRaw(64, 256);
 
-        for (unsigned gate = 0; gate < plane.m_ysize/2; gate++)  {      // Pixel sind uebereinander angeordnet
-          int readout_gate;
-          //   if (Direction == false) // default
-          readout_gate = (Startgate + gate)%(plane.m_ysize/2);
-          //else
-          //readout_gate = (startgate[ii] + 64 - gate)%64;
+        for (unsigned gate = 0; gate < plane.YSize()/2; ++gate)  {      // Pixel sind uebereinander angeordnet
+          int readout_gate = (Startgate + gate) % (plane.YSize()/2);
+          int odderon = readout_gate % 2;  // = 0 for even, = 1 for odd;
 
-          int odderon;
-          for (unsigned col = 0; col < plane.m_xsize/2; col += 2) {
-            odderon = readout_gate %2;      //  = 0 for even, = 1 for odd
+          for (unsigned col = 0; col < plane.XSize()/2; col += 2) {
 
-            // eight cases:       -- new! Considers Matrix->Curo Bondpad mismatch! --
-            // 1. U, ramzelle 0 --> row 1, col 63
-            //              int dummy = RAM16[(frame*64*128) + (gate*128) + (col*4)];
-            //DepfetFrame[63-col][(readout_gate*2) +1 -odderon] = RAM_A[(frame*64*128) + (gate*128) + (col*4)];
-
-// JF->              DATA[(63-col)*_noOfYPixel+(readout_gate*2) +1 -odderon]= ADC[(gate*128) + (col*4)]&0xffff;
-            ix=(plane.m_xsize-1)-col;
-            iy=(readout_gate*2) +1 -odderon;
-
-            i=ix*plane.m_ysize+iy; //pixel id in for m_pix
-            j=(gate*plane.m_ysize/2) + (col*4);   //pixel id in our data
-
-            plane.m_x[0][i] =ix;
-            plane.m_y[0][i] =iy;
-            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
-
-
-            /*
-              printf("TDepfetProducerLab::BuildEvent(frame=%d):: RAM_A[%d]=%d  DepfetFrame[%d][%d]=%f\n",frame
-              ,(frame*64*128) + (gate*128) + (col*4),RAM_A[(frame*64*128) + (gate*128) + (col*4)]
-              ,63-col , (readout_gate*2) +1 -odderon  ,  DepfetFrame[63-col][(readout_gate*2) +1 -odderon]);
-            */
-            // 2. D, ramzelle 1 --> row 0, col 0
-            //              dummy = RAM16[(frame*64*128) + (gate*128) + (col*4) +1];
-            //DepfetFrame[col][(readout_gate*2) +odderon] = RAM_A[(frame*64*128) + (gate*128) + (col*4) +1];
-
-//JF->              DATA[col*_noOfYPixel+(readout_gate*2) +odderon]= ADC[(gate*128) + (col*4) +1]&0xffff;
-
-            ix=col;
-            iy=(readout_gate*2) + odderon;
-
-            i=ix*plane.m_ysize+iy; //pixel id in for m_pix
-            j=(gate*plane.m_ysize/2) + (col*4) + 1 ;   //pixel id in our data
-
-            plane.m_x[0][i] =ix;
-            plane.m_y[0][i] =iy;
-            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
-
-
-
-            // 3. U, ramzelle 2 --> row 1, col 62
-            //DepfetFrame[63 -1 - col][(readout_gate*2) +1 -odderon] = RAM_A[(frame*64*128) + (gate*128) + (col*4) +2];
-//JF->                DATA[(63-1-col)*_noOfYPixel+(readout_gate*2) +1 -odderon]= ADC[(gate*128) + (col*4) +2]&0xffff;
-            ix=(plane.m_xsize-1) -1 -col;
-            iy=(readout_gate*2) +1 - odderon;
-
-            i=ix*plane.m_ysize+iy; //pixel id in for m_pix
-            j=(gate*plane.m_ysize/2) + (col*4) + 2 ;   //pixel id in our data
-
-            plane.m_x[0][i] =ix;
-            plane.m_y[0][i] =iy;
-            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
-
-
-            // 4. D, ramzelle 3 --> row 0, col 1
-            //DepfetFrame[col +1][(readout_gate*2) +odderon] = RAM_A[(frame*64*128) + (gate*128) + (col*4) +3];
-//JF->                DATA[(col+1)*_noOfYPixel+(readout_gate*2) +odderon]= ADC[(gate*128) + (col*4) +3]&0xffff;
-
-            ix=col+1;
-            iy=(readout_gate*2) + odderon;
-
-            i=ix*plane.m_ysize+iy; //pixel id in for m_pix
-            j=(gate*plane.m_ysize/2) + (col*4) + 3 ;   //pixel id in our data
-
-            plane.m_x[0][i] =ix;
-            plane.m_y[0][i] =iy;
-            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
-
-
-
-            // 5. U, ramzelle 4 --> row 0, col 63
-            //DepfetFrame[63 - col][(readout_gate*2) +odderon] = RAM_A[(frame*64*128) + (gate*128) + (col*4) +4];
-//JF->                DATA[(63-col)*_noOfYPixel+(readout_gate*2) +odderon]= ADC[(gate*128) + (col*4) +4]&0xffff;
-
-            ix=(plane.m_xsize-1) -col;
-            iy=(readout_gate*2) +odderon;
-
-            i=ix*plane.m_ysize+iy; //pixel id in for m_pix
-            j=(gate*plane.m_ysize/2) + (col*4) + 4 ;   //pixel id in our data
-
-            plane.m_x[0][i] =ix;
-            plane.m_y[0][i] =iy;
-            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
-
-            // 6. D, ramzelle 5 --> row 1, col 0
-            //DepfetFrame[col][(readout_gate*2) +1 -odderon] = RAM_A[(frame*64*128) + (gate*128) + (col*4) +5];
-//JF->                DATA[col*_noOfYPixel+(readout_gate*2) +1 -odderon]= ADC[(gate*128) + (col*4) +5]&0xffff;
-            ix=col;
-            iy=(readout_gate*2) + 1 -odderon;
-
-            i=ix*plane.m_ysize+iy; //pixel id in for m_pix
-            j=(gate*plane.m_ysize/2) + (col*4) + 5 ;   //pixel id in our data
-
-            plane.m_x[0][i] =ix;
-            plane.m_y[0][i] =iy;
-            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
-
-
-            // 7. U, ramzelle 6 --> row 0, col 62
-            //DepfetFrame[63 -1 - col][(readout_gate*2) +odderon] = RAM_A[(frame*64*128) + (gate*128) + (col*4) +6];
-//JF->                DATA[(63-1-col)*_noOfYPixel+(readout_gate*2) +odderon]= ADC[(gate*128) + (col*4) +6]&0xffff;
-
-            ix=(plane.m_xsize-1) -1 -col;
-            iy=(readout_gate*2) +odderon;
-
-            i=ix*plane.m_ysize+iy; //pixel id in for m_pix
-            j=(gate*plane.m_ysize/2) + (col*4) + 6 ;   //pixel id in our data
-
-            plane.m_x[0][i] =ix;
-            plane.m_y[0][i] =iy;
-            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
-
-
-            // 8. D, ramzelle 7 --> row 1, col 1
-            //DepfetFrame[col +1][(readout_gate*2) +1 -odderon] = RAM_A[(frame*64*128) + (gate*128) + (col*4) +7];
-//JF->                DATA[(col+1)*_noOfYPixel+(readout_gate*2) +1 -odderon]= ADC[(gate*128) + (col*4) +7]&0xffff;
-
-            ix=col+1;
-            iy=(readout_gate*2) + 1 -odderon;
-
-            i=ix*plane.m_ysize+iy; //pixel id in for m_pix
-            j=(gate*plane.m_ysize/2) + (col*4) + 7 ;   //pixel id in our data
-
-            plane.m_x[0][i] =ix;
-            plane.m_y[0][i] =iy;
-            plane.m_pix[0][i] = getlittleendian<unsigned short>(&data[12 + 2*j]);
-
-
+            for (unsigned icase = 0; icase < 8; ++icase) {
+              int ix;
+              switch (icase % 4) {
+              case 0: ix = plane.XSize() - 1 - col; break;
+              case 1: ix = col; break;
+              case 2: ix = plane.XSize() - 2 - col; break;
+              default: ix = col + 1; break;
+              }
+              int iy = readout_gate * 2 + (icase == 1 || icase == 3 || icase == 4 || icase == 6 ? odderon : 1 - odderon);
+              int j = gate * plane.YSize() / 2 + col*4 + icase;
+              
+              plane.SetPixel(ix*plane.YSize() + iy, ix, iy, getlittleendian<unsigned short>(&data[12 + 2*j]));
+            } // icase
           } // col
         } // gates
 
-
-
       } else {
         plane.SetSizeRaw(64, 128);
-        unsigned npixels = plane.m_xsize * plane.m_ysize;
+        unsigned npixels = plane.XSize() * plane.YSize();
         for (size_t i = 0; i < npixels; ++i) {
           unsigned d = getlittleendian<unsigned>(&data[(3 + i)*4]);
-          plane.m_x[0][i] = (d >> 16) & 0x3f;
-          plane.m_y[0][i] = (d >> 22) & 0x7f;
-          plane.m_pix[0][i] = d & 0xffff;
+          plane.SetPixel(i, (d >> 16) & 0x3f, (d >> 22) & 0x7f, d & 0xffff);
         }
       }
       return plane;
