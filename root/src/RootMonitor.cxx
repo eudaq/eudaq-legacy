@@ -2004,10 +2004,6 @@ private:
     //          << " frames " << m_decoder->NumFrames(e) << " pixels " << npixels << std::endl;
     std::vector<double> cds = plane.GetPixels<double>();
     std::vector<double> ones(cds.size(), 1.0);
-    if (hitpixels != cds.size()) EUDAQ_THROW("Bad cds size");
-    if (plane
-    for (size_t i = 0; i < cds.size(); ++i) {
-    }
     double sumx2 = 0.0;
     // if (plane.m_pix.size() == 1) {
     //   for (size_t i = 0; i < hitpixels; ++i) {
