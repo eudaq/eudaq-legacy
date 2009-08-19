@@ -37,7 +37,7 @@ std::vector<unsigned> parsenumbers(const std::string & s) {
   return result;
 }
 
-bool DoEvent(unsigned ndata, const eudaq::DetectorEvent & dev, bool do_process, bool do_display, bool do_zs, bool do_dump) {
+bool DoEvent(unsigned /*ndata*/, const eudaq::DetectorEvent & dev, bool do_process, bool do_display, bool do_zs, bool do_dump) {
   if (!do_display) do_zs = false;
   if (do_zs) do_display = false;
   //std::cout << "DEBUG " << ndata << ", " << do_display << ", " << do_zs << std::endl;
@@ -56,9 +56,6 @@ bool DoEvent(unsigned ndata, const eudaq::DetectorEvent & dev, bool do_process, 
         bool bad = false;
         for (size_t i = 0; i < cds.size(); ++i) {
           //if (i < 10) std::cout << ", " << /*plane.m_pix[0][i] << ";" <<*/ cds[i];
-          if (plane.m_flags & eudaq::StandardPlane::FLAG_DIFFCOORDS && cds[i] != 1) {
-            bad = true;
-          }
         }
         //std::cout << (bad ? "***" : "") << std::endl;
         if (bad) std::cout << "***" << std::endl;

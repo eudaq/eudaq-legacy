@@ -10,12 +10,12 @@ namespace eudaq {
   class StandardPlane : public Serializable {
   public:
     enum FLAGS { FLAG_ZS = 0x1, // Data are zero suppressed
-                 FLAG_NEEDCDS = 0x2, // CDS needs to be calculated
+                 FLAG_NEEDCDS = 0x2, // CDS needs to be calculated (data is 2 or 3 raw frames)
                  FLAG_NEGATIVE = 0x4, // Signal polarity is negative
 
-                 FLAG_WITHPIVOT = 0x100,
-                 FLAG_WITHSUBMAT = 0x200,
-                 FLAG_DIFFCOORDS = 0x400
+                 FLAG_WITHPIVOT = 0x10000, // Include before/after pivot boolean per pixel
+                 FLAG_WITHSUBMAT = 0x20000, // Include Submatrix ID per pixel
+                 FLAG_DIFFCOORDS = 0x40000 // Each frame can have different coordinates (in ZS mode)
     };
     typedef double pixel_t;
     typedef double coord_t;
@@ -64,7 +64,7 @@ namespace eudaq {
     int  Polarity() const { return m_flags & FLAG_NEGATIVE ? -1 : 1; }
 
     void Print(std::ostream &) const;
-    //private: // left public for the moment for compatibility
+  private: // left public for the moment for compatibility
     const std::vector<pixel_t> & GetPlane(const std::vector<std::vector<pixel_t> > & v, unsigned p) const {
       if (v.size() == 1) return v[0];
       return v[p];
