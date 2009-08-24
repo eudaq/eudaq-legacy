@@ -44,8 +44,12 @@
 #include <TPRegexp.h>
 #include <TObjString.h>
 
-//
-//
+
+const int FORTIS_NUM_PIXELS_X = 128;
+const int FORTIS_NUM_PIXELS_Y = 128;
+
+
+
 
 struct m_Header {
   unsigned int    EventSize: 20;
@@ -70,7 +74,7 @@ struct  m_DATA  {
   unsigned short nil : 3;
 };
 
-static const unsigned MAX_BOARDS = 9;
+static const unsigned MAX_BOARDS = 7;
 static const unsigned MAX_SEEDS = 1000;
 static const double DEFAULT_NOISE = 4;
 
@@ -124,7 +128,7 @@ public:
       enabled = checkboxbutton->IsOn();
     }
   TGCheckButton *checkboxbutton; //check box associated to this array of histograms
-//std::vector<TH1*> h; // array of histogram pointer
+  //std::vector<TH1*> h; // array of histogram pointer
   TH1 *h[50];
   int index;
   std::vector<TString> drawoptions; //draw option for each histogram
@@ -201,7 +205,7 @@ public:
 
 class ConfigurationClass : public TQObject { //a class holding some configuration informations
 public:
-  ConfigurationClass () : UPDATE_EVERY_N_EVENTS(40), HITCORR_NUM_BINS(20), CLUSTER_POSITION(1), CLUSTER_TYPE(3), SEED_THRESHOLD(5.0), SEED_NEIGHBOUR_THRESHOLD(2.0), CLUSTER_THRESHOLD(7.0), DEPFET_SEED_THRESHOLD(50.0), DEPFET_NEIGHBOUR_THRESHOLD(20.0), RESETONNEWRUN(true)  //some default values for the configuration
+  ConfigurationClass () : UPDATE_EVERY_N_EVENTS(40), HITCORR_NUM_BINS(20), CLUSTER_POSITION(1), CLUSTER_TYPE(3), SEED_THRESHOLD(5.0), SEED_NEIGHBOUR_THRESHOLD(2.0), CLUSTER_THRESHOLD(7.0), DEPFET_SEED_THRESHOLD(16.0), DEPFET_NEIGHBOUR_THRESHOLD(4.0), FORTIS_SEED_THRESHOLD(5.0), FORTIS_NEIGHBOUR_THRESHOLD(2.0), RESETONNEWRUN(true)  //some default values for the configuration
     {
     }
 
@@ -216,6 +220,9 @@ public:
   double CLUSTER_THRESHOLD;
   double DEPFET_SEED_THRESHOLD;
   double DEPFET_NEIGHBOUR_THRESHOLD;
+  double FORTIS_SEED_THRESHOLD;
+  double FORTIS_NEIGHBOUR_THRESHOLD;
+  
   bool RESETONNEWRUN;
 };
 
@@ -347,6 +354,7 @@ public:
       //load the config file
       std::vector<int> num_x_pixels;
       std::vector<int> num_y_pixels;
+     
 
       std::fstream f;
       std::string s;
@@ -380,7 +388,42 @@ public:
               {
                 const TString tmpstring = ((TObjString *)arr->At(i))->GetString();
                 //find the sensor type and add the number of pixels to the array
-                if(tmpstring == "DET_MIMOSTAR2")
+
+
+                if(tmpstring == "DET_MIMOSA26")
+                  {
+                    mimosa26.push_back(true);
+                  }
+                else
+                  {
+                    mimosa26.push_back(false);
+                  }
+
+                if(tmpstring == "DET_FORTIS")
+                  {
+                    std::cout << "fortis sensor found in the config file." << std::endl;
+                    isfortis.push_back(true);
+                  }
+                else
+                  {
+                    isfortis.push_back(false);
+                  }
+ 
+
+              if(tmpstring == "DET_DEPFET")
+                {
+                  std::cout << "depfet sensor found in the config file." << std::endl;
+                  isdepfet.push_back(true);
+                }
+              else
+                {
+                  isdepfet.push_back(false);
+                }
+
+
+
+              //find the sensor type and add the number of pixels to the array
+              if(tmpstring == "DET_MIMOSTAR2")
                   {
                     num_x_pixels.push_back(132);
                     num_y_pixels.push_back(128);
@@ -401,6 +444,11 @@ public:
                     num_x_pixels.push_back(512);
                     num_y_pixels.push_back(512);
                   }
+                else if(tmpstring == "DET_MIMOSA26")
+                  {
+                    num_x_pixels.push_back(1178);
+                    num_y_pixels.push_back(512);
+                  }
                 else if(tmpstring == "DET_MIMOSA5")
                   {
                     num_x_pixels.push_back(1024);
@@ -411,6 +459,12 @@ public:
                     num_x_pixels.push_back(64);
                     num_y_pixels.push_back(256);
                   }
+                else if(tmpstring == "DET_FORTIS")
+                  {
+                    //adjust your number of pixels here!! and aftwards do a "make root"
+                    num_x_pixels.push_back(FORTIS_NUM_PIXELS_X);
+                    num_y_pixels.push_back(FORTIS_NUM_PIXELS_Y);
+                  }
               }
             delete arr;
             //end of splitting
@@ -420,17 +474,185 @@ public:
         }
       f.close();
 
+    static bool firstcall = true;
+     if(firstcall)
+      {
+       
+        bool foundfortis = false;
+        for(size_t i = 0; i < isfortis.size(); i++)
+          {
+            if(isfortis[i])
+              {
+                foundfortis = true;
+              }
+          }
+        std::cout << "start loading fortis pedestals ... debug: "<< isfortis.size()<< " " <<  foundfortis << std::endl;
+        if(foundfortis)
+          {
+            for(size_t i = 0; i < FORTIS_NUM_PIXELS_X; i++)
+              {
+                fortis_ped_matrix.push_back(std::vector<double>(FORTIS_NUM_PIXELS_Y,0.0));
+                fortis_noise_matrix.push_back(std::vector<double>(FORTIS_NUM_PIXELS_Y,1.0));
+              }
+            //fill ped array
+
+            std::fstream f;
+            std::string s;
+            std::string pedfilename = "fortis_pedestals.txt";
+            f.open(pedfilename.c_str(), std::ios::in);
+
+            if(!f)
+              {
+                std::cout << "can not find fortis pedestal file: " << pedfilename <<  std::endl;
+                exit(-1);
+              }
+            else
+              {
+                std::cout << "the fortis pedestal file was found" << std::endl;
+              }
+            while (!f.eof())
+              {
+                std::getline(f, s);        // read one line
+                TString tmpstring = s;
+                TPRegexp shortTest("(.+?)\\s(.+?)\\s(.+?)\\s(.+?)");
+                TObjArray *subStrL = shortTest.MatchS(tmpstring);
+
+                int x = -1;
+                int y = -1;
+                double ped = -9999.0;
+                double noise = -1.0;
+                //loop over all groups
+                for (int i = 1; i < subStrL->GetEntries(); i++) {
+                  const TString subStr = ((TObjString *)subStrL->At(i))->GetString();
+                  //std::cout << "i=" << i << " " << subStr.Atoi() << std::endl;
+                  if(i==1)
+                    x = subStr.Atoi();
+                  if(i==2)
+                    y = subStr.Atoi();
+                  if(i==3)
+                    ped = subStr.Atof();
+                  if(i==4)
+                    noise = subStr.Atof();
+                }
+                               
+                //only fill fortis ped matrix if the matching was a success
+                if(x != -1 && y != -1 && ped > -9998.0 && noise > 0.0)
+                  {
+                    fortis_noise_matrix[x][y] = noise;
+                    fortis_ped_matrix[x][y] = ped;
+                  }
+                else
+                  {
+                    std::cout << "fortis pedestal file reading error! unreasonable numbers:" << x << " " << y << " " << ped << " " << subStrL->GetEntries()  << " " << noise<< std::endl;
+                  }
+                delete subStrL;
+              }
+
+            f.close();
+
+
+
+
+            //end of fill ped array
+          }
+      }
+    if(firstcall)
+      {
+       
+        bool founddepfet = false;
+        for(size_t i = 0; i < isdepfet.size(); i++)
+          {
+            if(isdepfet[i])
+              {
+                founddepfet = true;
+              }
+          }
+        std::cout << "start loading depfet pedestals ... debug: "<< isdepfet.size()<< " " <<  founddepfet << std::endl;
+        if(founddepfet)
+          {
+            for(size_t i = 0; i < 64; i++)
+              {
+                depfet_ped_matrix.push_back(std::vector<double>(256,0.0));
+                depfet_noise_matrix.push_back(std::vector<double>(256,1.0));
+              }
+            //fill ped array
+
+            std::fstream f;
+            std::string s;
+            std::string pedfilename = "Pedestals.bdt";
+            f.open(pedfilename.c_str(), std::ios::in);
+
+            if(!f)
+              {
+                std::cout << "can not find depfet pedestal file: " << pedfilename <<  std::endl;
+                exit(-1);
+              }
+            else
+              {
+                std::cout << "the depfet pedestal file was found" << std::endl;
+              }
+            while (!f.eof())
+              {
+                std::getline(f, s);        // read one line
+                TString tmpstring = s;
+                TPRegexp shortTest("(.+?)\\s(.+?)\\s(.+?)\\s(.+?)\\s(.+?)");
+                TObjArray *subStrL = shortTest.MatchS(tmpstring);
+
+                int x = -1;
+                int y = -1;
+                double ped = -9999.0;
+                double noise = -1.0;
+                //loop over all groups
+                for (int i = 1; i < subStrL->GetEntries(); i++) {
+                  const TString subStr = ((TObjString *)subStrL->At(i))->GetString();
+                  //std::cout << "i=" << i << " " << subStr.Atoi() << std::endl;
+                  if(i==1)
+                    x = subStr.Atoi();
+                  if(i==2)
+                    y = subStr.Atoi();
+                  if(i==3)
+                    ped = subStr.Atof();
+                  if(i==4)
+                    noise = subStr.Atof();
+                  
+                }
+               
+                
+                //only fill depfet ped matrix if the matching was a success
+                if(x != -1 && y != -1 && ped > -9998.0 && noise > 0.0)
+                  {
+                    depfet_noise_matrix[x][y] = noise;
+                    depfet_ped_matrix[x][y] = ped;
+                  }
+                else
+                  {
+                    std::cout << "depfet pedestal file reading error! unreasonable numbers:" << x << " " << y << " " << ped << " " << subStrL->GetEntries()  << " " << noise<< std::endl;
+                  }
+                delete subStrL;
+              }
+
+            f.close();
+
+
+
+
+            //end of fill ped array
+            firstcall = false;
+          }
+      }
+
+
       if( num_x_pixels.size() != num_y_pixels.size() || num_x_pixels.size() == 0)
         {
           std::cout << "sensor size could not be read from configuration file!" << std::endl;
         }
 
       //    for(int i = 0;i < 1; i++)
-//        {
-//      num_x_pixels.push_back(264);
-//      num_y_pixels.push_back(256);
+    //        {
+    //      num_x_pixels.push_back(264);
+    //      num_y_pixels.push_back(256);
 
-//        }
+    //        }
       //end of loading the config file
       totalnumevents=0;
 
@@ -524,6 +746,24 @@ public:
       m_conf_group_frame->AddFrame(m_conf_depfet_seedneighbourthreshold.get(), m_hinttop.get());
 
       //
+ //
+      fortis_seedthresholdlabel = new TGLabel(m_conf_group_frame.get(),"FORTIS Seed Threshold:");
+      m_conf_group_frame->AddFrame(fortis_seedthresholdlabel.get(), m_hinttop.get());
+
+      m_conf_fortis_seedthreshold= new TGNumberEntry(m_conf_group_frame.get(), conf.FORTIS_SEED_THRESHOLD, 20);
+      m_conf_fortis_seedthreshold->Associate(this);
+      m_conf_group_frame->AddFrame(m_conf_fortis_seedthreshold.get(), m_hinttop.get());
+
+      fortis_seedneighbourthresholdlabel = new TGLabel(m_conf_group_frame.get(),"FORTIS Seed Neighbour Threshold:");
+      m_conf_group_frame->AddFrame(fortis_seedneighbourthresholdlabel.get(), m_hinttop.get());
+
+      m_conf_fortis_seedneighbourthreshold= new TGNumberEntry(m_conf_group_frame.get(), conf.FORTIS_NEIGHBOUR_THRESHOLD, 8);
+      m_conf_fortis_seedneighbourthreshold->Associate(this);
+      m_conf_group_frame->AddFrame(m_conf_fortis_seedneighbourthreshold.get(), m_hinttop.get());
+
+      //
+
+
 
 
       clusterthresholdlabel = new TGLabel(m_conf_group_frame.get(),"Cluster Threshold:");
@@ -640,7 +880,7 @@ public:
       {
         TString title;
         char tmpstring[50];
-        sprintf(tmpstring, "X Cluster Correlation Board 0 : Board %1.0f", (float)(m_board.size()) );
+        sprintf(tmpstring, "X Cluster Correlation Board 0 : Board %1.0f", (float)(m_board.size()-1) );
         title = tmpstring;
         m_clustercorrelation.push_back(
           new TH2DNew(make_name("clustercorrelation",    (m_board.size()-1)).c_str(), title,  num_x_pixels.back(), 0, num_x_pixels.back(), num_x_pixels[0], 0, num_x_pixels[0])
@@ -662,7 +902,7 @@ public:
       {
         TString title;
         char tmpstring[50];
-        sprintf(tmpstring, "Y Cluster Correlation Board 0 : Board %1.0f", (float)(m_board.size()) );
+      sprintf(tmpstring, "Y Cluster Correlation Board 0 : Board %1.0f", (float)(m_board.size()-1) );
         title = tmpstring;
         m_clustercorrelationy.push_back(
           new TH2DNew(make_name("clustercorrelationy",    (m_board.size()-1)).c_str(), title,  num_y_pixels.back(), 0, num_y_pixels.back(), num_y_pixels[0], 0, num_y_pixels[0])
@@ -1245,6 +1485,8 @@ public:
               m_board[i].m_canvas->cd(canvaspadindex);
               if(board_pads[t].at(i).GetStatus()) //if the pad is active, it is drawn
                 {
+                if(board_pads[t].at(i).h[0]->GetTitle() == "CDS Values")
+                  gPad->SetLogy();
                   board_pads[t].at(i).h[0]->DrawCopy( board_pads[t].at(i).drawoptions.at(0)); //index is equal to 0 because in each board display tab only one plot per pad is drawn
                   canvaspadindex++;
                 }
@@ -1370,6 +1612,17 @@ public:
       if(depfet_seedneighbourthresh > 0)
         conf.DEPFET_NEIGHBOUR_THRESHOLD = depfet_seedneighbourthresh;
       //end of depfet
+
+      //fortis
+      double fortis_seedthresh = (double) m_conf_fortis_seedthreshold->GetNumber();
+      if(fortis_seedthresh > 0)
+        conf.FORTIS_SEED_THRESHOLD = fortis_seedthresh;
+      
+      double fortis_seedneighbourthresh = (double) m_conf_fortis_seedneighbourthreshold->GetNumber();
+      if(fortis_seedneighbourthresh > 0)
+        conf.FORTIS_NEIGHBOUR_THRESHOLD = fortis_seedneighbourthresh;
+      //end of fortis
+      
 
       double seedthresh = (double) m_conf_seedthreshold->GetNumber();
       if(seedthresh > 0)
@@ -1569,8 +1822,8 @@ public:
         }
 
         for(size_t k = 0; k < cpos.at(0).size(); k++) {
-          for(size_t l = 0; l < cpos.at((int)m_board.size()-2).size(); l++) {
-            m_clustercorrelation.back()->Fill(cpos.at((int)m_board.size()-2).at(l),cpos.at(0).at(k));
+          for(size_t l = 0; l < cpos.at((int)m_board.size()-1).size(); l++) {
+            m_clustercorrelation.back()->Fill(cpos.at((int)m_board.size()-1).at(l),cpos.at(0).at(k));
           }
         }
         //depfet correlation
@@ -1608,10 +1861,10 @@ public:
     }
     unsigned planeshit = 0;
     //  std::cout << "Event " << ev->GetEventNumber() << ", clusters:";
-//       for (size_t i = 0; i < numplanes; ++i) {
-//         std::cout << " " << m_board[i].m_clusters.size();
-//       }
-//       std::cout << std::endl;
+    //       for (size_t i = 0; i < numplanes; ++i) {
+    //         std::cout << " " << m_board[i].m_clusters.size();
+    //       }
+    //       std::cout << std::endl;
     int numtracks = 0;
 
     for (size_t i = 0; i < ev.NumPlanes(); ++i) {
@@ -1746,29 +1999,29 @@ public:
       int updatedpads = 0;
       while (TVirtualPad * p = c->GetPad(++j)) {
         //   TList *l;
-//         l = p->GetListOfPrimitives();
+        //         l = p->GetListOfPrimitives();
         // std::cout << "pad entries = " << (l->GetEntries()) <<  std::endl;
         Bool_t mod = kTRUE;
-//         for (Int_t j = 0; j < l->GetEntries(); j++) { //this loop updates ONLY pads that contain updated and modified plots
-//           if(l->At(j)->InheritsFrom("TH2D")) //ensure that we have histograms and not another tobject like a title and so on
-//             {
-//               TH2DNew *h = (TH2DNew*)l->At(j);
-//               if(h->modified)
-//                 {
-//                   mod = kTRUE;
-//                   h->modified = kFALSE;
-//                 }
-//             }
-//           if(l->At(j)->InheritsFrom("TH1D"))
-//             {
-//               TH1DNew *h = (TH1DNew*)l->At(j);
-//               if(h->modified)
-//                 {
-//                   mod = kTRUE;
-//                   h->modified = kFALSE;
-//                 }
-//             }
-//         }
+        //         for (Int_t j = 0; j < l->GetEntries(); j++) { //this loop updates ONLY pads that contain updated and modified plots
+        //           if(l->At(j)->InheritsFrom("TH2D")) //ensure that we have histograms and not another tobject like a title and so on
+        //             {
+        //               TH2DNew *h = (TH2DNew*)l->At(j);
+        //               if(h->modified)
+        //                 {
+        //                   mod = kTRUE;
+        //                   h->modified = kFALSE;
+        //                 }
+        //             }
+        //           if(l->At(j)->InheritsFrom("TH1D"))
+        //             {
+        //               TH1DNew *h = (TH1DNew*)l->At(j);
+        //               if(h->modified)
+        //                 {
+        //                   mod = kTRUE;
+        //                   h->modified = kFALSE;
+        //                 }
+        //             }
+        //         }
         if(mod)
           {
             p->Modified();
@@ -1858,17 +2111,22 @@ private:
     b.m_histoclusterx   = new TH1DNew(make_name("ClustXProfile", board).c_str(), "Cluster X Profile", num_x_pixels, 0, num_x_pixels);
     b.m_hitmap_depfet_corr = new TH2DNew(make_name("EUDET DEPFET HITMAP", board).c_str(), "EUDET DEPFET HITMAP",   264, 0, 264, 256, 0, 256);
     b.m_histoclustery   = new TH1DNew(make_name("ClustYProfile", board).c_str(), "Cluster Y Profile", num_y_pixels, 0, num_y_pixels);
-    b.m_historawval     = new TH1DNew(make_name("RawValues",     board).c_str(), "Raw Values",        512, 0, 4096);
-    if (num_x_pixels == 64) {
-      // Horrible hack for DEPFET
+    if(isfortis[board])
+      b.m_historawval     = new TH1DNew(make_name("RawValues",     board).c_str(), "Raw Values",        65536 , 0, 65536 );
+    else
+      b.m_historawval     = new TH1DNew(make_name("RawValues",     board).c_str(), "Raw Values",        512, 0, 4096);  
+    
+    if (isdepfet[board]) {
       b.m_histocdsval     = new TH1DNew(make_name("CDSValues",     board).c_str(), "CDS Values",        4050, -50, 4000);
+    } else if (isfortis[board]) {
+      b.m_histocdsval     = new TH1DNew(make_name("CDSValues",     board).c_str(), "CDS Values",        9000, -1000, 10000);
     } else {
-      b.m_histocdsval     = new TH1DNew(make_name("CDSValues",     board).c_str(), "CDS Values",        150, -50, 100);
+      b.m_histocdsval     = new TH1DNew(make_name("CDSValues",     board).c_str(), "CDS Values",        150, -200, 100);
     }
     b.m_histonoise     = new TH1DNew(make_name("Noise",     board).c_str(), "Noise",        100, 0, 10);
     b.m_histonoiseeventnr     = new TH1DNew(make_name("NoiseEventNr",     board).c_str(), "NoiseEventNr",        30, 0, 1500);
 
-    b.m_histoclusterval = new TH1DNew(make_name("ClusterValues", board).c_str(), "Cluster Charge",    500,  0, 1000);
+    b.m_histoclusterval = new TH1DNew(make_name("ClusterValues", board).c_str(), "Cluster Charge",    500,  0, 10000);
     b.m_histonumclusters= new TH1DNew(make_name("NumClusters",   board).c_str(), "Num Clusters",      100,  0,  100);
     b.m_histodeltax     = new TH1DNew(make_name("DeltaX",        board).c_str(), "Delta X",           200,-100, 100);
     b.m_histodeltay     = new TH1DNew(make_name("DeltaY",        board).c_str(), "Delta Y",           200,-100, 100);
@@ -1888,6 +2146,7 @@ private:
     //std::cout << "Filling " << e.LocalEventNumber() << " board" << boardnumber
     //          << " frames " << m_decoder->NumFrames(e) << " pixels " << npixels << std::endl;
     std::vector<double> cds(hitpixels, 0.0), ones(hitpixels, 1.0);
+    TH1::StatOverflows(kTRUE);
     double sumx2 = 0.0;
     if (plane.m_pix.size() == 1) {
       for (size_t i = 0; i < hitpixels; ++i) {
@@ -1911,7 +2170,7 @@ private:
 
        //  TF1 *f1 = new TF1("bla","gaus");
 
-//         b.rmshisto->Fit(f1,"Q0","");
+        //         b.rmshisto->Fit(f1,"Q0","");
         
         //  Double_t sigma = f1->GetParameter(2);
         
@@ -1936,7 +2195,22 @@ private:
       b.m_historawval->FillN(hitpixels, &plane.m_pix[1][0], &ones[0]);
       //b.m_historawval->SetNormFactor(b.m_historawval->Integral() / m_histoevents);
     }
-    b.m_histocdsval->FillN(hitpixels, &cds[0], &ones[0]);
+    //b.m_histocdsval->FillN(hitpixels, &cds[0], &ones[0]);
+
+    for(size_t i = 0; i < plane.m_y.size();i++)
+      {
+        double pedestal = 0.0;
+        if(isdepfet[boardnumber])
+          pedestal = depfet_ped_matrix[plane.m_x[i]][plane.m_y[i]];
+        if(isfortis[boardnumber])
+          pedestal = fortis_ped_matrix[plane.m_x[i]][plane.m_y[i]];
+        
+        if(isfortis[boardnumber])
+          b.m_histocdsval->Fill((plane.m_pix[1][i]-pedestal));
+        else
+          b.m_histocdsval->Fill((cds[i]-pedestal));
+      }
+
     //b.m_histocdsval->SetNormFactor(b.m_histocdsval->Integral() / m_histoevents);
     const std::vector<double> & newx = plane.m_x; // TODO: shouldn't need to recalculate this for each event
     //     for (int i = 0; i < cds.size(); ++i) {
@@ -1949,11 +2223,26 @@ private:
     //       }
     //     }
     b.m_tempcds->Reset();
-    b.m_tempcds->FillN(hitpixels, &newx[0], &plane.m_y[0], &cds[0]);
-
     b.m_tempcds2->Reset();
-    b.m_tempcds2->FillN(hitpixels, &newx[0], &plane.m_y[0], &cds[0]);
-
+    if(isfortis[boardnumber])
+      { 
+        double pedestal = 0.0;
+        
+        for(size_t i = 0; i < plane.m_y.size(); ++i)
+          {
+            //pedestal = fortis_ped_matrix[plane.m_x[i]][plane.m_y[i]];
+            pedestal = 0.0;
+            b.m_tempcds->Fill(newx[i],plane.m_y[i],(plane.m_pix[1][i]-pedestal) );
+            b.m_tempcds2->Fill(newx[i],plane.m_y[i],(plane.m_pix[1][i]-pedestal) );
+          }
+      }
+    else
+      {
+        b.m_tempcds->FillN(hitpixels, &newx[0], &plane.m_y[0], &cds[0]);
+        b.m_tempcds2->Reset();
+        b.m_tempcds2->FillN(hitpixels, &newx[0], &plane.m_y[0], &cds[0]);
+      }
+    
     if((totalnumevents % (int)conf.UPDATE_EVERY_N_EVENTS) == 0) {
       b.m_testhisto->Reset();
       TString tmpstring;
@@ -1964,11 +2253,51 @@ private:
       b.m_testhisto->FillN(hitpixels, &newx[0], &plane.m_y[0], &cds[0]);
     }
 
-    b.m_histocds2d->FillN(hitpixels, &newx[0], &plane.m_y[0], &cds[0]);
+    //b.m_histocds2d->FillN(hitpixels, &newx[0], &plane.m_y[0], &cds[0]);
+    for(size_t i = 0; i < plane.m_y.size();i++)
+      {
+        double pedestal = 0.0;
+        if(isdepfet[boardnumber])
+          pedestal = depfet_ped_matrix[plane.m_x[i]][plane.m_y[i]];
+        else if (isfortis[boardnumber])
+          pedestal = fortis_ped_matrix[plane.m_x[i]][plane.m_y[i]];
+
+        if(isfortis[boardnumber])
+          b.m_histocds2d->Fill(plane.m_x[i], plane.m_y[i],(plane.m_pix[1][i]-pedestal));
+        else
+          b.m_histocds2d->Fill(plane.m_x[i], plane.m_y[i],(cds[i]-pedestal));
+      }
+
     b.m_clusters.clear();
     b.m_clusterx.clear();
     b.m_clustery.clear();
-    //std::cout << "DEBUG: FillBoard " << m_histoevents << std::endl;
+
+
+
+    if(mimosa26[boardnumber])
+      {
+        for(size_t i =0; i< plane.m_y.size(); i++)
+          {
+            b.m_clusterx.push_back( plane.m_x[i]);
+            b.m_clustery.push_back( plane.m_y[i]);
+            
+            b.m_clusters.push_back(1.0);
+          }
+      //   for (int iy = 1; iy <= b.m_tempcds->GetNbinsY(); ++iy) {
+//           for (int ix = 1; ix <= b.m_tempcds->GetNbinsX(); ++ix) {
+//             b.m_clusters.push_back(ix);
+//             b.m_clusterx.push_back(iy);
+//             b.m_clustery.push_back(1.0);
+            
+//           }
+//         }
+        
+      }
+    else
+      {
+      
+
+        //std::cout << "DEBUG: FillBoard " << m_histoevents << std::endl;
     if (m_histoevents >= 20) {
       if (m_histoevents < 500) {
         //std::cout << "DEBUG: filling noise" << std::endl;
@@ -1984,20 +2313,41 @@ private:
 
       std::vector<Seed> seeds;
       seeds.reserve(20); // preallocate memory for 20 seed pixels
-      const double seed_thresh = conf.SEED_THRESHOLD /* sigma */ , cluster_thresh = conf.CLUSTER_THRESHOLD /* sigma */, seedneighbour_thresh = conf.SEED_NEIGHBOUR_THRESHOLD;
-
+      double seed_thresh = conf.SEED_THRESHOLD /* sigma */ , cluster_thresh = conf.CLUSTER_THRESHOLD /* sigma */, seedneighbour_thresh = conf.SEED_NEIGHBOUR_THRESHOLD;
+      
+      if(isdepfet[boardnumber])
+        {
+          seed_thresh = conf.DEPFET_SEED_THRESHOLD /* sigma */ , cluster_thresh = 0.0 /* sigma */, seedneighbour_thresh = conf.DEPFET_NEIGHBOUR_THRESHOLD; 
+        }
+      if(isfortis[boardnumber])
+        {
+          seed_thresh = conf.FORTIS_SEED_THRESHOLD /* sigma */ , cluster_thresh = 0.0 /* sigma */, seedneighbour_thresh = conf.FORTIS_NEIGHBOUR_THRESHOLD; 
+        }
       for (int iy = 1; iy <= b.m_tempcds->GetNbinsY(); ++iy) {
         for (int ix = 1; ix <= b.m_tempcds->GetNbinsX(); ++ix) {
           double s = b.m_tempcds->GetBinContent(ix, iy);
           double noise = DEFAULT_NOISE; //b.m_histonoise2d->GetBinContent(ix, iy);
-          if (s > seed_thresh*noise) {
+          
+          Double_t pedestal = 0.0;
+          
+          if(isdepfet[boardnumber])
+            {          
+              pedestal = depfet_ped_matrix[ix-1][iy-1];
+              noise =  depfet_noise_matrix[ix-1][iy-1];
+            }
+          if(isfortis[boardnumber])
+            {          
+              pedestal = fortis_ped_matrix[ix-1][iy-1];
+              noise =  fortis_noise_matrix[ix-1][iy-1];
+            }
+          if ((s-pedestal) > seed_thresh*noise) {
             seeds.push_back(Seed(ix, iy, s));
           }
         }
       }
 
       //construct the cluster
-      if (seeds.size() < MAX_SEEDS) {
+      if (seeds.size() < MAX_SEEDS || isfortis[boardnumber]) {
         std::sort(seeds.begin(), seeds.end(), &Seed::compare);
         for (size_t i = 0; i < seeds.size(); ++i) {
           int clustersizeindex = 1;
@@ -2012,17 +2362,46 @@ private:
             double noise = 0;
             for (int dy = -clustersizeindex; dy <= clustersizeindex; ++dy) {
               for (int dx = -clustersizeindex; dx <= clustersizeindex; ++dx) {
+                Double_t pedestal = 0.0;
+                try{
+                  if((seeds[i].x+dx) >= 0 && (seeds[i].y+dy) >= 0 && (seeds[i].x+dx) < b.m_tempcds->GetXaxis()->GetLast()
+                     && (seeds[i].y+dy) < b.m_tempcds->GetYaxis()->GetLast())
+                    {
+                      if(isdepfet[boardnumber])
+                        pedestal = depfet_ped_matrix.at(seeds[i].x+dx).at(seeds[i].y+dy);
+                      if(isfortis[boardnumber])
+                        pedestal = fortis_ped_matrix.at(seeds[i].x+dx).at(seeds[i].y+dy);
+                    }
+                }
+                catch (...) 
+                  {
+                    std::cout << "error " << (seeds[i].x+dx) << " " << (seeds[i].y+dy) << std::endl;
+                    exit(-1);
+                  }
                 if((seeds[i].x+dx) >= 0 && (seeds[i].y+dy) >= 0 && (seeds[i].x+dx) < b.m_tempcds->GetXaxis()->GetLast()
                    && (seeds[i].y+dy) < b.m_tempcds->GetYaxis()->GetLast() //check whether we are inside the histogram
-                   && b.m_tempcds->GetBinContent((int)seeds[i].x+dx, (int)seeds[i].y+dy) > seedneighbour_thresh * DEFAULT_NOISE)
+                   && (b.m_tempcds->GetBinContent((int)seeds[i].x+dx, (int)seeds[i].y+dy)-pedestal) > seedneighbour_thresh * DEFAULT_NOISE)
                   {
-                    noise += DEFAULT_NOISE*DEFAULT_NOISE;
+                    if(isdepfet[boardnumber])
+                      {          
+                        
+                        noise +=  depfet_noise_matrix[seeds[i].x+dx-1][seeds[i].y+dy-1] * depfet_noise_matrix[seeds[i].x+dx-1][seeds[i].y+dy-1];
+                      }
+                    if(isfortis[boardnumber])
+                      {          
+                        noise +=  fortis_noise_matrix[seeds[i].x+dx-1][seeds[i].y+dy-1] * fortis_noise_matrix[seeds[i].x+dx-1][seeds[i].y+dy-1];
+                      }
+                    else
+                      noise += DEFAULT_NOISE*DEFAULT_NOISE;
+                    
                     cluster += b.m_tempcds->GetBinContent((int)seeds[i].x+dx, (int)seeds[i].y+dy);
                     b.m_tempcds->SetBinContent((int)seeds[i].x+dx, (int)seeds[i].y+dy, 0);
                   }
               }
             }
             noise = std::sqrt(noise);
+            if(isdepfet[boardnumber])
+              noise = 0.0;
             if (cluster > cluster_thresh*noise) { //cut on the cluster charge
               if (conf.CLUSTER_POSITION == 1)
                 {
@@ -2041,6 +2420,8 @@ private:
                         {
                           double noise = 5.0;
                           double value = b.m_tempcds2->GetBinContent((int)seeds[i].x+dx, (int)seeds[i].y+dy);
+                          if(isdepfet[boardnumber])
+                            noise = 0.0;
                           if((seeds[i].x+dx) >= 0 && (seeds[i].y+dy) >= 0 && (seeds[i].x+dx) < b.m_tempcds2->GetXaxis()->GetLast()
                              && (seeds[i].y+dy) < b.m_tempcds2->GetYaxis()->GetLast() //check whether we are inside the histogram
                              && value > seedneighbour_thresh*noise) // cut on s/n of the seed pixels neighbours
@@ -2104,6 +2485,24 @@ private:
       }
       /*if (seeds.size())*/ b.m_histonumhits->Fill(seeds.size());
     }
+      } // end of eudrb clustering
+
+    if(mimosa26[boardnumber])
+      {
+        numberofclusters = b.m_clusters.size();
+
+        clusterposition = b.m_clusterx;
+        clusterpositiony = b.m_clustery;
+
+       //  b.m_histohit2d->Reset();
+//         b.m_histohit2d->FillN(b.m_clusters.size(), &b.m_clusterx[0], &b.m_clustery[0], &b.m_clusters[0]);
+//         b.m_histocluster2d->FillN(b.m_clusters.size(), &b.m_clusterx[0], &b.m_clustery[0], &b.m_clusters[0]);
+//         b.m_histoclusterx->FillN(b.m_clusters.size(), &b.m_clusterx[0], &b.m_clusters[0]);
+//         b.m_histoclusterx->SetNormFactor(b.m_histoclusterx->Integral() / m_histoevents);
+//         b.m_histoclustery->FillN(b.m_clusters.size(), &b.m_clustery[0], &b.m_clusters[0]);
+//         b.m_histoclustery->SetNormFactor(b.m_histoclustery->Integral() / m_histoevents);
+//         b.m_histoclusterval->FillN(b.m_clusters.size(), &b.m_clusters[0], &ones[0]); 
+      }
     if (!b.islog && m_histoevents > 100) {
       b.islog = true;
       //b.m_canvas->cd(3)->SetLogy();
@@ -2112,6 +2511,8 @@ private:
       //m_canvasmain->cd(board + m_board.size() + 1)->SetLogy();
     }
   }
+
+  std::vector<bool> mimosa26;
 
   eudaq::Time m_lastupdate;
   bool m_modified, m_runended;
@@ -2160,6 +2561,8 @@ private:
   counted_ptr<TGLabel> seedneighbourthresholdlabel;
   counted_ptr<TGLabel> depfet_seedthresholdlabel;
   counted_ptr<TGLabel> depfet_seedneighbourthresholdlabel;
+  counted_ptr<TGLabel> fortis_seedthresholdlabel;
+  counted_ptr<TGLabel> fortis_seedneighbourthresholdlabel;
 
 
   counted_ptr<TGLabel> clusterthresholdlabel;
@@ -2171,6 +2574,8 @@ private:
   counted_ptr<TGNumberEntry> m_conf_seedneighbourthreshold;
   counted_ptr<TGNumberEntry> m_conf_depfet_seedthreshold;
   counted_ptr<TGNumberEntry> m_conf_depfet_seedneighbourthreshold;
+  counted_ptr<TGNumberEntry> m_conf_fortis_seedthreshold;
+  counted_ptr<TGNumberEntry> m_conf_fortis_seedneighbourthreshold;
 
   counted_ptr<TGNumberEntry> m_conf_clusterthreshold;
 
@@ -2241,7 +2646,14 @@ private:
 
   std::vector< TH2DNew *> m_depfet_correlation;
   std::vector< TH2DNew *> m_depfet_correlationy;
-
+  std::vector< std::vector<double> > depfet_ped_matrix;
+  std::vector< std::vector<double> > depfet_noise_matrix;
+  std::vector< std::vector<double> > fortis_ped_matrix;
+  std::vector< std::vector<double> > fortis_noise_matrix;
+  
+  std::vector<bool> isdepfet;
+  std::vector<bool> isfortis;
+  
   counted_ptr<TH1DNew> m_depfet_adc;
   counted_ptr<TH2DNew> m_depfet_map;
 
