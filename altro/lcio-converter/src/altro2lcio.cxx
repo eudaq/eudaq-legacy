@@ -3,7 +3,7 @@
 #include "eudaq/RawDataEvent.hh"
 
 // the lcio stuff
-#include "EVENT/LCEvent.h"
+#include "IMPL/LCEventImpl.h"
 #include "lcio.h"
 #include "IO/LCWriter.h"
 #include "EVENT/LCIO.h"
@@ -191,17 +191,21 @@ int main(int argc, char * argv[])
 		    unsigned int eventnumber =  read32bitword(inputbuffer + 12);
 		    if (eventnumber%100 == 0)
 		      std::cout << "Reading event number "<< eventnumber << std::endl;
-		    eudaq::RawDataEvent eudaqevent( "AltroEvent", runnumber, eventnumber);
-		    eudaqevent.AddBlock(inputbuffer, (blocklength+1) *4);
+		    eudaq::RawDataEvent eudaqevent("Altro", runnumber, eventnumber);
+		    // the block number is always 0, there is only one block
+		    eudaqevent.AddBlock(0, inputbuffer, (blocklength+1) *4);
 
 		    // set the data format version read from header
 		    std::stringstream dataformat_string;
 		    dataformat_string << dataformat;
 		    eudaqevent.SetTag("Data format version",dataformat_string.str() );
 		    
-		    const eudaq::DataConverterPlugin * plugin = 
-			eudaq::PluginManager::GetInstance().GetPlugin( eudaqevent.GetType() );
-		    lcio::LCEvent * lcevent= plugin->GetLCIOEvent (&eudaqevent);
+		    lcio::LCEventImpl * lcevent = new lcio::LCEventImpl;
+		    lcevent->setEventNumber( eudaqevent.GetEventNumber() );
+		    lcevent->setRunNumber( eudaqevent.GetRunNumber() );
+		    lcevent->setTimeStamp( eudaqevent.GetTimestamp() );		    
+
+		    eudaq::PluginManager::ConvertLCIOSubEvent( *lcevent, eudaqevent );
 		
 		    // write the event to the file
 		    if (lcevent)

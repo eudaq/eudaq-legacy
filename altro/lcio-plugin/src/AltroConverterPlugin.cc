@@ -117,7 +117,7 @@ protected:
      *  accoring event type string. This automatically registers
      *  the plugin to the plugin manager.
      */
-    AltroConverterPlugin() : DataConverterPlugin("AltroEvent"){}
+    AltroConverterPlugin() : DataConverterPlugin("Altro"){}
 
 
 private:

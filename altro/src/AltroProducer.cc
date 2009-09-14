@@ -367,7 +367,7 @@ void AltroProducer::OnStartRun(unsigned param)
 {
     SetRunNumber( param );
     SetEventNumber( 1 ); // has to be 1 because BORE is event 0 :-(
-    SendEvent(eudaq::RawDataEvent::BORE( "AltroEvent", param )); // send param instead of GetRunNumber
+    SendEvent(eudaq::RawDataEvent::BORE( "Altro", param )); // send param instead of GetRunNumber
     std::cout << "Start Run: " << param << std::endl;
 
     SetRunActive(true);
