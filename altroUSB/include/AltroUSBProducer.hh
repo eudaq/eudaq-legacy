@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "TLUSynchroniser.h"
 
-//#define REAL_DAQ
+#define REAL_DAQ
 
 #ifdef REAL_DAQ
  #include "ilcdaq.h"

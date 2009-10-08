@@ -312,6 +312,11 @@ void AltroUSBProducer::OnStartRun(unsigned param)
     while (!GetRunActive())
 	eudaq::mSleep(1);
     
+    // now we are realy ready to take data, give TLU the signal that it can start sending
+    if (m_useTLU)
+    {
+	tlu->setBusy(false);
+    }
 
     EUDAQ_INFO("U2F is ready to accept triggers");
     SetStatus(eudaq::Status::LVL_OK, "U2F is ready to accept triggers");
@@ -545,11 +550,13 @@ void  AltroUSBProducer::Exec()
 		tenMicroseconds.tv_sec = 0;
 		tenMicroseconds.tv_nsec = 1000;
 		nanosleep (&tenMicroseconds, NULL);
-
+		
 		continue;		
 	      }
 	      else
 	      {
+		  std::cout << "trigger detected, raising busy" << std::endl;
+
 		// there was a trigger, raise the busy flag
 		tlu->setBusy(true);
 	      }
