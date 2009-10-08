@@ -250,7 +250,18 @@ void AltroUSBProducer::OnConfigure(const eudaq::Configuration & param)
     delete tlu;
     if ( m_useTLU )
     {
-      tlu = new TLUSynchroniser(parport);
+      try
+      {
+	  tlu = new TLUSynchroniser(parport);
+      }
+      catch ( std::runtime_error &ex )
+      {
+	  // something went wrong with initialising the parport or the handshake with the TLU
+	  EUDAQ_ERROR( ex.what() );
+	  SetStatus(eudaq::Status::LVL_ERROR, "Could not synchronise with TLU.");
+	  std::cout <<"Terminating due to error:" << ex.what() << std::endl;
+	  CommandPush( TERMINATE );
+      }
     }
     else
     {
@@ -407,7 +418,7 @@ void  AltroUSBProducer::Exec()
 
     while(!terminate)
     {
-	if ( (counter++%1000 == 0) || GetRunActive() )
+	if ( (counter++%1000 == 0) )
 	    std::cout << "blip" <<counter <<std::endl;
 
 	// look if there are any commands in the buffer
@@ -485,6 +496,45 @@ void  AltroUSBProducer::Exec()
 	}
 	else // run is active, read out next event
 	{
+	    // if the run is to be finished turn off the daq and the run active flagg
+	    if (finish_run)
+	    {
+#ifdef REAL_DAQ
+		pthread_mutex_lock( &m_ilcdaq_mutex );
+		  DAQ_Stop();
+		pthread_mutex_unlock( &m_ilcdaq_mutex );
+#endif
+		
+		if ( m_useTLU )
+		{
+		  // assert the busy line and check that there has been no trigger 
+		  tlu->setBusy(true);
+		  
+		  // sleep a bit to allow all signals on the cables to arrive
+		  timespec oneMicrosecond;
+		  oneMicrosecond.tv_sec = 0;
+		  oneMicrosecond.tv_nsec = 1000;
+		  nanosleep (&oneMicrosecond, NULL);
+		  
+		  // Check the trigger line.
+		  // Only deactivate the run if there has been no trigger.
+		  // Otherwise read the event. Deactivation of the run will 
+		  // happen in the next cycle of the loop where no trigger can occur.
+		  // This is because finish_run is still set and the busy will not be released.
+		  if ( !tlu->readTrigger() )
+		  {
+		      SetRunActive(false);
+		  }
+		}
+		else // in case there is no TLU always set the run inactive
+		{
+		      SetRunActive(false);
+		}
+		  
+		continue;
+	    }// finish_run
+
+	    // now check for trigger and read out the event
 	    if ( m_useTLU )
 	    {
 	      if (!tlu->readTrigger())
@@ -509,11 +559,6 @@ void  AltroUSBProducer::Exec()
 #ifdef REAL_DAQ
 	    pthread_mutex_lock( &m_ilcdaq_mutex );
 	    // perform the readout
-	    if (finish_run)
-	    {
-		// set the last acquisiton flag
-		acquisition_mode |= M_LAST;
-	    }
 
 	    // read the altro in blocks of 1024 bytes. This is the minimal size, and the size of a USB burst
 	    // Like this it is ensured that the data is shipped once the event is finished, and is read
@@ -627,47 +672,16 @@ void  AltroUSBProducer::Exec()
 		tlu->setBusy(false);
 	    }// if useTLU
 	    
-	    // if the run is to be finished turn off the daq and the run active flagg
-	    if (finish_run)
-	    {
-#ifdef REAL_DAQ
-		pthread_mutex_lock( &m_ilcdaq_mutex );
-		  DAQ_Stop();
-		pthread_mutex_unlock( &m_ilcdaq_mutex );
-#endif
-		
-		if ( m_useTLU )
-		{
-		  // assert the busy line and check that there has been no trigger 
-		  tlu->setBusy(true);
-		  
-		  // sleep a bit to allow all signals on the cables to arrive
-		  timespec oneMicrosecond;
-		  oneMicrosecond.tv_sec = 0;
-		  oneMicrosecond.tv_nsec = 1000;
-		  nanosleep (&oneMicrosecond, NULL);
-		  
-		  // Check the trigger line.
-		  // Only deactivate the run if there has been no trigger.
-		  // Otherwise read the event. Deactivation of the run will 
-		  // happen in the next cycle of the loop where no trigger can occur.
-		  // This is because finish_run is still set and the busy will not be released.
-		  if ( !tlu->readTrigger() )
-		  {
-		      SetRunActive(false);
-		  }
-		}
-		else // in case there is no TLU always set the run inactive
-		{
-		      SetRunActive(false);		  
-		}
-		  
-	    }
-
 	    // if the run is not active
 	    // wait 1 ms and return to the start of the loop
 //	    eudaq::mSleep(100);
-	    std::cout << "processing event" << GetEventNumber() << std::endl;;	    
+
+#ifdef REAL_DAQ
+	    std::cout << "processing event" << GetEventNumber() << std::endl;    
+#else
+	    std::cout << "processing event" << GetIncreaseEventNumber() << std::endl;
+#endif
+	    
 	}//  if (getRunActive)
 
     }// while !terminate
