@@ -8,7 +8,8 @@
 #include <ostream>
 #include <cctype>
 
-#define REAL_DAQ
+// definded in the header
+//#define REAL_DAQ
 
 #ifdef REAL_DAQ
 
@@ -23,8 +24,12 @@
 AltroUSBProducer::AltroUSBProducer(const std::string & name,
 					   const std::string & runcontrol)
     : eudaq::Producer(name, runcontrol), m_runactive(false),  m_configured(false), m_run(0) , m_ev(0), 
-      m_daq_config(0), m_block_size(0), m_data_block(0)
+      m_block_size(0), m_data_block(0), m_useTLU(true), tlu(0)
 {
+#ifdef REAL_DAQ
+  m_daq_config = 0;
+#endif
+  
     // Inititalise the mutexes
     pthread_mutex_init( &m_ilcdaq_mutex, 0 );
     pthread_mutex_init( &m_commandqueue_mutex, 0 );
@@ -67,6 +72,10 @@ AltroUSBProducer::~AltroUSBProducer()
     pthread_mutex_destroy( &m_runactive_mutex );
     pthread_mutex_destroy( &m_run_mutex );
     pthread_mutex_destroy( &m_ev_mutex );
+
+    // free the parallel port which synchinises with the TLU
+    delete tlu;
+    
 }
 
 unsigned int AltroUSBProducer::GetRunNumber()
@@ -164,17 +173,21 @@ void AltroUSBProducer::OnConfigure(const eudaq::Configuration & param)
 
     SetStatus(eudaq::Status::LVL_WARN, "Wait while configuring ...");    
 
+    std::cout << "configuring" << std::flush;
+
+    // lock the mutex to protext the C library an the memory
+    pthread_mutex_lock( &m_ilcdaq_mutex );    
+
+#ifdef REAL_DAQ
+
+    std::cout << " with real hardware" << std::flush;
+
     // get the file names from the config
     std::string configdaqfilename   =  param.Get("ConfigDaq",   CONFIG_DAQ);
     std::string configaltrofilename =  param.Get("ConfigAltro", CONFIG_ALTRO);
     
-    std::cout << "configuring" << std::flush;
-
-#ifdef REAL_DAQ
     std::cout << " with real hardware" << std::flush;
     
-    // lock the mutex to protext the C library
-    pthread_mutex_lock( &m_ilcdaq_mutex );    
 
     // the initialisation part "copied" from ilcsa
     if ( DaqConfigRead( configdaqfilename.c_str() ) )
@@ -228,6 +241,22 @@ void AltroUSBProducer::OnConfigure(const eudaq::Configuration & param)
     
 
     pthread_mutex_unlock( &m_ilcdaq_mutex );
+
+    // finally check if a TLU should be used 
+    // !!!FIXME read m_useTLU from config!!!
+    // !!!FIXME read parport from config!!!
+    std::string parport("/dev/parport0");
+    // reset the tlu syncronisation by deleting the old and creating a new TLUSynchroniser
+    delete tlu;
+    if ( m_useTLU )
+    {
+      tlu = new TLUSynchroniser(parport);
+    }
+    else
+    {
+      tlu=0; // leave the pointer in a save state after deleting
+    }
+
 
     std::cout << " ... done " << std::endl;
 
@@ -456,6 +485,27 @@ void  AltroUSBProducer::Exec()
 	}
 	else // run is active, read out next event
 	{
+	    if ( m_useTLU )
+	    {
+	      if (!tlu->readTrigger())
+	      {
+		// there was no trigger
+		// sleep a bit and continue with the loop
+		timespec tenMicroseconds;
+		tenMicroseconds.tv_sec = 0;
+		tenMicroseconds.tv_nsec = 1000;
+		nanosleep (&tenMicroseconds, NULL);
+
+		continue;		
+	      }
+	      else
+	      {
+		// there was a trigger, raise the busy flag
+		tlu->setBusy(true);
+	      }
+	    }// if useTLU
+	  
+
 #ifdef REAL_DAQ
 	    pthread_mutex_lock( &m_ilcdaq_mutex );
 	    // perform the readout
@@ -465,7 +515,7 @@ void  AltroUSBProducer::Exec()
 		acquisition_mode |= M_LAST;
 	    }
 
-	    // read the altro in block of 1024 bytes. This is the minimal size, and the size of a USB burst
+	    // read the altro in blocks of 1024 bytes. This is the minimal size, and the size of a USB burst
 	    // Like this it is ensured that the data is shipped once the event is finished, and is read
 	    // as soon as it is available
 	    unsigned int nbytesread = 0;
@@ -477,7 +527,7 @@ void  AltroUSBProducer::Exec()
 		unsigned int retval =0;
 		unsigned int osize = 0;
 		
-		std::cout <<  "Readings in mode "<< acquisition_mode <<" to address " <<
+		std::cout <<  "Reading in mode "<< acquisition_mode <<" to address " <<
 		    std::hex << reinterpret_cast<void *>(m_data_block +( block_index * 1024)) << std::dec << std::endl;
 
 		// read the next (up to) 1024 bytes. Always write to the next block
@@ -570,6 +620,12 @@ void  AltroUSBProducer::Exec()
 
 	    pthread_mutex_unlock( &m_ilcdaq_mutex );
 #endif
+
+	    // In case the run should be finished do not release the busy  line
+	    if ( m_useTLU && !finish_run)
+	    {
+		tlu->setBusy(false);
+	    }// if useTLU
 	    
 	    // if the run is to be finished turn off the daq and the run active flagg
 	    if (finish_run)
@@ -579,8 +635,33 @@ void  AltroUSBProducer::Exec()
 		  DAQ_Stop();
 		pthread_mutex_unlock( &m_ilcdaq_mutex );
 #endif
-
-		SetRunActive(false);
+		
+		if ( m_useTLU )
+		{
+		  // assert the busy line and check that there has been no trigger 
+		  tlu->setBusy(true);
+		  
+		  // sleep a bit to allow all signals on the cables to arrive
+		  timespec oneMicrosecond;
+		  oneMicrosecond.tv_sec = 0;
+		  oneMicrosecond.tv_nsec = 1000;
+		  nanosleep (&oneMicrosecond, NULL);
+		  
+		  // Check the trigger line.
+		  // Only deactivate the run if there has been no trigger.
+		  // Otherwise read the event. Deactivation of the run will 
+		  // happen in the next cycle of the loop where no trigger can occur.
+		  // This is because finish_run is still set and the busy will not be released.
+		  if ( !tlu->readTrigger() )
+		  {
+		      SetRunActive(false);
+		  }
+		}
+		else // in case there is no TLU always set the run inactive
+		{
+		      SetRunActive(false);		  
+		}
+		  
 	    }
 
 	    // if the run is not active

@@ -1,7 +1,13 @@
 #include "eudaq/Producer.hh"
 #include <pthread.h>
 #include <stdint.h>
-#include "ilcdaq.h"
+#include "TLUSynchroniser.h"
+
+//#define REAL_DAQ
+
+#ifdef REAL_DAQ
+ #include "ilcdaq.h"
+#endif
 
 class AltroUSBProducer : public eudaq::Producer
 {
@@ -87,7 +93,10 @@ protected:
     // Variables needed by the readout C library
     // Always lock the ilcdaq mutex before accessing them!
 
-    DAQ* m_daq_config;     ///< the config of the daq
+ #ifdef REAL_DAQ
+   DAQ* m_daq_config;     ///< the config of the daq
+#endif
+
     unsigned int m_block_size; ///< size of the u2fdata memory block (number of bytes)
     unsigned char * m_data_block; ///< the memory block where the u2f dumps the data it reads
 
@@ -111,4 +120,8 @@ protected:
 
     /// A mutex to protect the CommandQueue
     pthread_mutex_t m_commandqueue_mutex;
+
+    /// Flag whether to wait for TLU trigger signal
+  bool m_useTLU;
+  TLUSynchroniser *tlu;
 };
