@@ -331,8 +331,8 @@ void AltroUSBProducer::OnStopRun()
 	return;
     }
 
-    SetStatus(eudaq::Status::LVL_WARN, "Wait until run has stopped...");    
-
+    SetStatus(eudaq::Status::LVL_OK, "Do not restart or reconfigure until DAQ is off");	
+    EUDAQ_WARN("Do not restart or reconfigure until DAQ is off.");
 
     // Tell the main loop to stop the run
     CommandPush( STOP_RUN );
@@ -506,6 +506,22 @@ void  AltroUSBProducer::Exec()
 	    {
 #ifdef REAL_DAQ
 		pthread_mutex_lock( &m_ilcdaq_mutex );
+
+		  // make one last readout with LAST flag set
+		  acquisition_mode |= M_LAST;
+
+		  // this takes 20 seconds or so until until the read timeout is reached.
+		  
+
+		  // we need this for the call by reference, but we don't care about the result
+		  unsigned int osize = 0;
+		
+		  // read the next (up to) 1024 bytes. Always write to beginnig of block
+		  // ignore the return value, it's just to reset the device
+		  U2F_ReadOut(m_daq_config->devices[0].handle, 1024, &osize, 
+				       m_data_block , acquisition_mode);
+
+		  // now it's save to turn off the daq
 		  DAQ_Stop();
 		pthread_mutex_unlock( &m_ilcdaq_mutex );
 #endif
