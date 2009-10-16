@@ -20,6 +20,8 @@
 #include <sstream>
 #include <cstring>
 
+#define NDEBUG
+
 // initial buffer size is 2MB 
 #define INITIAL_BUFFER_SIZE 0x200000
 
@@ -30,6 +32,13 @@ uint32_t read32bitword(unsigned char const * const buffer)
 	    static_cast<uint32_t> (buffer[1]) <<  8  |
 	    static_cast<uint32_t> (buffer[2]) << 16  |
 	    static_cast<uint32_t> (buffer[3]) << 24;
+}
+
+uint16_t read16bitword(unsigned char const * const buffer)
+{
+	return
+	static_cast<uint16_t> (buffer[0]) |
+	static_cast<uint16_t>(buffer[1]) << 8;
 }
 
 int main(int argc, char * argv[])
@@ -77,9 +86,9 @@ int main(int argc, char * argv[])
 	size_t lastdotposition = outFileName.find_last_of(".");
 	// erase the file extension
 	outFileName.erase(lastdotposition);
+	std::cout << "Base output file name (w/o extension) is "<<outFileName<< std::endl;
 	// append new extension ".slcio"
 	outFileName.append(".slcio");
-	std::cout << "using oufile name "<<outFileName<< std::endl;
     }
     else
     {
@@ -106,21 +115,34 @@ int main(int argc, char * argv[])
 	
 	// read the first 32bit word. It is the (exclusive) number of 32-bit words
 	size_t blocklength =  read32bitword(inputbuffer);
+
+#ifndef NDEBUG
+	    std::cout << "DEBUG: Block Size is "<< (blocklength * 4) << std::endl;
+#endif
+
+	if(state == START_FIRST_FILE)
+	std::cout << "Conversion starting: " << std::endl ;
 	
 	// check if input buffer is large enough
 	if ( buffersize < (blocklength+1)*4 )
 	{
-	    // delete inputbuffer and reacclocate sufficient memory
+	    // delete inputbuffer and reallocate sufficient memory
 	    delete[] inputbuffer;
+
+#ifndef NDEBUG
+	    std::cout << "DEBUG: allocating "<<(blocklength + 1) * 4 << " for inputbuffer"<<std::endl;
+#endif
 	    inputbuffer = new unsigned char[ (blocklength + 1) * 4 ];
-//	    std::cout << "DEBUG: allocated "<<(blocklength + 1) * 4 << " for inputbuffer"<<std::endl;
-	    
 	    // set the first four bytes to the length
 	    inputbuffer[0] = static_cast<unsigned char>(blocklength & 0xFF) ;
 	    inputbuffer[1] = static_cast<unsigned char>((blocklength & 0xFF00) >> 8 ) ;
 	    inputbuffer[2] = static_cast<unsigned char>((blocklength & 0xFF0000) >> 16 ) ;
 	    inputbuffer[3] = static_cast<unsigned char>((blocklength & 0xFF000000) >> 24 ) ;
-	} 
+	}
+
+#ifndef NDEBUG
+	    std::cout << "DEBUG: allocated "<< sizeof(inputbuffer) << " for inputbuffer"<<std::endl;
+#endif
 	
 	// read the complete block into memory, starting after the first 4 bytes which have
 	// already been read
@@ -137,27 +159,45 @@ int main(int argc, char * argv[])
 	    }
 	    return 1;
 	}
-//	else
-//	    std::cout << "DEBUG: Reading block with "<< blocklength*4<< " bytes from input file" << std::endl;
+	else
+	{
+#ifndef NDEBUG
+	    std::cout << "DEBUG: Reading block with "<< blocklength*4<< " bytes from input file" << std::endl;
+#endif
+	}
 	
 
 	// interpret block identifier
 	unsigned int blockid = read32bitword(inputbuffer + 8);
 
+#ifndef NDEBUG
+	std::cout << "DEBUG: Reading block with " << std::hex << blockid << std::dec << " Block ID" << std::endl;
+#endif
+
 	switch (blockid)
 	{	
 	    case 0x11111111: // start of run block
 	        if (state != START_FIRST_FILE)
-		{
-		  std::cerr << "Error: found start of run block where not exprected" <<std::endl;
-		  state=ERROR;
-		  break;
-		}
-		
-		dataformat = read32bitword(inputbuffer + 12);
-		runnumber  = read32bitword(inputbuffer + 16);
+	        {
+	        	std::cerr << "Error: found start of run block where not expected" <<std::endl;
+	        	state=ERROR;
+	        	break;
+	        }
+#ifndef NDEBUG
+	        std::cout << "DEBUG: Reading the Run Start Block and creating the Run Header" << std::endl;
+#endif
 
-		std::cout << "Starting run "<<runnumber << " with data format "<<dataformat<<std::endl;
+	        //The first 2 bytes of the fourth dataword contain the version number in encoded with a big endian byte ordering
+	        //The third byte of the fourth dataword contains the subversion number which is considered a minor subversion
+	        //Because of an error in the DAQ configuration file the data taken with version 4.1.1 have infact the format version value
+	        //set to 421. The if clause is meant to repair this error
+	        if(read32bitword(inputbuffer + 12) == 421)
+	        	dataformat = 411;
+	        else
+	        	dataformat = read16bitword(inputbuffer + 12) + read16bitword(inputbuffer+14);
+	        runnumber  = read32bitword(inputbuffer + 16);
+	        std::cout << "Starting run "<<runnumber << " with data format "<<dataformat<<std::endl;
+	        std::cout << "Run beginning in year " << read16bitword(inputbuffer + 22) << " month " << static_cast<uint16_t>(inputbuffer[21]) << " day " << static_cast<uint16_t>(inputbuffer[20]) << std::endl;
 
 		{ // create runheader and fill it
 		    lcio::LCRunHeaderImpl* runheader = new lcio::LCRunHeaderImpl ; 
@@ -186,7 +226,7 @@ int main(int argc, char * argv[])
 		}
 
 		// genereate eudaq event, convert to lcio and add lcevent to file
-//		std::cout << "DEBUG: Reading event with "<<(blocklength+1) *4 << std::endl;
+		//std::cout << "DEBUG: Reading event with "<<(blocklength+1) *4 << std::endl;
 	        {
 		    unsigned int eventnumber =  read32bitword(inputbuffer + 12);
 		    if (eventnumber%100 == 0)
@@ -206,6 +246,9 @@ int main(int argc, char * argv[])
 		    lcevent->setTimeStamp( eudaqevent.GetTimestamp() );		    
 
 		    eudaq::PluginManager::ConvertLCIOSubEvent( *lcevent, eudaqevent );
+#ifndef NDEBUG
+			std::cout << "DEBUG: Event " << eventnumber << " conversion complete"<< std::endl;
+#endif
 		
 		    // write the event to the file
 		    if (lcevent)
