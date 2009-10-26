@@ -24,7 +24,7 @@
 AltroUSBProducer::AltroUSBProducer(const std::string & name,
 					   const std::string & runcontrol)
     : eudaq::Producer(name, runcontrol), m_runactive(false),  m_configured(false), m_run(0) , m_ev(0), 
-      m_block_size(0), m_data_block(0), m_useTLU(true), tlu(0)
+      m_block_size(0), m_data_block(0), m_useTLU(true), tlu(0), _parport("/dev/parport1")
 {
 #ifdef REAL_DAQ
   m_daq_config = 0;
@@ -37,6 +37,27 @@ AltroUSBProducer::AltroUSBProducer(const std::string & name,
     pthread_mutex_init( &m_run_mutex, 0 );
     pthread_mutex_init( &m_ev_mutex, 0 );
 //    pthread_mutex_init( &m_data_mutex, 0 );
+
+    if ( m_useTLU )
+    {
+      try
+      {
+	  tlu = new TLUSynchroniser(_parport);
+      }
+      catch ( std::runtime_error &ex )
+      {
+	  // something went wrong with initialising the parport or the handshake with the TLU
+	  EUDAQ_ERROR( ex.what() );
+	  SetStatus(eudaq::Status::LVL_ERROR, "Could not synchronise with TLU.");
+	  std::cout <<"Terminating due to error:" << ex.what() << std::endl;
+	  CommandPush( TERMINATE );
+	  m_useTLU=0;
+      }
+    }
+    else
+    {
+      tlu=0; // leave the pointer in a save state after deleting
+    }
 
     std::cout << "end of constructor" << std::endl;
 }
@@ -175,12 +196,44 @@ void AltroUSBProducer::OnConfigure(const eudaq::Configuration & param)
 
     std::cout << "configuring" << std::flush;
 
+    // check if a TLU should be used 
+    // !!!FIXME read m_useTLU from config!!!
+    // !!!FIXME read parport from config!!!
+    // reset the tlu syncronisation by deleting the old and creating a new TLUSynchroniser
+    delete tlu;
+    if ( m_useTLU )
+    {
+      try
+      {
+	  tlu = new TLUSynchroniser(_parport);
+      }
+      catch ( std::runtime_error &ex )
+      {
+	  // something went wrong with initialising the parport or the handshake with the TLU
+	  EUDAQ_ERROR( ex.what() );
+	  SetStatus(eudaq::Status::LVL_ERROR, "Could not synchronise with TLU.");
+	  std::cout <<"Terminating due to error:" << ex.what() << std::endl;
+	  CommandPush( TERMINATE );
+      }
+    }
+    else
+    {
+      tlu=0; // leave the pointer in a save state after deleting
+    }
+
     // lock the mutex to protext the C library an the memory
     pthread_mutex_lock( &m_ilcdaq_mutex );    
 
 #ifdef REAL_DAQ
 
     std::cout << " with real hardware" << std::flush;
+
+    // reset the hardware
+    // This feature only works if a parallel port adapter for the TLU is there
+    if (m_useTLU)
+    {
+	tlu->reset(); // this is not a reset of the TLU, but the reset pin of the parallel port used for the TLU
+    }
 
     // get the file names from the config
     std::string configdaqfilename   =  param.Get("ConfigDaq",   CONFIG_DAQ);
@@ -241,32 +294,6 @@ void AltroUSBProducer::OnConfigure(const eudaq::Configuration & param)
     
 
     pthread_mutex_unlock( &m_ilcdaq_mutex );
-
-    // finally check if a TLU should be used 
-    // !!!FIXME read m_useTLU from config!!!
-    // !!!FIXME read parport from config!!!
-    std::string parport("/dev/parport0");
-    // reset the tlu syncronisation by deleting the old and creating a new TLUSynchroniser
-    delete tlu;
-    if ( m_useTLU )
-    {
-      try
-      {
-	  tlu = new TLUSynchroniser(parport);
-      }
-      catch ( std::runtime_error &ex )
-      {
-	  // something went wrong with initialising the parport or the handshake with the TLU
-	  EUDAQ_ERROR( ex.what() );
-	  SetStatus(eudaq::Status::LVL_ERROR, "Could not synchronise with TLU.");
-	  std::cout <<"Terminating due to error:" << ex.what() << std::endl;
-	  CommandPush( TERMINATE );
-      }
-    }
-    else
-    {
-      tlu=0; // leave the pointer in a save state after deleting
-    }
 
 
     std::cout << " ... done " << std::endl;
@@ -359,8 +386,25 @@ void AltroUSBProducer::OnTerminate()
 void AltroUSBProducer::OnReset()
 {
     std::cout << "Reset" << std::endl;
-    // Tell the main loop to terminate
-    CommandPush( RESET );
+
+    // if there is a parallel port do a hard reset
+    if (m_useTLU)
+    {
+#ifdef REAL_DAQ
+	// wail until all hardware access is finished
+		pthread_mutex_lock( &m_ilcdaq_mutex );
+		   tlu->reset(); // this is not a reset of the TLU,
+		                 // but the reset pin of the parallel port used for the TLU
+		pthread_mutex_unlock( &m_ilcdaq_mutex );
+		EUDAQ_INFO("Reset performed.");
+		SetStatus(eudaq::Status::LVL_OK, "Reset performed");
+#endif
+    }
+    else
+    {
+	// Tell the main loop to terminate
+	CommandPush( RESET );
+    }
 //    SetStatus(eudaq::Status::LVL_OK);
 }
 
@@ -545,11 +589,13 @@ void  AltroUSBProducer::Exec()
 		  if ( !tlu->readTrigger() )
 		  {
 		      SetRunActive(false);
+		      finish_run = false;
 		  }
 		}
 		else // in case there is no TLU always set the run inactive
 		{
 		      SetRunActive(false);
+		      finish_run = false;
 		}
 		  
 		continue;

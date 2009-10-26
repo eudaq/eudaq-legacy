@@ -124,4 +124,6 @@ protected:
     /// Flag whether to wait for TLU trigger signal
   bool m_useTLU;
   TLUSynchroniser *tlu;
+    std::string _parport; // the parallel port for the TLU synchroniser
+    
 };
