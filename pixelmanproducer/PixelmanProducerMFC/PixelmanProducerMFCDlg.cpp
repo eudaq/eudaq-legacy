@@ -677,7 +677,7 @@ int CPixelmanProducerMFCDlg::mpxCheckForTrigger()
 		timePixDaqStatus.parPortSetBusyLineHigh();
 		// wait until the shutter has closed again
 		// (unfortunately 1 ms is the shortest we can get :-( )
-		Sleep(1);
+		Sleep(2);
 		return mpxCtrlTriggerType(devId, TRIGGER_ACQSTOP);
 	}
 	else
