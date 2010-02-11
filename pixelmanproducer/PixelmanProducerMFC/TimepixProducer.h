@@ -2,6 +2,7 @@
 #include "eudaq/Producer.hh"
 #include <pthread.h>
 #include "PixelmanProducerMFCDlg.h"
+#include "TimePixBore.h"
 //#include "targetver.h"
 
 #include <queue>
@@ -104,4 +105,6 @@ private:
 
 	std::queue<timepix_producer_command_t> m_commandQueue;
 	pthread_mutex_t m_commandQueue_mutex;
+
+	TimePixBore* timePixBoreEvent;
 };
