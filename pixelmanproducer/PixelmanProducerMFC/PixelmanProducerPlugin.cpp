@@ -112,7 +112,7 @@ void DialogBoxInit(unsigned int par)
 		pMainWnd->mpxCtrlGetFrame16 = &mpxCtrlGetFrame16;
 		pMainWnd->mpxCtrlTriggerType = &mpxCtrlTriggerType;
 		pMainWnd->mpxCtrlReconnectMpx = &mpxCtrlReconnectMpx;
-		pMainWnd->mpxCtrlInitMpxDevice = &mpxCtrlInitMpxDevice;
+	//  pMainWnd->mpxCtrlInitMpxDevice = &mpxCtrlInitMpxDevice;
 		pMainWnd->mpxCtrlReviveMpxDevice = &mpxCtrlReviveMpxDevice;
 		pMainWnd->mpxCtrlAbortOperation = &mpxCtrlAbortOperation;
 		ret = pMainWnd->Create(IDD_PIXELMANPRODUCERMFC_DIALOG, CWnd::GetDesktopWindow());
@@ -178,10 +178,11 @@ int mpxCtrlReconnectMpx(DEVID devId)
 	return mgr->mpxCtrlReconnectMpx(devId);
 }
 
-int mpxCtrlInitMpxDevice(DEVID devId)
+/*int mpxCtrlInitMpxDevice(DEVID devId)
 {
 	return mgr->mpxCtrlInitMpxDevice(devId, NULL);
 }
+*/
 
 int mpxCtrlReviveMpxDevice(DEVID devId)
 {

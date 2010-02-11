@@ -518,7 +518,7 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 				EUDAQ_INFO("Device " + eudaq::to_string(pMainWnd->m_ModuleID.getInt()) + ": reconnecting Chip");
 			}
 
-			int ini = pMainWnd->mpxCtrlInitMpxDevice(devId);
+			int ini = pMainWnd->mpxCtrlReviveMpxDevice(devId);
 			EUDAQ_INFO("Device " + eudaq::to_string(pMainWnd->m_ModuleID.getInt()) + ": reinitialising Chip");						
 		}
 	}
@@ -556,7 +556,7 @@ UINT mpxCtrlPerformTriggeredFrameAcqThread(LPVOID pParam)
 			DEVID devId = pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceId;
 			int abortOK = pMainWnd->mpxCtrlAbortOperation(devId);
 			EUDAQ_DEBUG("Operation aborted");
-			int initOK = pMainWnd->mpxCtrlInitMpxDevice(devId);
+			int initOK = pMainWnd->mpxCtrlReviveMpxDevice(devId);
 			EUDAQ_DEBUG("Device reinitialised");
 		}
 

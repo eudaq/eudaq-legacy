@@ -40,7 +40,7 @@ public:
 							 u32 frameNumber);
 	int (*mpxCtrlTriggerType)(DEVID devId, int trigger);
 	int (*mpxCtrlReconnectMpx)(DEVID devId);
-	int (*mpxCtrlInitMpxDevice)(DEVID devId);
+	//int (*mpxCtrlInitMpxDevice)(DEVID devId);
 	int (*mpxCtrlReviveMpxDevice)(DEVID devId);
 	int (*mpxCtrlAbortOperation)(DEVID devId);
 

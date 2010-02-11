@@ -239,7 +239,7 @@ void TimepixProducer::OnConfigure(const eudaq::Configuration & param)
 	else
 	{ 
 		DEVID devId = pixelmanCtrl->mpxDevId[pixelmanCtrl->mpxCurrSel].deviceId;
-		pixelmanCtrl->mpxCtrlInitMpxDevice(devId);
+		pixelmanCtrl->mpxCtrlReviveMpxDevice(devId);
 		pixelmanCtrl->m_commHistRunCtrl.AddString(_T("Configuring"));
 		EUDAQ_INFO("Configured (" + param.Name() + ")");
 		
