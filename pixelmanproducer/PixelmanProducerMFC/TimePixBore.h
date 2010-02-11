@@ -6,7 +6,7 @@
 class TimePixBore
 {
 public:
-	TimePixBore(medipixChipId *param, double timeToEndOfShutter);
+	TimePixBore(DevInfo *param, double timeToEndOfShutter, DACTYPE *dacVals);
 	//virtual ~TimePixBore();
 	unsigned int version;
 	int m_rowLen;                   // number of chips
@@ -15,7 +15,8 @@ public:
     char m_chipboardID[MPX_MAX_CHBID];    // id of chip/chipboard
 	const char *m_ifaceName;  
 	double m_clockTimepix;
-	double timeToEndOfShutter;
+	double m_timeToEndOfShutter;
+	DACTYPE *m_dacVals;
 
 protected:
 	medipixChipId deviceInfos;
