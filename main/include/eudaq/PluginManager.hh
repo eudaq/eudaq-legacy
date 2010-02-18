@@ -31,6 +31,7 @@ namespace eudaq {
      */
     static PluginManager & GetInstance();
 
+    static unsigned GetTriggerID(const Event &);
     static void Initialize(const DetectorEvent &);
     static lcio::LCRunHeader * GetLCRunHeader(const DetectorEvent &);
     static StandardEvent ConvertToStandard(const DetectorEvent &);
@@ -49,9 +50,10 @@ namespace eudaq {
      */
     std::map<t_eventid, DataConverterPlugin *> m_pluginmap;
 
-  private:
     PluginManager() {}
     PluginManager(PluginManager const &) {}
+    class _dummy;
+    friend class _dummy; // Silence superfluous warnings in some gcc versions
   };
 
 }//namespace eudaq

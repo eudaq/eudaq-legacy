@@ -22,6 +22,7 @@ namespace eudaq {
   std::string firstline(const std::string & s);
   std::string escape(const std::string &);
   std::vector<std::string> split(const std::string & str, const std::string & delim = "\t");
+  std::vector<std::string> split(const std::string & str, const std::string & delim, bool dotrim);
 
   /** Sleep for a specified number of milliseconds.
    * \param ms The number of milliseconds
@@ -204,6 +205,35 @@ namespace eudaq {
       result += *ptr++ << (8*i);
     }
     return result;
+#endif
+  }
+
+  template <typename T>
+  inline void setbigendian(unsigned char * ptr, const T & val) {
+#if (defined(       __BYTE_ORDER) &&        __BYTE_ORDER ==        __BIG_ENDIAN) || \
+    (defined(__DARWIN_BYTE_ORDER) && __DARWIN_BYTE_ORDER == __DARWIN_BIG_ENDIAN)
+    *reinterpret_cast<T *>(ptr) = val;
+#else
+    T tmp = val;
+    ptr += sizeof (T);
+    for (size_t i = 0; i < sizeof (T); ++i) {
+      *--ptr = tmp & 0xff;
+      tmp >>= 8;
+    }
+#endif
+  }
+
+  template <typename T>
+  inline void setlittleendian(unsigned char * ptr, const T & val) {
+#if (defined(       __BYTE_ORDER) &&        __BYTE_ORDER ==        __LITTLE_ENDIAN) || \
+    (defined(__DARWIN_BYTE_ORDER) && __DARWIN_BYTE_ORDER == __DARWIN_LITTLE_ENDIAN)
+    *reinterpret_cast<T *>(ptr) = val;
+#else
+    T tmp = val;
+    for (size_t i = 0; i < sizeof (T); ++i) {
+      *ptr++ = tmp & 0xff;
+      tmp >>= 8;
+    }
 #endif
   }
 

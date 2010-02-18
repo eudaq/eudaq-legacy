@@ -3,7 +3,7 @@ TARGET = Lib/libZestSC1.a
 ARFLAGS = r
 OBJS = Main.o Error.o Data.o DataMac.o Config.o
 CC = gcc
-CFLAGS = -c -O2 -I../Inc -I/sw/include
+CFLAGS = -c -O2 -I../Inc -I/sw/include -I/opt/local/include
 
 all: $(TARGET)
 

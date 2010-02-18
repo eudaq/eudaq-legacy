@@ -35,13 +35,13 @@ CC   := gcc
 # C++ compiler
 CXX  := g++
 # C dependencies
-CDEP := gcc -M -MM -MP
+CDEP := $(CC) -M -MM -MP
 # C++ dependencies
-CCDEP:= g++ -M -MM -MP
+CCDEP:= $(CXX) -M -MM -MP
 # Linker
-LD   := g++
+LD   := $(CXX)
 # Command for building dynamic libraries
-DLIB := g++
+DLIB := $(CXX)
 # Command for building static libraries
 SLIB := ar
 
@@ -110,7 +110,7 @@ CXXFLAGS = $(CFLAGS)
 
 # Linker flags
 #LDFLAGS := -static -all_load
-LDFLAGS := 
+LDFLAGS :=
 SFLAGS  := ru
 ifeq ($(PLATFORM),MACOSX)
   DFLAGS  = -dynamiclib

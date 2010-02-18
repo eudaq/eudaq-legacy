@@ -54,7 +54,7 @@ namespace eudaq {
 
   struct SensorInfo {
     typedef void (*mapfunc_t)(unsigned & x, unsigned & y, unsigned c, unsigned r, unsigned m, unsigned nc, unsigned nr);
-    SensorInfo(const std::string name, unsigned c, unsigned r, unsigned m, unsigned w, unsigned h, mapfunc_t mfunc = 0)
+    SensorInfo(const std::string & name, unsigned c, unsigned r, unsigned m, unsigned w, unsigned h, mapfunc_t mfunc = 0)
       : name(name), cols(c), rows(r), mats(m), width(w), height(h), mapfunc(mfunc)
       {}
     std::string name;
@@ -134,15 +134,18 @@ namespace eudaq {
       if (id >= m_info.size() || m_info[id].m_version < 1) EUDAQ_THROW("Unrecognised ID ("+to_string(id)+", num="+to_string(m_info.size())+") converting EUDRB event");
       return m_info[id];
     }
+    static unsigned GetTLUEvent(const std::vector<unsigned char> & data) {
+      const unsigned word = getbigendian<unsigned>(&data[data.size() - 8]);
+      return word>>8 & 0xffff;
+    }
     void ConvertLCIOHeader(lcio::LCRunHeader & header, eudaq::Event const & bore, eudaq::Configuration const & conf) const;
     bool ConvertStandard(StandardEvent & stdEvent, const Event & eudaqEvent) const;
     StandardPlane ConvertPlane(const std::vector<unsigned char> & data, unsigned id) const {
       const BoardInfo & info = GetInfo(id);
       StandardPlane plane(id, "EUDRB", info.Sensor().name);
-      plane.m_tluevent = (data[data.size()-7] << 8) | data[data.size()-6];
-      plane.m_xsize = info.Sensor().width;
-      plane.m_ysize = info.Sensor().height;
-      plane.m_pivotpixel = ((data[5] & 0x3) << 16) | (data[6] << 8) | data[7];
+      plane.SetXSize(info.Sensor().width);
+      plane.SetYSize(info.Sensor().height);
+      plane.SetTLUEvent(GetTLUEvent(data));
       if (info.m_mode == BoardInfo::MODE_ZS2) {
         ConvertZS2(plane, data, info);
       } else if (info.m_mode == BoardInfo::MODE_ZS) {
@@ -150,7 +153,6 @@ namespace eudaq {
       } else {
         ConvertRaw(plane, data, info);
       }
-      plane.m_flags |= StandardPlane::FLAG_NEGATIVE;
       return plane;
     }
     static void ConvertZS2(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info);
@@ -193,6 +195,13 @@ namespace eudaq {
       FillInfo(e, c);
     }
 
+    virtual unsigned GetTriggerID(Event const & ev) const {
+      const RawDataEvent & rawev = dynamic_cast<const RawDataEvent &>(ev);
+      if (rawev.NumBlocks() < 1) return (unsigned)-1;
+      const std::vector<unsigned char> & data = rawev.GetBlock(rawev.NumBlocks() - 1);
+      return GetTLUEvent(data);
+    }
+
     virtual bool GetStandardSubEvent(StandardEvent & result, const Event & source) const {
       return ConvertStandard(result, source);
     }
@@ -219,6 +228,13 @@ namespace eudaq {
   class LegacyEUDRBConverterPlugin : public DataConverterPlugin, public EUDRBConverterBase {
     virtual void Initialize(const eudaq::Event & e, const eudaq::Configuration & c) {
       FillInfo(e, c);
+    }
+
+    virtual unsigned GetTriggerID(Event const & ev) const {
+      const RawDataEvent & rawev = dynamic_cast<const RawDataEvent &>(ev);
+      if (rawev.NumBlocks() < 1) return (unsigned)-1;
+      const std::vector<unsigned char> & data = rawev.GetBlock(0);
+      return GetTLUEvent(data);
     }
 
     virtual bool GetStandardSubEvent(StandardEvent & result, const Event & source) const {
@@ -263,71 +279,92 @@ namespace eudaq {
 #define GET(o) getbigendian<unsigned>(&alldata[(o)*4])
   void EUDRBConverterBase::ConvertZS2(StandardPlane & plane, const std::vector<unsigned char> & alldata, const BoardInfo & info) {
     static const bool dbg = false;
-    //static int debugcount = 0;
-    //debugcount++;
-    //if (0 && debugcount <= 6) { // Outputs raw data in Angelo's text format (Now implemented in FileWriterMimoloop)
-    //  std::cerr << "BaseAddress: " << to_hex(getbigendian<unsigned>(&alldata[0]) & 0xff000000 | 0x00400000) << std::endl;
-    //  for (size_t i = 0; i < alldata.size()-3; i += 4) {
-    //    std::cerr << to_hex(i/4+1) << " : " << to_hex(getbigendian<unsigned>(&alldata[i]), 0) << std::endl;
-    //  }
-    //}
-    if (dbg) std::cout << "DataSize = " << alldata.size() << std::endl;
+    static const bool dbg2 = false;
+    if (dbg) std::cout << "DataSize = " << hexdec(alldata.size(), 0) << std::endl;
     if (alldata.size() < 64) EUDAQ_THROW("Bad data packet (only " + to_string(alldata.size()) + " bytes)");
     unsigned offset = 0, word = GET(offset);
-    if (dbg) std::cout << "BaseAddress = " << to_hex(word & 0xff000000 | 0x00400000) << std::endl;
+    if (dbg) std::cout << "BaseAddress = 0x" << to_hex(word & 0xff000000 | 0x00400000) << std::endl;
     unsigned wordcount = word & 0xffffff;
-    if (dbg) std::cout << "WordCount = " << wordcount << std::endl;
+    if (dbg) std::cout << "WordCount = " << hexdec(wordcount, 0) << std::endl;
     if (wordcount*4 + 16 != alldata.size()) EUDAQ_THROW("Bad wordcount (" + to_string(wordcount) +
                                                           ", bytes=" + to_string(alldata.size()) + ")");
+    word = GET(offset=1);
+    if (dbg) std::cout << "Unknown = " << hexdec(word >> 8 & 0xffff) << std::endl;
+    // offset 2 is a repeat of offset 0
+    word = GET(offset=3);
+    unsigned sof = word;
+    if (dbg) std::cout << "StartOfFrame = " << hexdec(sof, 0) << std::endl;
     word = GET(offset=4);
-    if (dbg) std::cout << "LocalEventNumber = " << (word>>8 & 0xffff) << std::endl;
-    if (dbg) std::cout << "FrameNumberAtTrigger = " << (word & 0xff) << std::endl;
+    if (dbg) std::cout << "LocalEventNumber = " << hexdec(word>>8 & 0xffff, 0) << std::endl;
+    if (dbg) std::cout << "FrameNumberAtTrigger = " << hexdec(word & 0xff, 0) << std::endl;
     word = GET(offset=5);
-    if (dbg) std::cout << "PixelAddressAtTrigger = " << hexdec(word & 0x3ffff, 0) << std::endl;
+    unsigned pixadd = word & 0x3ffff;
+    plane.SetPivotPixel((9216 + pixadd - sof + 56) % 9216);
+    if (dbg) std::cout << "PixelAddressAtTrigger = " << hexdec(pixadd, 0)
+                       << ": pivot = " << hexdec(plane.PivotPixel(), 0) << std::endl;
     unsigned wordremain = wordcount-12;
 
-    for (int frame = 1; frame <= 2; ++frame) {
-      word = GET(offset += 2);
-      if (dbg) std::cout << "M26FrameCounter_" << frame << " = " << hexdec(word, 0) << std::endl;
-      word = GET(++offset);
-      unsigned count = word & 0xffff;
-      if (dbg) std::cout << "M26WordCount_" << frame << " = " << hexdec(count, 0) << std::endl;
-      if (count > wordremain) EUDAQ_THROW("Bad M26 word count (" + to_string(count) + ", remain=" +
-                                           to_string(wordremain) + ", total=" + to_string(wordcount) + ")");
-      wordremain -= count;
-      std::vector<unsigned short> vec;
-      // read pixel data
-      for (size_t i = 0; i < count; ++i) {
+    plane.SetSizeZS(info.Sensor().width, info.Sensor().height, 0, 2, StandardPlane::FLAG_WITHPIVOT | StandardPlane::FLAG_DIFFCOORDS);
+    try {
+      for (int frame = 1; frame <= 2; ++frame) {
+        word = GET(offset += 2);
+        if (dbg) std::cout << "M26FrameCounter_" << frame << " = " << hexdec(word, 0) << std::endl;
         word = GET(++offset);
-        vec.push_back(word & 0xffff);
-        vec.push_back(word>>16 & 0xffff);
-      }
-      unsigned npixels = 0;
-      plane.SetSizeZS(info.Sensor().width, info.Sensor().height, 0);
-      for (size_t i = 0; i < vec.size(); ++i) {
-      //  std::cout << "  " << i << " : " << hexdec(vec[i]) << std::endl;
-        if (i == vec.size() - 1) break;
-        unsigned numstates = vec[i] & 0xf;
-        unsigned row = vec[i]>>4 & 0x7ff;
-        if (dbg) std::cout << "Hit line " << (vec[i] & 0x8000 ? "* " : ". ") << row
-                           << ", states " << numstates << ":";
-        for (unsigned s = 0; s < numstates; ++s) {
-          unsigned v = vec[++i];
-          unsigned column = v>>2 & 0x7ff;
-          unsigned num = v & 3;
-          if (dbg) std::cout << (s ? "," : " ") << column;
-          if (dbg) if (v&3 > 0) std::cout << "-" << (column + num);
-          for (unsigned j = 0; j < num+1; ++j) {
-            plane.PushPixel(column+j, row, 1);
-          }
-          npixels += num + 1;
+        unsigned count = word & 0xffff;
+        if (dbg) std::cout << "M26WordCount_" << frame << " = " << hexdec(count, 0) << ", " << hexdec(word>>16, 0) << std::endl;
+        if (count > wordremain) EUDAQ_THROW("Bad M26 word count (" + to_string(count) + ", remain=" +
+                                            to_string(wordremain) + ", total=" + to_string(wordcount) + ")");
+        wordremain -= count;
+        std::vector<unsigned short> vec;
+        // read pixel data
+        for (size_t i = 0; i < count; ++i) {
+          word = GET(++offset);
+          vec.push_back(word & 0xffff);
+          vec.push_back(word>>16 & 0xffff);
         }
-        if (dbg) std::cout << std::endl;
+        unsigned npixels = 0;
+        for (size_t i = 0; i < vec.size(); ++i) {
+          //  std::cout << "  " << i << " : " << hexdec(vec[i]) << std::endl;
+          if (i == vec.size() - 1) break;
+          unsigned numstates = vec[i] & 0xf;
+          unsigned row = vec[i]>>4 & 0x7ff;
+          if (numstates+1 > vec.size()-i) {
+            // Ignoring bad line
+            //std::cout << "Ignoring bad line " << row << " (too many states)" << std::endl;
+            break;
+          }
+          if (dbg) std::cout << "Hit line " << (vec[i] & 0x8000 ? "* " : ". ") << row
+                             << ", states " << numstates << ":";
+          if (dbg2) std::cout << "*** Overflow in plane " << plane.ID() << ", row " << row << std::endl;
+          bool pivot = row >= (plane.PivotPixel() / 16);
+          for (unsigned s = 0; s < numstates; ++s) {
+            unsigned v = vec.at(++i);
+            unsigned column = v>>2 & 0x7ff;
+            unsigned num = v & 3;
+            if (dbg) std::cout << (s ? "," : " ") << column;
+            if (dbg) if (v&3 > 0) std::cout << "-" << (column + num);
+            for (unsigned j = 0; j < num+1; ++j) {
+              plane.PushPixel(column+j, row, 1, pivot, frame-1);
+            }
+            npixels += num + 1;
+          }
+          if (dbg) std::cout << std::endl;
+        }
+        if (dbg) std::cout << "Total pixels = " << npixels << std::endl;
+        ++offset;
       }
-      if (dbg) std::cout << "Total pixels = " << npixels << std::endl;
-      ++offset;
+    } catch (const std::out_of_range & e) {
+      std::cout << "\n%%%% Oops: " << e.what() << " %%%%" << std::endl;
     }
-    word = GET(++offset);
+//     if (dbg) {
+//       std::cout << "Plane " << plane.m_pix.size();
+//       for (size_t i = 0; i < plane.m_pix.size(); ++i) {
+//         std::cout << ", " << plane.m_pix[i].size();
+//       }
+//       std::cout << std::endl;
+//     }
+    // readjust offset to be sure it points to trailer:
+    word = GET(offset = alldata.size() / 4 - 2);
     if (dbg) std::cout << "TLUEventNumber = " << hexdec(word>>8 & 0xffff, 0) << std::endl;
     if (dbg) std::cout << "NumFramesAtTrigger = " << hexdec(word & 0xff, 0) << std::endl;
     word = GET(++offset);
@@ -346,8 +383,9 @@ namespace eudaq {
     bool padding = (alldata[alldata.size()-trailersize-4] == 0);
     unsigned npixels = (alldata.size() - headersize - trailersize) / 4 - padding;
     plane.SetSizeZS(info.Sensor().width, info.Sensor().height, npixels);
-    plane.m_mat.resize(plane.m_pix[0].size());
+    //plane.m_mat.resize(plane.m_pix[0].size());
     const unsigned char * data = &alldata[headersize];
+    plane.SetPivotPixel(((data[5] & 0x3) << 16) | (data[6] << 8) | data[7]);
     for (unsigned i = 0; i < npixels; ++i) {
       int mat = 3 - (data[4*i] >> 6), col = 0, row = 0;
       if (info.m_version < 2) {
@@ -359,10 +397,12 @@ namespace eudaq {
       }
       unsigned x, y;
       info.Sensor().mapfunc(x, y, col, row, mat, info.Sensor().cols, info.Sensor().rows);
-      plane.m_x[i] = x;
-      plane.m_y[i] = y;
-      plane.m_mat[i] = mat;
-      plane.m_pix[0][i] = ((data[4*i+2] & 0x0F) << 8) | (data[4*i+3]);
+      unsigned pix = ((data[4*i+2] & 0x0F) << 8) | (data[4*i+3]);
+      plane.SetPixel(i, x, y, pix);
+      //plane.m_x[i] = x;
+      //plane.m_y[i] = y;
+      //plane.m_mat[i] = mat;
+      //plane.m_pix[0][i] = ((data[4*i+2] & 0x0F) << 8) | (data[4*i+3]);
     }
   }
 
@@ -372,6 +412,7 @@ namespace eudaq {
       headersize += 8;
       EUDAQ_THROW("EUDRB V3 decoding not yet implemented");
     }
+    plane.SetPivotPixel(((data[5] & 0x3) << 16) | (data[6] << 8) | data[7]);
     unsigned possible1 = 2 *  info.Sensor().cols * info.Sensor().rows      * info.Sensor().mats * info.Frames();
     unsigned possible2 = 2 * (info.Sensor().cols * info.Sensor().rows - 1) * info.Sensor().mats * info.Frames();
     bool missingpixel = false;
@@ -384,9 +425,8 @@ namespace eudaq {
                   + to_string(possible1) + " or " + to_string(possible2));
     }
     //unsigned npixels = info.Sensor().cols * info.Sensor().rows * info.Sensor().mats;
-    plane.SetSizeRaw(info.Sensor().width, info.Sensor().height, info.Frames(), true);
-    plane.m_flags |= StandardPlane::FLAG_NEEDCDS;
-    plane.m_mat.resize(plane.m_pix[0].size());
+    plane.SetSizeRaw(info.Sensor().width, info.Sensor().height, info.Frames(), StandardPlane::FLAG_WITHPIVOT | StandardPlane::FLAG_NEEDCDS | StandardPlane::FLAG_NEGATIVE);
+    //plane.m_mat.resize(plane.m_pix[0].size());
     const unsigned char * ptr = &data[headersize];
     for (unsigned row = 0; row < info.Sensor().rows; ++row) {
       for (unsigned col = 0; col < info.Sensor().cols; ++col) {
@@ -396,20 +436,22 @@ namespace eudaq {
             unsigned x = 0, y = 0;
             info.Sensor().mapfunc(x, y, col, row, mat, info.Sensor().cols, info.Sensor().rows);
             size_t i = x + y*info.Sensor().width;
-            if (frame == 0) {
-              plane.m_x[i] = x;
-              plane.m_y[i] = y;
-              plane.m_mat[i] = mat;
-              if (info.m_version < 2) {
-                plane.m_pivot[i] = (row << 7 | col) >= plane.m_pivotpixel;
-              } else {
-                plane.m_pivot[i] = (row << 9 | col) >= plane.m_pivotpixel;
-              }
-            }
+            // if (frame == 0) {
+            //   plane.m_x[i] = x;
+            //   plane.m_y[i] = y;
+            //   plane.m_mat[i] = mat;
+            //   if (info.m_version < 2) {
+            //     plane.m_pivot[i] = (row << 7 | col) >= plane.m_pivotpixel;
+            //   } else {
+            //     plane.m_pivot[i] = (row << 9 | col) >= plane.m_pivotpixel;
+            //   }
+            // }
             short pix = *ptr++ << 8;
             pix |= *ptr++;
             pix &= 0xfff;
-            plane.m_pix[frame][i] = pix;
+            //plane.m_pix[frame][i] = pix;
+            bool pivot = (info.m_version < 2) ? (row << 7 | col) >= plane.PivotPixel() : (row << 9 | col) >= plane.PivotPixel();
+            plane.SetPixel(i, x, y, pix, pivot, frame);
           }
         }
       }
@@ -421,6 +463,11 @@ namespace eudaq {
   void EUDRBConverterBase::ConvertLCIOHeader(lcio::LCRunHeader & header, eudaq::Event const & bore, eudaq::Configuration const & /*conf*/) const {
     eutelescope::EUTelRunHeaderImpl runHeader(&header);
     runHeader.setDAQHWName(EUTELESCOPE::EUDRB);
+
+    // the information below was used by EUTelescope before the
+    // introduction of the BUI. Now all these parameters shouldn't be
+    // used anymore but they are left here for backward compatibility.
+
     runHeader.setEUDRBMode(bore.GetTag("MODE"));
     runHeader.setEUDRBDet(bore.GetTag("DET"));
     unsigned numplanes = bore.GetTag("BOARDS", 0);
@@ -429,6 +476,10 @@ namespace eudaq {
     for (unsigned i = 0; i < numplanes; ++i) {
       const int id = bore.GetTag("ID" + to_string(i), i);
       const BoardInfo & info = GetInfo(id);
+
+      // @ EMLYN
+      // Can you fix this size stripping away the markers? 
+      // thx
       xMax[i] = info.Sensor().width - 1;
       yMax[i] = info.Sensor().height - 1;
     }
@@ -452,12 +503,34 @@ namespace eudaq {
     result.parameters().setValue( eutelescope::EUTELESCOPE::EVENTTYPE, eutelescope::kDE );
 
     // prepare the collections for the rawdata and the zs ones
-    std::auto_ptr< lcio::LCCollectionVec > rawDataCollection ( new lcio::LCCollectionVec (lcio::LCIO::TRACKERRAWDATA) ) ;
-    std::auto_ptr< lcio::LCCollectionVec > zsDataCollection  ( new lcio::LCCollectionVec (lcio::LCIO::TRACKERDATA) ) ;
+    LCCollectionVec * rawDataCollection, * zsDataCollection, * zs2DataCollection;
+    bool rawDataCollectionExists = false, zsDataCollectionExists = false, zs2DataCollectionExists = false;
+
+    try {
+      rawDataCollection = static_cast< LCCollectionVec* > ( result.getCollection( "rawdata" ) );
+      rawDataCollectionExists = true;
+    } catch ( lcio::DataNotAvailableException& e ) {
+      rawDataCollection = new LCCollectionVec( lcio::LCIO::TRACKERRAWDATA );
+    }
+
+    try {
+      zsDataCollection = static_cast< LCCollectionVec* > ( result.getCollection( "zsdata" ) );
+      zsDataCollectionExists = true;
+    } catch ( lcio::DataNotAvailableException& e ) {
+      zsDataCollection = new LCCollectionVec( lcio::LCIO::TRACKERDATA );
+    }
+
+    try {
+      zs2DataCollection = static_cast< LCCollectionVec* > ( result.getCollection( "zsdata_m26" ) );
+      zs2DataCollectionExists = true;
+    } catch ( lcio::DataNotAvailableException& e ) {
+      zs2DataCollection = new LCCollectionVec( lcio::LCIO::TRACKERDATA );
+    }
 
     // set the proper cell encoder
-    CellIDEncoder< TrackerRawDataImpl > rawDataEncoder ( eutelescope::EUTELESCOPE::MATRIXDEFAULTENCODING, rawDataCollection.get() );
-    CellIDEncoder< TrackerDataImpl    > zsDataEncoder  ( eutelescope::EUTELESCOPE::ZSDATADEFAULTENCODING, zsDataCollection.get()  );
+    CellIDEncoder< TrackerRawDataImpl > rawDataEncoder  ( eutelescope::EUTELESCOPE::MATRIXDEFAULTENCODING, rawDataCollection );
+    CellIDEncoder< TrackerDataImpl    > zsDataEncoder   ( eutelescope::EUTELESCOPE::ZSDATADEFAULTENCODING, zsDataCollection  );
+    CellIDEncoder< TrackerDataImpl    > zs2DataEncoder  ( eutelescope::EUTELESCOPE::ZSDATADEFAULTENCODING, zs2DataCollection  );
 
     // a description of the setup
     std::vector< eutelescope::EUTelSetupDescription * >  setupDescription;
@@ -477,25 +550,25 @@ namespace eudaq {
 
       // The current detector is ...
       eutelescope::EUTelPixelDetector * currentDetector = 0x0;
-      if ( plane.m_sensor == "MIMOTEL" ) {
+      if ( plane.Sensor() == "MIMOTEL" ) {
 
         currentDetector = new eutelescope::EUTelMimoTelDetector;
         std::string mode;
-        plane.IsZS() ? mode = "ZS" : mode = "RAW2";
+        plane.GetFlags(StandardPlane::FLAG_ZS) ? mode = "ZS" : mode = "RAW2";
         currentDetector->setMode( mode );
         if ( result.getEventNumber() == 0 ) {
           setupDescription.push_back( new eutelescope::EUTelSetupDescription( currentDetector )) ;
         }
-      } else if ( plane.m_sensor == "MIMOSA18" ) {
+      } else if ( plane.Sensor() == "MIMOSA18" ) {
 
         currentDetector = new eutelescope::EUTelMimosa18Detector;
         std::string mode;
-        plane.IsZS() ? mode = "ZS" : mode = "RAW2";
+        plane.GetFlags(StandardPlane::FLAG_ZS) ? mode = "ZS" : mode = "RAW2";
         currentDetector->setMode( mode );
         if ( result.getEventNumber() == 0 ) {
           setupDescription.push_back( new eutelescope::EUTelSetupDescription( currentDetector ));
         }
-      } else if ( plane.m_sensor == "MIMOSA26" ) {
+      } else if ( plane.Sensor() == "MIMOSA26" ) {
 
         currentDetector = new eutelescope::EUTelMimosa26Detector;
         std::string mode = "ZS2";
@@ -505,20 +578,19 @@ namespace eudaq {
         }
       } else {
 
-        EUDAQ_ERROR("Unrecognised sensor type in LCIO converter: " + plane.m_sensor);
+        EUDAQ_ERROR("Unrecognised sensor type in LCIO converter: " + plane.Sensor());
         return true;
 
       }
       std::vector<size_t > markerVec = currentDetector->getMarkerPosition();
 
-      if ( plane.IsZS() ) {
-        // storage of ZS data is done here
-        zsDataEncoder["sensorID"] = iPlane;
+      if (plane.GetFlags(StandardPlane::FLAG_ZS)) {
+        zsDataEncoder["sensorID"] = plane.ID();
         zsDataEncoder["sparsePixelType"] = eutelescope::kEUTelSimpleSparsePixel;
 
         // get the total number of pixel. This is written in the
         // eudrbBoard and to get it in a easy way pass through the eudrbDecoder
-        size_t nPixel = plane.m_x.size();
+        size_t nPixel = plane.HitPixels();
 
         // prepare a new TrackerData for the ZS data
         std::auto_ptr<lcio::TrackerDataImpl > zsFrame( new lcio::TrackerDataImpl );
@@ -536,7 +608,7 @@ namespace eudaq {
           // them out. First I need to have the original position
           // (with markers in) and then calculate how many pixels I
           // have to remove
-          size_t originalX = (size_t)plane.m_x[ iPixel ] ;
+          size_t originalX = (size_t)plane.GetX(iPixel);
 
           if ( find( markerVec.begin(), markerVec.end(), originalX ) == markerVec.end() ) {
             // the original X is not on a marker column, so I need
@@ -549,11 +621,11 @@ namespace eudaq {
             sparsePixel->setXCoord( originalX - diff );
 
             // no problem instead with the Y coordinate
-            sparsePixel->setYCoord( (size_t)plane.m_y[ iPixel ] );
+            sparsePixel->setYCoord( (size_t)plane.GetY(iPixel) );
 
             // last the pixel charge. The CDS is automatically
             // calculated by the EUDRB
-            sparsePixel->setSignal( (size_t)plane.m_pix[0][ iPixel ] );
+            sparsePixel->setSignal( (size_t)plane.GetPixel(iPixel) );
 
             // in case of DEBUG
             // streamlog_out ( DEBUG0 ) << ( *(sparsePixel.get() ) ) << endl;
@@ -576,10 +648,14 @@ namespace eudaq {
         }
 
         // perfect! Now add the TrackerData to the collection
-        zsDataCollection->push_back( zsFrame.release() );
+        if ( plane.Sensor() == "MIMOSA26" ) {
+          zs2DataCollection->push_back( zsFrame.release() );
+        } else {
+          zsDataCollection->push_back( zsFrame.release() );
+        }
 
         // for the debug of the synchronization
-        pivotPixelPosVec.push_back( plane.m_pivotpixel );
+        pivotPixelPosVec.push_back( plane.PivotPixel() );
 
       } else {
 
@@ -588,7 +664,7 @@ namespace eudaq {
         rawDataEncoder["xMax"]     = currentDetector->getXMax() - markerVec.size();
         rawDataEncoder["yMin"]     = currentDetector->getYMin();
         rawDataEncoder["yMax"]     = currentDetector->getYMax();
-        rawDataEncoder["sensorID"] = iPlane;
+        rawDataEncoder["sensorID"] = plane.ID();
 
         // get the full vector of CDS
         std::vector<short> cdsVec = plane.GetPixels<short>();
@@ -637,11 +713,11 @@ namespace eudaq {
         // put the pivot pixel in the timestamp field of the
         // TrackerRawData. I know that is not correct, but this is
         // the only place where I can put this info
-        cdsFrame->setTime( plane.m_pivotpixel );
+        cdsFrame->setTime( plane.PivotPixel() );
 
         // this is also the right place to add the pivot pixel to
         // the pivot pixel vector for synchronization checks
-        pivotPixelPosVec.push_back( plane.m_pivotpixel );
+        pivotPixelPosVec.push_back( plane.PivotPixel() );
 
         // now append the TrackerRawData object to the corresponding
         // collection releasing the auto pointer
@@ -658,16 +734,15 @@ namespace eudaq {
 
       LCCollectionVec * eudrbSetupCollection = NULL;
       bool eudrbSetupExists = false;
-      try { 
+      try {
         eudrbSetupCollection = static_cast< LCCollectionVec* > ( result.getCollection( "eudrbSetup" ) ) ;
         eudrbSetupExists = true;
-      } catch (...) {
+      } catch ( lcio::DataNotAvailableException& e) {
         eudrbSetupCollection = new LCCollectionVec( lcio::LCIO::LCGENERICOBJECT );
       }
 
       for ( size_t iPlane = 0 ; iPlane < setupDescription.size() ; ++iPlane ) {
-        eudrbSetupCollection->push_back( setupDescription.at( iPlane ) );
-      }
+        eudrbSetupCollection->push_back( setupDescription.at( iPlane ) );      }
 
       if (!eudrbSetupExists) {
         result.addCollection( eudrbSetupCollection, "eudrbSetup" );
@@ -728,14 +803,19 @@ namespace eudaq {
       }
     }
 
-    // add the collections to the event only if not empty!
-    if ( rawDataCollection->size() != 0 ) {
-      result.addCollection( rawDataCollection.release(), "rawdata" );
+    // add the collections to the event only if not empty and not yet there
+    if ( !rawDataCollectionExists && ( rawDataCollection->size() != 0 ) ){
+      result.addCollection( rawDataCollection, "rawdata" );
     }
 
-    if ( zsDataCollection->size() != 0 ) {
-      result.addCollection( zsDataCollection.release(), "zsdata" );
+    if ( !zsDataCollectionExists && ( zsDataCollection->size() != 0 )) {
+      result.addCollection( zsDataCollection, "zsdata" );
     }
+
+    if ( !zs2DataCollectionExists && ( zs2DataCollection->size() != 0 )) {
+      result.addCollection( zs2DataCollection, "zsdata_m26" );
+    }
+
 
     return true;
   }

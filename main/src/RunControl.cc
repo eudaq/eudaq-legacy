@@ -125,12 +125,6 @@ namespace eudaq {
     m_listening = listen;
   }
 
-  void RunControl::RestartRun() {
-    StopRun(false);
-    mSleep(10000);
-    StartRun("Continued");
-  }
-
   void RunControl::Terminate() {
     EUDAQ_INFO("Terminating connections");
     SendCommand("TERMINATE");
@@ -228,14 +222,6 @@ namespace eudaq {
         if (from_string(status->GetTag("RUN"), m_runnumber) == m_runnumber) {
           // We ignore status messages that are marked with a previous run number
           OnReceive(ev.id, status);
-          if (ev.id.GetType() == "DataCollector") {
-            //std::cout << "st=" << m_stopping << ", lim=" << m_runsizelimit << ", size=" << status->GetTag("FILEBYTES") << std::endl;
-            if (!m_stopping && m_runsizelimit > 800 &&
-                from_string(status->GetTag("FILEBYTES"), 0LL) >= m_runsizelimit) {
-              EUDAQ_INFO("File limit reached: " + status->GetTag("FILEBYTES") + " > " + to_string(m_runsizelimit));
-              RestartRun();
-            }
-          }
         }
         //std::cout << "Receive:    " << ev.id << " \'" << ev.packet << "\'" << std::endl;
       }
@@ -264,7 +250,7 @@ namespace eudaq {
 
     status = m_cmdserver->SendReceivePacket<eudaq::Status>("SERVER", id, 1000000);
     m_dataaddr = status.GetTag("_SERVER");
-    std::cout << "DataServer responded: " << m_dataaddr << std::endl;
+    std::cout << "DataServer responded: Server = '" << m_dataaddr << "'" << std::endl;
     if (m_dataaddr == "") EUDAQ_THROW("Invalid response from DataCollector");
     SendCommand("DATA", m_dataaddr);
 

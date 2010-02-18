@@ -54,6 +54,10 @@ namespace eudaq {
     }
   }
 
+  unsigned PluginManager::GetTriggerID(const Event & ev) {
+    return GetInstance().GetPlugin(ev).GetTriggerID(ev);
+  }
+
 #if USE_LCIO && USE_EUTELESCOPE
   lcio::LCRunHeader * PluginManager::GetLCRunHeader(const DetectorEvent & bore) {
     IMPL::LCRunHeaderImpl * lcHeader = new IMPL::LCRunHeaderImpl;
@@ -82,13 +86,17 @@ namespace eudaq {
   StandardEvent PluginManager::ConvertToStandard(const DetectorEvent & dev) {
     StandardEvent event(dev.GetRunNumber(), dev.GetEventNumber(), dev.GetTimestamp());
     for (size_t i = 0; i < dev.NumEvents(); ++i) {
-      if (dev.GetEvent(i)->GetSubType() == "EUDRB") {
-        ConvertStandardSubEvent(event, *dev.GetEvent(i));
+      const Event * ev = dev.GetEvent(i);
+      if (!ev) EUDAQ_THROW("Null event!");
+      if (ev->GetSubType() == "EUDRB") {
+        ConvertStandardSubEvent(event, *ev);
       }
     }
     for (size_t i = 0; i < dev.NumEvents(); ++i) {
-      if (dev.GetEvent(i)->GetSubType() != "EUDRB") {
-        ConvertStandardSubEvent(event, *dev.GetEvent(i));
+      const Event * ev = dev.GetEvent(i);
+      if (!ev) EUDAQ_THROW("Null event!");
+      if (ev->GetSubType() != "EUDRB") {
+        ConvertStandardSubEvent(event, *ev);
       }
     }
     return event;
@@ -114,7 +122,11 @@ namespace eudaq {
 #endif
 
   void PluginManager::ConvertStandardSubEvent(StandardEvent & dest, const Event & source) {
-    GetInstance().GetPlugin(source).GetStandardSubEvent(dest, source);
+    try {
+      GetInstance().GetPlugin(source).GetStandardSubEvent(dest, source);
+    } catch (const Exception & e) {
+      std::cerr << "Error during conversion in PluginManager::ConvertStandardSubEvent" << std::endl;
+    }
   }
 
   void PluginManager::ConvertLCIOSubEvent(lcio::LCEvent & dest, const Event & source) {
