@@ -8,7 +8,7 @@ class TimePixBore
 public:
 	TimePixBore(DevInfo *param, double timeToEndOfShutter, DACTYPE *dacVals);
 	//virtual ~TimePixBore();
-	unsigned int version;
+	double version;
 	int m_rowLen;                   // number of chips
     int m_numberOfRows;                   // number of rows in which chips are aligned (e.g. quad has 4 chips, which are in 2 rows)
     int m_mpxType;                        // medipix type - MPX_ORIG, MPX_MXR, MPX_TPX

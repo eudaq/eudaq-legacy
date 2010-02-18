@@ -206,6 +206,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\main\src\PluginManager.cc"
+				>
+			</File>
+			<File
 				RelativePath="..\..\main\src\Producer.cc"
 				>
 			</File>
@@ -219,6 +223,10 @@
 			</File>
 			<File
 				RelativePath="..\..\main\src\Serializable.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\..\main\src\StandardEvent.cc"
 				>
 			</File>
 			<File
