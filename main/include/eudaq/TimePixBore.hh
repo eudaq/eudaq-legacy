@@ -27,7 +27,7 @@ namespace eudaq {
  *  compiled in if the PIXELMAN_FOR_EUDAQ preprocessor flag is set. It is not needed
  *  to deserialise the class and thus the main Eudaq does not have a Pixelman dependency.
  */
-class TimePixBore: public Event
+class TimepixBore: public Event
 {
  public:
         // The constructor used by the pixelman producer.
