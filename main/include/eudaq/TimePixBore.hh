@@ -40,7 +40,7 @@ class TimepixBore: public Event
 #endif
 
 	/// the constructor used by the data collector. It gets a data stream from the deserializer
-	explicit TimePixBore(Deserializer &);
+	explicit TimepixBore(Deserializer &);
 
 	/// due to the inhomogeneous data structure this thing needs it's own serialise function
 	virtual void Serialize (Serializer &) const;
