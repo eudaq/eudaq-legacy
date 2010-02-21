@@ -29,7 +29,7 @@ namespace eudaq {
  *  compiled in if the PIXELMAN_FOR_EUDAQ preprocessor flag is set. It is not needed
  *  to deserialise the class and thus the main Eudaq does not have a Pixelman dependency.
  */
-class TimepixBore: public Event
+class TimePixBore: public Event
 {
  public:
         // The constructor used by the pixelman producer.
@@ -42,7 +42,7 @@ class TimepixBore: public Event
 #endif
 
 	/// the constructor used by the data collector. It gets a data stream from the deserializer
-	explicit TimepixBore(Deserializer &);
+	explicit TimePixBore(Deserializer &);
 
 	/// due to the inhomogeneous data structure this thing needs it's own serialise function
 	virtual void Serialize (Serializer &) const;
