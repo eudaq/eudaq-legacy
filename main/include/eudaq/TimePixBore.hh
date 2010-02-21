@@ -4,8 +4,10 @@
 // the svn revision of the corresponding tpccondata class
 // unfirtunatelz this has to be updated manually :-(
 #define SVN_REVISION 1853
+#define PIXELMAN_FOR_EUDAQ
 
 #include "eudaq/Event.hh"
+#include "eudaq/RawDataEvent.hh"
 #include <string>
 
 // The common.h comes from pixelman
@@ -34,7 +36,7 @@ class TimepixBore: public Event
         // Only available from within pixelman
 
 #ifdef PIXELMAN_FOR_EUDAQ
-  explicit TimePixBore( unsigned int run, DevInfo *param, double timeToEndOfShutter, 
+  explicit TimepixBore( unsigned int run, DevInfo* param, double timeToEndOfShutter, 
 			double shutterLength, int moduleID,
 			DACTYPE *dacVals, size_t sizeOfDacVals);
 #endif
@@ -55,6 +57,8 @@ class TimepixBore: public Event
 	double GetTimeToEndOfShutter(){ return m_timeToEndOfShutter; }
 	double GetShutterLength(){ return  m_shutterLength; }
 	std::vector<unsigned short> GetDACValues(){ return m_dacVals; }
+	//void Print(std::ostream & os) {RawDataEvent::Print(std::ostream & os)};
+
 
 
  protected:
