@@ -7,6 +7,7 @@
  
 #include "eudaq/OptionParser.hh"
 #include "eudaq/Logger.hh"
+#include "eudaq/TimePixBore.hh"
 #include "TimepixProducer.h"
 #include "TimePixDAQStatus.h"
 #include <limits>
@@ -20,6 +21,7 @@
 short _stdcall Inp32(short PortAddress);
 void _stdcall Out32(short PortAddress, short data);
 //TimepixProducer* producer;
+
 
 
 
@@ -78,6 +80,8 @@ CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
     pthread_mutex_init( &m_StartAcquisitionFailedMutex, 0 );	
 	pthread_mutex_init( &m_producer_mutex, 0);
 	pthread_mutex_init( &m_frameAcquisitionThreadMutex, 0);
+	pthread_mutex_init( &m_dacVals_mutex, 0);
+	pthread_mutex_init( &m_sizeOfDacVals_mutex, 0);
 }
 
 
@@ -95,6 +99,8 @@ CPixelmanProducerMFCDlg::~CPixelmanProducerMFCDlg()
     pthread_mutex_destroy( &m_StartAcquisitionFailedMutex );	
     pthread_mutex_destroy( &m_producer_mutex );	
 	pthread_mutex_destroy( &m_frameAcquisitionThreadMutex );
+	pthread_mutex_destroy( &m_dacVals_mutex );void setDacTypeVals(DACTYPE* dacVals);
+	pthread_mutex_destroy( &m_sizeOfDacVals_mutex);
 }
 
 
@@ -116,6 +122,7 @@ void CPixelmanProducerMFCDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMMANDS, m_commHistRunCtrl);
 
 	DDX_Control(pDX, IDC_TOS, m_timeToEndOfShutter);
+	DDX_Control(pDX, IDC_SHUTLEN, m_shutterLength);
 }
 
 
@@ -133,7 +140,7 @@ BEGIN_MESSAGE_MAP(CPixelmanProducerMFCDlg, CDialog)
 	ON_CBN_SELCHANGE(IDC_CHIPSELECT, &CPixelmanProducerMFCDlg::OnCbnSelchangeChipselect)
 	//ON_WM_TIMER()
 
-	ON_BN_CLICKED(IDC_BUTTON1, &CPixelmanProducerMFCDlg::OnBnClickedButton1)
+	ON_BN_CLICKED(IDC_DEBUGBUTTON, &CPixelmanProducerMFCDlg::OnBnClickedDebug)
 	//ON_EN_CHANGE(IDC_EDIT2, &CPixelmanProducerMFCDlg::OnEnChangeParPortAddr)
 	ON_BN_CLICKED(ID_CONNECT, &CPixelmanProducerMFCDlg::OnBnClickedConnect)
 END_MESSAGE_MAP()
@@ -172,6 +179,7 @@ BOOL CPixelmanProducerMFCDlg::OnInitDialog()
 
 	m_parPortAddress.SetWindowText("0x378");
 	m_timeToEndOfShutter.SetWindowText("0");
+	m_shutterLength.SetWindowText("0");
 
 	m_ThlMaskLabel.SetWindowText("No ASCII Mask selected");
 	
@@ -238,6 +246,25 @@ UINT mpxCtrlPerformAcqLoopThread(LPVOID pParam)
 				break; // don't do anything
 			
 			case TimepixProducer::START_RUN :
+			       // create a BORE and send it 
+			       {
+				 // get the devinfo from somewhere
+				 // get the dacvalues array and its size from somewhere
+					DACTYPE* dacvalues = new DACTYPE[15];
+					int sizeOfDacValues = 15;
+					eudaq::TimepixBore timePixBore = eudaq::TimepixBore( 
+					 pMainWnd->getProducer()->GetRunNumber() ,
+					 pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceInfo, 
+					 pMainWnd->m_timeToEndOfShutter.getDouble(),
+					 pMainWnd->m_shutterLength.getDouble(),
+				    pMainWnd->m_ModuleID.getInt(),
+					pMainWnd->getDacVals(),
+					pMainWnd->getSizeOfDacVals() );
+					   pMainWnd->getProducer()->SendBORE(  timePixBore);
+			       }// these braces are there in case you need some temporary variables
+			       // for the creation of the TimePixBore.
+			       // they go out of scope here
+
 				pMainWnd->getProducer()->SetRunStatusFlag(TimepixProducer::RUN_ACTIVE);
 				break;
 
@@ -316,10 +343,23 @@ void CPixelmanProducerMFCDlg::OnBnClickedConnect()
                                    "The name of this Producer");
 	//op.Parse(argv);
     EUDAQ_LOG_LEVEL(level.Value());
-	
 	pthread_mutex_lock( & m_producer_mutex );
 		m_producer = new TimepixProducer(name.Value(), rctrl.Value(), this);
 	pthread_mutex_unlock( & m_producer_mutex );
+
+	setSizeOfDacVals(getNumberOfDacs()*getNumberOfChips());
+	DACTYPE* dacVals = new DACTYPE[getSizeOfDacVals()];
+	DEVID devId = mpxDevId[mpxCurrSel].deviceId;
+	int retval = this->mpxCtrlGetDACs(devId, dacVals, getSizeOfDacVals(), ALLCHIPS);
+	if (retval != 0)
+	{
+		m_commHistRunCtrl.SetWindowText("Getting DacVals Failed");
+		setDacVals(NULL);
+	}
+	else
+	{	
+		setDacVals(dacVals);
+	}
 
 	CWinThread* pThread = AfxBeginThread(mpxCtrlPerformAcqLoopThread, this);
 	
@@ -327,6 +367,8 @@ void CPixelmanProducerMFCDlg::OnBnClickedConnect()
 	m_commHistRunCtrl.AddString(_T("Connected"));
 	
 	//MessageBox("Goodbye", "HaveFun", NULL);
+
+	delete[] dacVals;
 
 
 }
@@ -715,7 +757,7 @@ void CPixelmanProducerMFCDlg::OnTimer(UINT_PTR nIDEvent)
 	
 	//return value of mpxCtrlPerformFrameAcqThread is per Defualt
 	}*/
-void CPixelmanProducerMFCDlg::OnBnClickedButton1()
+void CPixelmanProducerMFCDlg::OnBnClickedDebug()
 {	
 	/*static CString hexBuffer;
 	
@@ -797,6 +839,7 @@ void CPixelmanProducerMFCDlg::disablePixelManProdAcqControls()
 //	m_AcqTime.EnableWindow(false);
 	m_SpinModuleID.EnableWindow(false);
 	m_timeToEndOfShutter.EnableWindow(false);
+	m_shutterLength.EnableWindow(false);
 //	m_SpinAcqCount.EnableWindow(false);
 }
 
@@ -811,6 +854,7 @@ void CPixelmanProducerMFCDlg::enablePixelManProdAcqControls()
 //	m_AcqTime.EnableWindow(true);
 	m_SpinModuleID.EnableWindow(true);
 	m_timeToEndOfShutter.EnableWindow(true);
+	m_shutterLength.EnableWindow(true);
 //	m_SpinAcqCount.EnableWindow(true);
 }
 
@@ -846,4 +890,68 @@ CWinThread* CPixelmanProducerMFCDlg::getFrameAcquisitionThread( )
 	pthread_mutex_unlock( & m_frameAcquisitionThreadMutex );
 
 	return retval;
+}
+
+void CPixelmanProducerMFCDlg::setDacVals(DACTYPE* dacVals)
+{
+	pthread_mutex_lock( &m_dacVals_mutex );
+		m_dacVals = dacVals;
+	pthread_mutex_unlock( &m_dacVals_mutex );
+}
+
+DACTYPE* CPixelmanProducerMFCDlg::getDacVals()
+{
+	DACTYPE* retval;
+	pthread_mutex_lock( &m_dacVals_mutex );
+		retval= m_dacVals;
+	pthread_mutex_unlock( &m_dacVals_mutex );
+	return retval;
+}
+
+void CPixelmanProducerMFCDlg::setSizeOfDacVals(int size)
+{
+	pthread_mutex_lock( &m_sizeOfDacVals_mutex );
+		m_sizeOfDacVals = size;
+	pthread_mutex_lock( &m_sizeOfDacVals_mutex );
+}
+
+int CPixelmanProducerMFCDlg::getSizeOfDacVals()
+{
+	int retval;
+	pthread_mutex_lock( &m_sizeOfDacVals_mutex );
+		retval = m_sizeOfDacVals;
+	pthread_mutex_lock( &m_sizeOfDacVals_mutex );
+	return retval;
+}
+
+int CPixelmanProducerMFCDlg::getNumberOfDacs()
+{
+	if (mpxDevId[mpxCurrSel].deviceInfo.mpxType == MPX_ORIG)
+		return 14; //MediPix2 2.1 had only 14 Dacs
+	else
+		return 15;
+}
+
+int CPixelmanProducerMFCDlg::getNumberOfChips()
+{	
+	//for Mpx and TimePix of pixels per chip = 256*256
+	static int nPixelsPerChip = 256*256;
+	int numberOfChips;
+
+	switch (mpxDevId[mpxCurrSel].deviceInfo.mpxType)
+	{	
+		case MPX_ORIG:
+			numberOfChips = mpxDevId[mpxCurrSel].deviceInfo.pixCount/nPixelsPerChip;
+			break;
+		case MPX_MXR:
+			numberOfChips = mpxDevId[mpxCurrSel].deviceInfo.pixCount/nPixelsPerChip;
+			break;
+		case MPX_TPX:
+			numberOfChips = mpxDevId[mpxCurrSel].deviceInfo.pixCount/nPixelsPerChip;
+			break;
+		default:
+			numberOfChips =  -1; //Chip type not known
+	}
+		
+	return numberOfChips;
 }
