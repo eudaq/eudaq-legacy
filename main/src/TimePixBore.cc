@@ -2,6 +2,8 @@
 
 
 namespace eudaq {
+namespace eudaq 
+{
 
 #ifdef PIXELMAN_FOR_EUDAQ
   TimepixBore::TimepixBore( unsigned int run, DevInfo *param, double timeToEndOfShutter,
@@ -59,4 +61,5 @@ namespace eudaq {
     s.write( m_dacVals );
    }
 
-} // namespace eudaq
+ // namespace eudaq
+}
