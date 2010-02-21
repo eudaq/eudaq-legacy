@@ -1,10 +1,9 @@
-#include "eudaq/TimePixBore.hh"
+#include "eudaq/TimepixBore.hh"
 
-
-
+namespace eudaq{
 
 #ifdef PIXELMAN_FOR_EUDAQ
-  TimePixBore::TimePixBore( unsigned int run, DevInfo *param, double timeToEndOfShutter,
+  TimepixBore::TimepixBore( unsigned int run, DevInfo *param, double timeToEndOfShutter,
 			    double shutterLength, int moduleID,
 			    DACTYPE *dacVals, size_t sizeOfDacVals)
     : Event(run, 0,     NOTIMESTAMP, Event::FLAG_BORE), // this is always a BORE, so event 0, no timestamp
@@ -22,7 +21,7 @@
   }
 #endif
 
-   TimePixBore::TimePixBore(Deserializer & ds )
+   TimepixBore::TimepixBore(Deserializer & ds )
      : Event( ds )
    {
      ds.read( m_revision );
@@ -38,7 +37,7 @@
      ds.read( m_dacVals );
    }
 
-   void TimePixBore::Serialize (Serializer &s) const
+   void TimepixBore::Serialize (Serializer &s) const
    {
      // First call the serialiser of the event
      // In the deserialiser constructor the construcor of the mother class (Event) 
