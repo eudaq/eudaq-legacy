@@ -1,10 +1,7 @@
-//#include "stdafx.h"
 #include "eudaq/TimePixBore.hh"
 
 
 
-namespace eudaq 
-{
 
 #ifdef PIXELMAN_FOR_EUDAQ
   TimePixBore::TimePixBore( unsigned int run, DevInfo *param, double timeToEndOfShutter,
