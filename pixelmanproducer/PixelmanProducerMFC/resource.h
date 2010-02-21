@@ -12,6 +12,7 @@
 #define IDC_EDIT1                       1000
 #define IDC_MODULEID                    1001
 #define IDC_EDIT3                       1002
+#define IDC_SHUTLEN                     1002
 #define IDC_SPINMODULEID                1003
 #define IDC_ACQTIME                     1004
 #define IDC_QUIT                        1005
@@ -21,6 +22,7 @@
 #define IDC_COMBO1                      1009
 #define IDC_CHIPSELECT                  1009
 #define IDC_BUTTON1                     1011
+#define IDC_DEBUGBUTTON                 1011
 #define IDC_PARPORTADDR                 1012
 #define IDC_EDIT2                       1013
 #define IDC_LIST1                       1014

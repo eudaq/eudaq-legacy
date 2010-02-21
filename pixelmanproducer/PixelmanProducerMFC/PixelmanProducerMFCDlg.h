@@ -2,6 +2,8 @@
 //
 
 #pragma once
+#define PIXELMAN_FOR_EUDAQ
+
 #include "resource.h"
 #include "eudaq/DummyProducer.hh"
 #include "ceditextended.h"
@@ -43,6 +45,8 @@ public:
 	//int (*mpxCtrlInitMpxDevice)(DEVID devId);
 	int (*mpxCtrlReviveMpxDevice)(DEVID devId);
 	int (*mpxCtrlAbortOperation)(DEVID devId);
+	int (*mpxCtrlGetDACs)(DEVID devID, DACTYPE *dacVals, int size,
+								int chipNumber);
 
 	//functions to be remotely called from runcontrol
 	int mpxCtrlPerformFrameAcqTimePixProd();
@@ -52,6 +56,7 @@ public:
 	
 	void setAcquisitionActive();
 	bool getAcquisitionActive();
+
 
 	void setStartAcquisitionFailed(bool failedStatus);
 	bool getStartAcquisitionFailed();
@@ -64,6 +69,15 @@ public:
 	void setFrameAcquisitionThread( CWinThread* frameAcquThread );
 	CWinThread* getFrameAcquisitionThread();
 
+	void setDacVals(DACTYPE* dacVals);
+	DACTYPE* getDacVals();
+
+	int getNumberOfDacs();
+	int getNumberOfChips();
+
+	void setSizeOfDacVals(int size);
+	int getSizeOfDacVals();
+
 	/** Check if trigger line is raised and stop the acquisiton on the chip if so.
 	 *	Note: This function is thread safe because it only uses thread safe functions
 	 * (I hope that mpxCtrlTriggerType() is tread safe...)
@@ -73,6 +87,7 @@ public:
 	// There might be several plugins available, so we have to define which module/chip is readout
 	CEditExtended m_ModuleID;
 	CEditExtended m_timeToEndOfShutter;
+	CEditExtended m_shutterLength;
 //	CEditExtended m_AcqCount;
 //	CEditExtended m_AcqTime;
 	
@@ -131,6 +146,12 @@ protected://veerbte Klassen koennen drauf zugreifen
 	TimepixProducer* m_producer;
 	pthread_mutex_t m_producer_mutex;
 
+	DACTYPE* m_dacVals;
+	pthread_mutex_t m_dacVals_mutex;
+
+	int m_sizeOfDacVals;
+	pthread_mutex_t m_sizeOfDacVals_mutex;
+
 
 public:
 	afx_msg void OnBnClickedQuit();
@@ -139,7 +160,7 @@ public:
 	afx_msg void OnCbnSelchangeChipselect();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	
-	afx_msg void OnBnClickedButton1();
+	afx_msg void OnBnClickedDebug();
 	afx_msg void OnEnChangeParPortAddr();
 	afx_msg void OnBnClickedConnect();
 	afx_msg void OnBnClickedCancel();

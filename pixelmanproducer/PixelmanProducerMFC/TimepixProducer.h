@@ -2,7 +2,7 @@
 #include "eudaq/Producer.hh"
 #include <pthread.h>
 #include "PixelmanProducerMFCDlg.h"
-#include "TimePixBore.h"
+#include "eudaq/TimePixBore.hh"
 //#include "targetver.h"
 
 #include <queue>
@@ -21,6 +21,7 @@ class TimepixProducer : public eudaq::Producer
     void Event(i16 *timepixdata, u32 size);
     void SimpleEvent();
     void BlobEvent();
+    void SendBORE( eudaq::TimepixBore const & bore ); ///< Send the begin of run event, retry two times
 
     /** Threadsave version to set the m_done variable
      */
@@ -105,6 +106,4 @@ private:
 
 	std::queue<timepix_producer_command_t> m_commandQueue;
 	pthread_mutex_t m_commandQueue_mutex;
-
-	TimePixBore* timePixBoreEvent;
 };

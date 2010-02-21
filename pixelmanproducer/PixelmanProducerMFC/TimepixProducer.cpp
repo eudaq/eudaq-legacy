@@ -5,6 +5,7 @@
 #include "eudaq/RawDataEvent.hh"
 #include "eudaq/Utils.hh"
 #include "eudaq/OptionParser.hh"
+#include "eudaq/Exception.hh"
 #include <iostream>
 #include <ostream>
 #include <cctype> 
@@ -190,7 +191,7 @@ void TimepixProducer::Event(i16 *timepixdata, u32 size)
 			eudaq::RawDataEvent emptyEv("Timepix",GetRunNumber(),ev.GetEventNumber() );
 			try
 			{
-				SendEvent(ev);
+				SendEvent(emptyEv);
 				break;
 			}	
 			catch(...)
@@ -202,6 +203,35 @@ void TimepixProducer::Event(i16 *timepixdata, u32 size)
 	}
 
 	delete[] serialdatablock;
+}
+
+void TimepixProducer::SendBORE( eudaq::TimepixBore const & bore )
+{
+	eudaq::RawDataEvent ev("Timepix",GetRunNumber(), GetIncreaseEventNumber() );
+	for (int i=0; i < 3; i++)
+	{
+		try
+		{
+			SendEvent(bore);
+			break;
+		}
+		catch(...)
+		{
+			if (i < 2)
+			{
+				EUDAQ_WARN("Device "+eudaq::to_string(pixelmanCtrl->m_ModuleID.getInt()) + ": " +
+					eudaq::to_string(i) + ". Could not send BORE in run " + eudaq::to_string( ev.GetRunNumber() )
+					+ ". Retrying...");
+			}
+				// Sleep to wait for possible network problems to resolve
+			Sleep(500);
+		}
+
+		EUDAQ_ERROR("Device "+eudaq::to_string(pixelmanCtrl->m_ModuleID.getInt()) + ": "
+			    "Sending of BORE finally failed in run " + eudaq::to_string( ev.GetRunNumber() ) );
+		
+		throw eudaq::CommunicationException("PixelmanProcuder could not send BORE");
+	}  
 }
 
 void TimepixProducer::SimpleEvent()
@@ -262,7 +292,7 @@ void TimepixProducer::OnStartRun(unsigned param)
 	{ 
 		SetRunNumber( param );
 		SetEventNumber( 1 ); // has to be 1 because BORE is event 0 :-(
-		SendEvent(eudaq::RawDataEvent::BORE(_T("Timepix"), param )); // send param instead of GetRunNumber
+		// don't send the BORE here, it is done in the DAQ loop
 		//std::cout << "Start Run: " << param << std::endl;
 		//MessageBox(NULL, "Start of Run", "EudaqMessage", NULL);
 

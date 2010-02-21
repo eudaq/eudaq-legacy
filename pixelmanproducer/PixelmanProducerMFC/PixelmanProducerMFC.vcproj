@@ -234,10 +234,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\TimePixBore.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\TimePixDAQStatus.cpp"
 				>
 			</File>
@@ -256,7 +252,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\Pixelman_2008_03_30\_other_\headers\common.h"
+				RelativePath=".\Pixelman_2009_09_23\_other_\headers\common.h"
 				>
 			</File>
 			<File
@@ -301,10 +297,6 @@
 			</File>
 			<File
 				RelativePath=".\targetver.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TimePixBore.h"
 				>
 			</File>
 			<File
