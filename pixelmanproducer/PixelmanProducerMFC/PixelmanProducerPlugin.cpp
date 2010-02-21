@@ -38,6 +38,7 @@ int mpxCtrlReconnectMpx(DEVID devId);
 int mpxCtrlInitMpxDevice(DEVID devId);
 int mpxCtrlReviveMpxDevice(DEVID devId);
 int mpxCtrlAbortOperation(DEVID devId);
+int mpxCtrlGetDACs(DEVID devID, DACTYPE *dacVals, int size, int chipNumber);
 
 
 
@@ -115,6 +116,7 @@ void DialogBoxInit(unsigned int par)
 	//  pMainWnd->mpxCtrlInitMpxDevice = &mpxCtrlInitMpxDevice;
 		pMainWnd->mpxCtrlReviveMpxDevice = &mpxCtrlReviveMpxDevice;
 		pMainWnd->mpxCtrlAbortOperation = &mpxCtrlAbortOperation;
+		pMainWnd->mpxCtrlGetDACs = &mpxCtrlGetDACs;
 		ret = pMainWnd->Create(IDD_PIXELMANPRODUCERMFC_DIALOG, CWnd::GetDesktopWindow());
 		pMainWnd->SetWindowText("Pixelman Eudaq-Producer");
 		pMainWnd->ShowWindow(SW_SHOW);
@@ -192,4 +194,9 @@ int mpxCtrlReviveMpxDevice(DEVID devId)
 int mpxCtrlAbortOperation(DEVID devId)
 {
 	return mgr->mpxCtrlAbortOperation(devId);
+}
+
+int mpxCtrlGetDACsType(DEVID devID, DACTYPE *dacVals, int size, int chipNumber)
+{
+	return mgr->mpxCtrlGetDACs( devID, dacVals, size, chipNumber);
 }
