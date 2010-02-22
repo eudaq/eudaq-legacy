@@ -29,7 +29,8 @@ namespace eudaq {
  */
 class TimepixBore: public Event
 {
- public:
+  EUDAQ_DECLARE_EVENT(TimepixBore);
+public:
         // The constructor used by the pixelman producer.
         // Only available from within pixelman
 

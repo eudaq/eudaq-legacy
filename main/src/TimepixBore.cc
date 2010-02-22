@@ -2,6 +2,8 @@
 
 namespace eudaq{
 
+  EUDAQ_DEFINE_EVENT(TimepixBore, str2id("_TPX_BORE"));
+
 #ifdef PIXELMAN_FOR_EUDAQ
   TimepixBore::TimepixBore( unsigned int run, DevInfo const & param, double timeToEndOfShutter,
 			    double shutterLength, int moduleID,
@@ -61,7 +63,9 @@ namespace eudaq{
   void TimepixBore:: Print(std::ostream & os) const
   {
     Event::Print(os);
-    os << "Number of Chips"<<m_numberOfRows *  m_rowLen;
+    os << ", nChips "<<m_numberOfRows *  m_rowLen
+       << ", module "<< m_moduleID
+       << ", clock "<< m_clockTimepix;
   }
 
  // namespace eudaq
