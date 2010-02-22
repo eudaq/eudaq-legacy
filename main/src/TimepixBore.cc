@@ -58,5 +58,11 @@ namespace eudaq{
     s.write( m_dacVals );
    }
 
+  void TimepixBore:: Print(std::ostream & os) const
+  {
+    Event::Print(os);
+    os << "Number of Chips"<<m_numberOfRows *  m_rowLen;
+  }
+
  // namespace eudaq
 }

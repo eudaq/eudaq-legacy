@@ -4,10 +4,8 @@
 // the svn revision of the corresponding tpccondata class
 // unfirtunatelz this has to be updated manually :-(
 #define SVN_REVISION 1853
-#define PIXELMAN_FOR_EUDAQ
 
 #include "eudaq/Event.hh"
-#include "eudaq/RawDataEvent.hh"
 #include <string>
 
 // The common.h comes from pixelman
@@ -29,7 +27,7 @@ namespace eudaq {
  *  compiled in if the PIXELMAN_FOR_EUDAQ preprocessor flag is set. It is not needed
  *  to deserialise the class and thus the main Eudaq does not have a Pixelman dependency.
  */
-class TimePixBore: public Event
+class TimepixBore: public Event
 {
  public:
         // The constructor used by the pixelman producer.
@@ -42,7 +40,7 @@ class TimePixBore: public Event
 #endif
 
 	/// the constructor used by the data collector. It gets a data stream from the deserializer
-	explicit TimePixBore(Deserializer &);
+	explicit TimepixBore(Deserializer &);
 
 	/// due to the inhomogeneous data structure this thing needs it's own serialise function
 	virtual void Serialize (Serializer &) const;
@@ -57,7 +55,7 @@ class TimePixBore: public Event
 	double GetTimeToEndOfShutter(){ return m_timeToEndOfShutter; }
 	double GetShutterLength(){ return  m_shutterLength; }
 	std::vector<unsigned short> GetDACValues(){ return m_dacVals; }
-	//void Print(std::ostream & os) {RawDataEvent::Print(std::ostream & os)};
+        void Print(std::ostream & os) const;
 
 
 

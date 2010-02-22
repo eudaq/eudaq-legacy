@@ -207,7 +207,6 @@ void TimepixProducer::Event(i16 *timepixdata, u32 size)
 
 void TimepixProducer::SendBORE( eudaq::TimepixBore const & bore )
 {
-	eudaq::RawDataEvent ev("Timepix",GetRunNumber(), GetIncreaseEventNumber() );
 	for (int i=0; i < 3; i++)
 	{
 		try
@@ -220,7 +219,7 @@ void TimepixProducer::SendBORE( eudaq::TimepixBore const & bore )
 			if (i < 2)
 			{
 				EUDAQ_WARN("Device "+eudaq::to_string(pixelmanCtrl->m_ModuleID.getInt()) + ": " +
-					eudaq::to_string(i) + ". Could not send BORE in run " + eudaq::to_string( ev.GetRunNumber() )
+					eudaq::to_string(i) + ". Could not send BORE in run " + eudaq::to_string( bore.GetRunNumber() )
 					+ ". Retrying...");
 			}
 				// Sleep to wait for possible network problems to resolve
@@ -228,7 +227,7 @@ void TimepixProducer::SendBORE( eudaq::TimepixBore const & bore )
 		}
 
 		EUDAQ_ERROR("Device "+eudaq::to_string(pixelmanCtrl->m_ModuleID.getInt()) + ": "
-			    "Sending of BORE finally failed in run " + eudaq::to_string( ev.GetRunNumber() ) );
+			    "Sending of BORE finally failed in run " + eudaq::to_string( bore.GetRunNumber() ) );
 		
 		throw eudaq::CommunicationException("PixelmanProcuder could not send BORE");
 	}  
