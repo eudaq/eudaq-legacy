@@ -34,9 +34,9 @@ class TimepixBore: public Event
         // Only available from within pixelman
 
 #ifdef PIXELMAN_FOR_EUDAQ
-  explicit TimepixBore( unsigned int run, DevInfo* param, double timeToEndOfShutter, 
+  explicit TimepixBore( unsigned int run, DevInfo const & param, double timeToEndOfShutter, 
 			double shutterLength, int moduleID,
-			DACTYPE *dacVals, size_t sizeOfDacVals);
+			DACTYPE const * dacVals, size_t sizeOfDacVals);
 #endif
 
 	/// the constructor used by the data collector. It gets a data stream from the deserializer

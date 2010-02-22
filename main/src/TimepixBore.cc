@@ -3,14 +3,14 @@
 namespace eudaq{
 
 #ifdef PIXELMAN_FOR_EUDAQ
-  TimepixBore::TimepixBore( unsigned int run, DevInfo *param, double timeToEndOfShutter,
+  TimepixBore::TimepixBore( unsigned int run, DevInfo const & param, double timeToEndOfShutter,
 			    double shutterLength, int moduleID,
-			    DACTYPE *dacVals, size_t sizeOfDacVals)
+			    DACTYPE const * dacVals, size_t sizeOfDacVals)
     : Event(run, 0,     NOTIMESTAMP, Event::FLAG_BORE), // this is always a BORE, so event 0, no timestamp
       //           run, event, timestamp,   flags
-      m_revision( SVN_REVISION ),  m_rowLen(param->rowLen),  m_numberOfRows( param->numberOfRows),
-      m_mpxType( param->mpxType ),  m_chipboardIDstring( param->chipboardID, MPX_MAX_CHBID),
-      m_ifaceName( param->ifaceName ), m_clockTimepix( param->clockTimepix),
+      m_revision( SVN_REVISION ),  m_rowLen(param.rowLen),  m_numberOfRows( param.numberOfRows),
+      m_mpxType( param.mpxType ),  m_chipboardIDstring( param.chipboardID, MPX_MAX_CHBID),
+      m_ifaceName( param.ifaceName ), m_clockTimepix( param.clockTimepix),
       m_timeToEndOfShutter( timeToEndOfShutter ), m_shutterLength( shutterLength ),
       m_moduleID( moduleID ), m_dacVals( sizeOfDacVals )
   {

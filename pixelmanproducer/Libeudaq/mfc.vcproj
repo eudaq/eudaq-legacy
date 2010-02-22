@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../;&quot;C:\Documents and Settings\renz\Desktop\EuDAQ\extern\pthread-win32\include&quot;;&quot;C:\Documents and Settings\renz\Desktop\EuDAQ\main\include&quot;;&quot;C:\Dokumente und Einstellungen\renz\Desktop\EuDAQ\extern\pthread-win32\include&quot;;&quot;C:\Dokumente und Einstellungen\renz\Desktop\EuDAQ\main\include&quot;;&quot;C:\Dokumente und Einstellungen\renz\Desktop\EuDAQ\pixelmanproducer\mfc_dialog_v1.1\Pixelman_2008_03_30\_other_\headers&quot;"
+				AdditionalIncludeDirectories="../;&quot;C:\Documents and Settings\renz\Desktop\EuDAQ\extern\pthread-win32\include&quot;;&quot;C:\Documents and Settings\renz\Desktop\EuDAQ\main\include&quot;;&quot;C:\Dokumente und Einstellungen\renz\Desktop\EuDAQ\extern\pthread-win32\include&quot;;&quot;C:\Dokumente und Einstellungen\renz\Desktop\EuDAQ\main\include&quot;;&quot;C:\Dokumente und Einstellungen\renz\Desktop\EuDAQ\pixelmanproducer\mfc_dialog_v1.1\Pixelman_2009_09_23\_other_\headers&quot;"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL;WINVER=0x0501"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -251,7 +251,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Pixelman_2008_03_30\_other_\headers\mpxpluginmgrapi.h"
+				RelativePath=".\Pixelman_2009_09_23\_other_\headers\mpxpluginmgrapi.h"
 				>
 			</File>
 			<File

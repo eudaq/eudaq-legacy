@@ -65,7 +65,8 @@ IMPLEMENT_DYNAMIC(CPixelmanProducerMFCDlg, CDialog)
 
 CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 	: CDialog(CPixelmanProducerMFCDlg::IDD, pParent), timePixDaqStatus(0x378),
-		m_AcquisitionActive(false), m_producer(0), m_StartAcquisitionFailed(false)
+	  m_AcquisitionActive(false), m_producer(0), m_dacVals(0) m_sizeOfDacVals(0), 
+	  m_StartAcquisitionFailed(false)
 {
 	m_csThlFilePath.Empty();
 	m_csMaskFilePath.Empty();
@@ -81,8 +82,6 @@ CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 	pthread_mutex_init( &m_producer_mutex, 0);
 	pthread_mutex_init( &m_frameAcquisitionThreadMutex, 0);
 	pthread_mutex_init( &m_dacVals_mutex, 0);
-	setDacVals(0, 0);
-	
 }
 
 
@@ -93,7 +92,7 @@ CPixelmanProducerMFCDlg::~CPixelmanProducerMFCDlg()
 	//if(producerStarted==TRUE)
 	//	producer->SetDone(true);
 	delete m_producer;
-	delete m_dacVals;
+	delete[] m_dacVals;
 	
 	//this->DialogBoxDelete(this);
 
@@ -254,7 +253,7 @@ UINT mpxCtrlPerformAcqLoopThread(LPVOID pParam)
 				 // get the dacvalues array and its size from somewhere					
 					eudaq::TimepixBore timePixBore( 
 					 pMainWnd->getProducer()->GetRunNumber() ,
-					 &(pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceInfo), 
+					 pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceInfo, 
 					 pMainWnd->m_timeToEndOfShutter.getDouble(),
 					 pMainWnd->m_shutterLength.getDouble(),
 				    pMainWnd->m_ModuleID.getInt(),
@@ -360,7 +359,7 @@ void CPixelmanProducerMFCDlg::OnBnClickedConnect()
 	if (retval != 0)
 	{
 		m_commHistRunCtrl.SetWindowText("Getting DacVals Failed");
-		setDacVals(NULL, NULL);
+		setDacVals(0, 0);
 	}
 	else
 	{	
@@ -373,9 +372,6 @@ void CPixelmanProducerMFCDlg::OnBnClickedConnect()
 	m_commHistRunCtrl.AddString(_T("Connected"));
 	
 	//MessageBox("Goodbye", "HaveFun", NULL);
-
-	//delete[] dacVals;
-
 
 }
 
@@ -901,7 +897,7 @@ CWinThread* CPixelmanProducerMFCDlg::getFrameAcquisitionThread( )
 void CPixelmanProducerMFCDlg::setDacVals(DACTYPE* dacVals, int size)
 {
 	pthread_mutex_lock( &m_dacVals_mutex );
-		delete m_dacVals;
+		delete[] m_dacVals;
 		m_dacVals = dacVals;
 		m_sizeOfDacVals = size;
 	pthread_mutex_unlock( &m_dacVals_mutex );
@@ -945,6 +941,7 @@ int CPixelmanProducerMFCDlg::getNumberOfDacs()
 			numberOfDacs =  0; //Chip type not known
 	}
 
+	return numberOfDacs;
 }
 
 int CPixelmanProducerMFCDlg::getNumberOfChips()
