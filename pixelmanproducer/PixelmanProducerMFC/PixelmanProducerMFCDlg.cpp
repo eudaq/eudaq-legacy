@@ -65,17 +65,15 @@ IMPLEMENT_DYNAMIC(CPixelmanProducerMFCDlg, CDialog)
 
 CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 	: CDialog(CPixelmanProducerMFCDlg::IDD, pParent), timePixDaqStatus(0x378),
-	  m_AcquisitionActive(false), m_producer(0), m_dacVals(0) m_sizeOfDacVals(0), 
-	  m_StartAcquisitionFailed(false)
+	  m_AcquisitionActive(false), m_producer(0), m_dacVals(0), m_sizeOfDacVals(0), 
+	  m_StartAcquisitionFailed(false), mpxCurrSel(0)
+	  
 {
 	m_csThlFilePath.Empty();
 	m_csMaskFilePath.Empty();
-	m_csTestBitMaskFilePath.Empty();
+    m_csTestBitMaskFilePath.Empty();
 	m_csThhorModeMaskFilePath.Empty();
-	//m_lptPort.m_bHex = true;
-	mpxCurrSel = 0;
-	infDouble  = std::numeric_limits<double>::infinity();
-
+	infDouble = std::numeric_limits<double>::infinity();
 	// Inititalise the mutexes
     pthread_mutex_init( &m_AcquisitionActiveMutex, 0 );
     pthread_mutex_init( &m_StartAcquisitionFailedMutex, 0 );	

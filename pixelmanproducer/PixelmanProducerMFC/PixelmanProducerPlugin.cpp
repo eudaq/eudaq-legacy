@@ -196,7 +196,7 @@ int mpxCtrlAbortOperation(DEVID devId)
 	return mgr->mpxCtrlAbortOperation(devId);
 }
 
-int mpxCtrlGetDACsType(DEVID devID, DACTYPE *dacVals, int size, int chipNumber)
+int mpxCtrlGetDACs(DEVID devID, DACTYPE *dacVals, int size, int chipNumber)
 {
 	return mgr->mpxCtrlGetDACs( devID, dacVals, size, chipNumber);
 }
