@@ -43,7 +43,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\PixelmanProducerMFC\Pixelman_2009_09_23\_other_\headers;..\..\main\include;&quot;..\..\extern\pthread-win32\include&quot;;..\..\EuDAQ\main\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;EUDAQ_PLATFORM=PF_WIN32;WINVER=0x0501"
+				PreprocessorDefinitions="WIN32;_WINDOWS;WIN32; WINVER=0x0501;_DEBUG;_LIB;EUDAQ_PLATFORM=PF_WIN32;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -242,7 +242,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\main\src\TimePixBore.cc"
+				RelativePath="..\..\main\src\TimepixBore.cc"
 				>
 			</File>
 			<File

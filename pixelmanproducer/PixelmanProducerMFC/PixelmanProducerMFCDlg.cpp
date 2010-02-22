@@ -7,7 +7,7 @@
  
 #include "eudaq/OptionParser.hh"
 #include "eudaq/Logger.hh"
-#include "eudaq/TimePixBore.hh"
+#include "eudaq/TimepixBore.hh"
 #include "TimepixProducer.h"
 #include "TimePixDAQStatus.h"
 #include <limits>
@@ -81,7 +81,8 @@ CPixelmanProducerMFCDlg::CPixelmanProducerMFCDlg(CWnd* pParent/*=NULL*/)
 	pthread_mutex_init( &m_producer_mutex, 0);
 	pthread_mutex_init( &m_frameAcquisitionThreadMutex, 0);
 	pthread_mutex_init( &m_dacVals_mutex, 0);
-	pthread_mutex_init( &m_sizeOfDacVals_mutex, 0);
+	setDacVals(0, 0);
+	
 }
 
 
@@ -92,6 +93,7 @@ CPixelmanProducerMFCDlg::~CPixelmanProducerMFCDlg()
 	//if(producerStarted==TRUE)
 	//	producer->SetDone(true);
 	delete m_producer;
+	delete m_dacVals;
 	
 	//this->DialogBoxDelete(this);
 
@@ -99,8 +101,8 @@ CPixelmanProducerMFCDlg::~CPixelmanProducerMFCDlg()
     pthread_mutex_destroy( &m_StartAcquisitionFailedMutex );	
     pthread_mutex_destroy( &m_producer_mutex );	
 	pthread_mutex_destroy( &m_frameAcquisitionThreadMutex );
-	pthread_mutex_destroy( &m_dacVals_mutex );void setDacTypeVals(DACTYPE* dacVals);
-	pthread_mutex_destroy( &m_sizeOfDacVals_mutex);
+	pthread_mutex_destroy( &m_dacVals_mutex );
+	
 }
 
 
@@ -249,12 +251,10 @@ UINT mpxCtrlPerformAcqLoopThread(LPVOID pParam)
 			       // create a BORE and send it 
 			       {
 				 // get the devinfo from somewhere
-				 // get the dacvalues array and its size from somewhere
-					DACTYPE* dacvalues = new DACTYPE[15];
-					int sizeOfDacValues = 15;
-					eudaq::TimepixBore timePixBore = eudaq::TimepixBore( 
+				 // get the dacvalues array and its size from somewhere					
+					eudaq::TimepixBore timePixBore( 
 					 pMainWnd->getProducer()->GetRunNumber() ,
-					 pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceInfo, 
+					 &(pMainWnd->mpxDevId[pMainWnd->mpxCurrSel].deviceInfo), 
 					 pMainWnd->m_timeToEndOfShutter.getDouble(),
 					 pMainWnd->m_shutterLength.getDouble(),
 				    pMainWnd->m_ModuleID.getInt(),
@@ -347,18 +347,24 @@ void CPixelmanProducerMFCDlg::OnBnClickedConnect()
 		m_producer = new TimepixProducer(name.Value(), rctrl.Value(), this);
 	pthread_mutex_unlock( & m_producer_mutex );
 
-	setSizeOfDacVals(getNumberOfDacs()*getNumberOfChips());
-	DACTYPE* dacVals = new DACTYPE[getSizeOfDacVals()];
+
+	///////////////////////////////////////////////////////////
+	//getting DAC-Values of all right before acq. is started.//
+	///////////////////////////////////////////////////////////
+	int numberOfDacs = getNumberOfDacs()*getNumberOfChips();
+	DACTYPE* dacVals = new DACTYPE[numberOfDacs];
 	DEVID devId = mpxDevId[mpxCurrSel].deviceId;
-	int retval = this->mpxCtrlGetDACs(devId, dacVals, getSizeOfDacVals(), ALLCHIPS);
+	//It's not well documented if devId refers to Quad or single chip
+	//therefore take DACs of ALLCHIPS
+	int retval = mpxCtrlGetDACs(devId, dacVals, numberOfDacs, ALLCHIPS);
 	if (retval != 0)
 	{
 		m_commHistRunCtrl.SetWindowText("Getting DacVals Failed");
-		setDacVals(NULL);
+		setDacVals(NULL, NULL);
 	}
 	else
 	{	
-		setDacVals(dacVals);
+		setDacVals(dacVals, numberOfDacs);
 	}
 
 	CWinThread* pThread = AfxBeginThread(mpxCtrlPerformAcqLoopThread, this);
@@ -368,7 +374,7 @@ void CPixelmanProducerMFCDlg::OnBnClickedConnect()
 	
 	//MessageBox("Goodbye", "HaveFun", NULL);
 
-	delete[] dacVals;
+	//delete[] dacVals;
 
 
 }
@@ -892,10 +898,12 @@ CWinThread* CPixelmanProducerMFCDlg::getFrameAcquisitionThread( )
 	return retval;
 }
 
-void CPixelmanProducerMFCDlg::setDacVals(DACTYPE* dacVals)
+void CPixelmanProducerMFCDlg::setDacVals(DACTYPE* dacVals, int size)
 {
 	pthread_mutex_lock( &m_dacVals_mutex );
+		delete m_dacVals;
 		m_dacVals = dacVals;
+		m_sizeOfDacVals = size;
 	pthread_mutex_unlock( &m_dacVals_mutex );
 }
 
@@ -908,28 +916,35 @@ DACTYPE* CPixelmanProducerMFCDlg::getDacVals()
 	return retval;
 }
 
-void CPixelmanProducerMFCDlg::setSizeOfDacVals(int size)
-{
-	pthread_mutex_lock( &m_sizeOfDacVals_mutex );
-		m_sizeOfDacVals = size;
-	pthread_mutex_lock( &m_sizeOfDacVals_mutex );
-}
+
 
 int CPixelmanProducerMFCDlg::getSizeOfDacVals()
 {
 	int retval;
-	pthread_mutex_lock( &m_sizeOfDacVals_mutex );
+	pthread_mutex_lock( &m_dacVals_mutex );
 		retval = m_sizeOfDacVals;
-	pthread_mutex_lock( &m_sizeOfDacVals_mutex );
+	pthread_mutex_lock( &m_dacVals_mutex );
 	return retval;
 }
 
 int CPixelmanProducerMFCDlg::getNumberOfDacs()
 {
-	if (mpxDevId[mpxCurrSel].deviceInfo.mpxType == MPX_ORIG)
-		return 14; //MediPix2 2.1 had only 14 Dacs
-	else
-		return 15;
+	int numberOfDacs = 0;
+	switch (mpxDevId[mpxCurrSel].deviceInfo.mpxType)
+	{	
+		case MPX_ORIG:
+			numberOfDacs = 14;
+			break;
+		case MPX_MXR:
+			numberOfDacs =15;
+			break;
+		case MPX_TPX:
+			numberOfDacs = 15;
+			break;
+		default:
+			numberOfDacs =  0; //Chip type not known
+	}
+
 }
 
 int CPixelmanProducerMFCDlg::getNumberOfChips()
@@ -941,16 +956,12 @@ int CPixelmanProducerMFCDlg::getNumberOfChips()
 	switch (mpxDevId[mpxCurrSel].deviceInfo.mpxType)
 	{	
 		case MPX_ORIG:
-			numberOfChips = mpxDevId[mpxCurrSel].deviceInfo.pixCount/nPixelsPerChip;
-			break;
 		case MPX_MXR:
-			numberOfChips = mpxDevId[mpxCurrSel].deviceInfo.pixCount/nPixelsPerChip;
-			break;
 		case MPX_TPX:
 			numberOfChips = mpxDevId[mpxCurrSel].deviceInfo.pixCount/nPixelsPerChip;
 			break;
 		default:
-			numberOfChips =  -1; //Chip type not known
+			numberOfChips =  0; //Chip type not known
 	}
 		
 	return numberOfChips;

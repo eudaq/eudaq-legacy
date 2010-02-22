@@ -2,7 +2,6 @@
 //
 
 #pragma once
-#define PIXELMAN_FOR_EUDAQ
 
 #include "resource.h"
 #include "eudaq/DummyProducer.hh"
@@ -69,13 +68,12 @@ public:
 	void setFrameAcquisitionThread( CWinThread* frameAcquThread );
 	CWinThread* getFrameAcquisitionThread();
 
-	void setDacVals(DACTYPE* dacVals);
+	void setDacVals(DACTYPE* dacVals, int size);
 	DACTYPE* getDacVals();
 
 	int getNumberOfDacs();
 	int getNumberOfChips();
 
-	void setSizeOfDacVals(int size);
 	int getSizeOfDacVals();
 
 	/** Check if trigger line is raised and stop the acquisiton on the chip if so.
@@ -146,11 +144,10 @@ protected://veerbte Klassen koennen drauf zugreifen
 	TimepixProducer* m_producer;
 	pthread_mutex_t m_producer_mutex;
 
-	DACTYPE* m_dacVals;
+	DACTYPE* m_dacVals; int m_sizeOfDacVals;
 	pthread_mutex_t m_dacVals_mutex;
 
-	int m_sizeOfDacVals;
-	pthread_mutex_t m_sizeOfDacVals_mutex;
+	
 
 
 public:

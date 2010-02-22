@@ -46,7 +46,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="Pixelman_2009_09_23\_other_\headers;..\..\main\include;&quot;..\..\extern\pthread-win32\include&quot;"
-				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
+				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG; PIXELMAN_FOR_EUDAQ"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -131,7 +131,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="Pixelman_2009_09_23\_other_\headers;..\..\main\include;&quot;..\..\extern\pthread-win32\include&quot;"
-				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
+				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG; PIXELMAN_FOR_EUDAQ"
 				MinimalRebuild="false"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -272,7 +272,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\Pixelman_2008_03_30\_other_\headers\mpxmanagerapi.h"
+				RelativePath=".\Pixelman_2009_09_23\_other_\headers\mpxmanagerapi.h"
 				>
 			</File>
 			<File
