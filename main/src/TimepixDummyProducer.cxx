@@ -2,11 +2,13 @@
 #include "eudaq/TimepixDummyProducer.hh"
 #include "eudaq/Logger.hh"
 #include "eudaq/RawDataEvent.hh"
+#include "eudaq/TimepixBore.hh"
 #include "eudaq/Utils.hh"
 #include "eudaq/OptionParser.hh"
 #include <iostream>
 #include <ostream>
 #include <cctype>
+#include <cstring>
 
 
 
@@ -140,7 +142,56 @@ void TimepixDummyProducer::OnStartRun(unsigned param)
 {
     SetRunNumber( param );
     SetEventNumber( 1 ); // has to be 1 because BORE is event 0 :-(
+#ifdef PIXELMAN_FOR_EUDAQ   
+    // Create a TimepixBore which depends on some pixelman types. 
+    // This is only used for debugging when a common.h from pixelman is provided
+    // and the  PIXELMAN_FOR_EUDAQ is turned on manually
+    DevInfo devinfo;
+    devinfo.rowLen = 2;
+    devinfo.numberOfChips = 4;
+    devinfo.numberOfRows = 2;
+    devinfo.mpxType = MPX_TPX;
+    std::strncpy(devinfo.chipboardID, "DUMMY01", MPX_MAX_CHBID );
+    // make sure the chipboardID is always null-terminated
+    // strncpy fills the array with 0, so the last char should always be 0
+    // if not the thing has to be truncated
+    if ( devinfo.chipboardID[MPX_MAX_CHBID-1] != 0 )
+    {
+      devinfo.chipboardID[MPX_MAX_CHBID-1] = 0;
+      std::cout << "Warning, chipboardID has been truncated to " << devinfo.chipboardID 
+	   << std::endl;
+    }
+    static const std::string interfaceName("TimepixDummyProducer");
+    devinfo.ifaceName = interfaceName.c_str();
+
+    devinfo.clockTimepix = 55.0; // in MHz
+    
+    static const size_t nDacVals = 15;
+    DACTYPE * dacVals = new DACTYPE[nDacVals*devinfo.numberOfChips];
+    for ( size_t chipIndex = 0 ; chipIndex < static_cast<unsigned int>(devinfo.numberOfChips) ;
+	  ++chipIndex )
+    {
+      for ( size_t dacIndex = 0 ; dacIndex < nDacVals ; ++dacIndex )
+      {
+	dacVals[chipIndex*nDacVals + dacIndex] = static_cast<DACTYPE>((chipIndex+1)*dacIndex) ;
+      }
+    }
+    
+    eudaq::TimepixBore bore( param, // the run number
+			     devinfo,
+			     5328., // time to end of shutter = 5 mus shutter length 
+			           // + 328 ns trigger delay
+			     5000., // shutter length = 5 mus
+			     37, // module ID
+			     dacVals,
+			     nDacVals*devinfo.numberOfChips );
+    SendEvent(bore);
+    
+    delete[] dacVals;
+#else // send a simple BORE, nothing will happen
+    EUDAQ_WARN("TimepixDummyProducer  was compiled without TPCCondData. Only sending empty RawDataEvent::BORE");
     SendEvent(eudaq::RawDataEvent::BORE( "Timepix", param )); // send param instead of GetRunNumber
+#endif
     std::cout << "Start Run: " << param << std::endl;
 }
 

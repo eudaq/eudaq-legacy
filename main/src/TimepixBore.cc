@@ -2,7 +2,7 @@
 
 namespace eudaq{
 
-  EUDAQ_DEFINE_EVENT(TimepixBore, str2id("_TPX_BORE"));
+  EUDAQ_DEFINE_EVENT(TimepixBore, str2id("_TXB"));
 
 #ifdef PIXELMAN_FOR_EUDAQ
   TimepixBore::TimepixBore( unsigned int run, DevInfo const & param, double timeToEndOfShutter,

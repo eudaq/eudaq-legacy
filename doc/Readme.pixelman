@@ -1,0 +1,12 @@
+In order to get the contitions data, which the Pixelman plugin sends as Begin
+of Run Event (bore), you need the tpcconddata library from MarlinTPC.
+
+- Donwload and compile MarlinTPC (no need for make install, the library from
+  the build directory will be used)
+- Turn on the USE_TPCCONDDATA flag in the eudaq main/Makefile
+- Set the MARLINTPC environment variable
+
+Now you can call make in the main directory and the data collector writes the
+contidions data collections to the first event.
+
+Don't forget to add $MARLINTPC/build/lib to your LD_LIBRARY_PATH!

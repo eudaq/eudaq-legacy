@@ -46,16 +46,16 @@ public:
 	/// due to the inhomogeneous data structure this thing needs it's own serialise function
 	virtual void Serialize (Serializer &) const;
 	
-	unsigned int GetRevision(){ return m_revision; }
-	int GetNChips(){ return m_rowLen * m_numberOfRows; }
-	int GetMPXType(){ return  m_mpxType; }
-	std::string GetChipBoardIDString(){ return m_chipboardIDstring; }
-	int GetModuleID(){ return m_moduleID; }
-	std::string GetInterfaceName(){ return m_ifaceName; }
-	double GetClock(){ return m_clockTimepix; }
-	double GetTimeToEndOfShutter(){ return m_timeToEndOfShutter; }
-	double GetShutterLength(){ return  m_shutterLength; }
-	std::vector<unsigned short> GetDACValues(){ return m_dacVals; }
+	unsigned int GetRevision() const { return m_revision; }
+	int GetNChips() const { return m_rowLen * m_numberOfRows; }
+	int GetMPXType() const { return  m_mpxType; }
+	std::string GetChipBoardIDString() const { return m_chipboardIDstring; }
+	int GetModuleID() const { return m_moduleID; }
+	std::string GetInterfaceName() const { return m_ifaceName; }
+	double GetClock() const { return m_clockTimepix; }
+	double GetTimeToEndOfShutter() const { return m_timeToEndOfShutter; }
+	double GetShutterLength() const { return  m_shutterLength; }
+	std::vector<unsigned short> const & GetDACValues() const { return m_dacVals; }
         void Print(std::ostream & os) const;
 
 
