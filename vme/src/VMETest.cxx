@@ -70,7 +70,7 @@ int main(int /*argc*/, char ** argv) {
   eudaq::Option<unsigned> op_awidth(op, "a", "awidth", 32, "bits", "Address bus width");
   eudaq::Option<unsigned> op_dwidth(op, "d", "dwidth", 32, "bits", "Data bus width");
   eudaq::Option<char> op_mode(op, "m", "mode", 'S', "bytes", "The access mode:"
-                              "S=SINGLE, B=BLT, M=MBLT, 2=2eVME, S=2eSST, B=2eSSTB");
+                              "S=SINGLE, B=BLT, M=MBLT, 2=2eVME, E=2eSST, T=2eSSTB");
   try {
     op.Parse(argv);
     char c = toupper(op_mode.Value());
@@ -78,8 +78,8 @@ int main(int /*argc*/, char ** argv) {
                 c == 'B' ? VMEInterface::PBLT :
                 c == 'M' ? VMEInterface::PMBLT :
                 c == '2' ? VMEInterface::P2eVME :
-                c == 'S' ? VMEInterface::P2eSST :
-                c == 'B' ? VMEInterface::P2eSSTB :
+                c == 'E' ? VMEInterface::P2eSST :
+                c == 'T' ? VMEInterface::P2eSSTB :
                            VMEInterface::PNONE;
     std::cout << "Base address  = " << eudaq::hexdec(op_base.Value()) << "\n"
               << "Window size   = " << eudaq::hexdec(op_size.Value()) << "\n"

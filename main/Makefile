@@ -1,14 +1,12 @@
-USE_LCIO := 1
+USE_LCIO := 0
 USE_EUTELESCOPE := 0
-USE_TPCCONDDATA := 0
+USE_ROOT := 0
 
 TARGETLIB := eudaq
-EXTERNAL_DEFS += USE_LCIO=$(USE_LCIO) USE_EUTELESCOPE=$(USE_EUTELESCOPE)
+EXTERNAL_DEFS += USE_LCIO=$(USE_LCIO) USE_EUTELESCOPE=$(USE_EUTELESCOPE) USE_ROOT=$(USE_ROOT)
 EXTERNAL_DEFS += USE_TPCCONDDATA=$(USE_TPCCONDDATA)
 EXTERNAL_DEFS += EUDAQ_FUNC=__PRETTY_FUNCTION__ EUDAQ_PLATFORM=PF_$(PLATFORM)
 EXTERNAL_LIBS += pthread
-EXTERNAL_CFLAGS += $(shell root-config --cflags)
-EXTERNAL_LDLIBS += $(shell root-config --glibs)
 
 ifneq (${USE_LCIO},0)
   EXTERNAL_INCS += ${LCIO}/include
@@ -22,10 +20,9 @@ ifneq (${USE_EUTELESCOPE},0)
   EXTERNAL_LIBDIRS += ${EUTELESCOPE}/lib
 endif
 
-ifneq (${USE_TPCCONDDATA},0) 
-  EXTERNAL_INCS += ${MARLINTPC}/tpcconddata/include
-  EXTERNAL_LIBS += tpcconddata
-  EXTERNAL_LIBDIRS += ${MARLINTPC}/build/lib
+ifneq (${USE_ROOT},0)
+  EXTERNAL_INCS += $(shell root-config --incdir)
+  EXTERNAL_LDLIBS += $(shell root-config --glibs)
 endif
 
 include ../Makefile.common
