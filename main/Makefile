@@ -1,5 +1,6 @@
-USE_LCIO := 0
+USE_LCIO := 1
 USE_EUTELESCOPE := 0
+USE_TPCCONDDATA := 0
 USE_ROOT := 0
 
 TARGETLIB := eudaq
@@ -18,6 +19,12 @@ ifneq (${USE_EUTELESCOPE},0)
   EXTERNAL_INCS += ${EUTELESCOPE}/include
   EXTERNAL_LIBS += Eutelescope
   EXTERNAL_LIBDIRS += ${EUTELESCOPE}/lib
+endif
+
+ifneq (${USE_TPCCONDDATA},0) 
+  EXTERNAL_INCS += ${MARLINTPC}/tpcconddata/include
+  EXTERNAL_LIBS += tpcconddata
+  EXTERNAL_LIBDIRS += ${MARLINTPC}/build/lib
 endif
 
 ifneq (${USE_ROOT},0)
