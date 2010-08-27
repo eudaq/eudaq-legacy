@@ -17,15 +17,15 @@ using eudaq::split;
 static const short BADPIX = -32767;
 
 struct Seed {
-  Seed(short x, short y, short a) : x(x), y(y), a(a) {}
+  Seed(short x, short y, double a) : x(x), y(y), a(a) {}
   static bool compare(const Seed & lhs, const Seed & rhs) { return lhs.a > rhs.a; }
-  short x, y, a;
+  short x, y;
+  double a;
 };
 
 struct Cluster {
-  Cluster(double x, double y, unsigned c) : x(x), y(y), c(c) {}
-  double x, y;
-  unsigned c;
+  Cluster(double x, double y, double c) : x(x), y(y), c(c) {}
+  double x, y, c;
 };
 
 short delmarker(short x) {
@@ -205,7 +205,7 @@ int main(int /*argc*/, char ** argv) {
               //}
               int width = brd.XSize() - xmarkers.Value().size();
               int height = brd.YSize() - ymarkers.Value().size();
-              std::vector<short> cds(width * height);
+              std::vector<double> cds(width * height);
               std::vector<Seed> seeds;
               for (unsigned i = 0; i < brd.HitPixels(); ++i) {
                 int x = XFIX((unsigned)brd.GetX(i)), y = YFIX((unsigned)brd.GetY(i));
@@ -221,7 +221,7 @@ int main(int /*argc*/, char ** argv) {
               std::vector<Cluster> clusters;
               for (size_t i = 0; i < seeds.size(); ++i) {
                 bool badseed = false;
-                long long charge = 0, sumx = 0, sumy = 0;
+                double charge = 0, sumx = 0, sumy = 0;
                 for (int dy = -dclust; dy <= dclust; ++dy) {
                   int y = seeds[i].y + dy;
                   if (y < 0 || y >= height) continue;

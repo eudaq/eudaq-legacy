@@ -62,7 +62,7 @@ bool DoEvent(unsigned /*ndata*/, const eudaq::DetectorEvent & dev, bool do_proce
                     
                     const eudaq::RawDataEvent * rev = dynamic_cast<const eudaq::RawDataEvent *>(dev.GetEvent(i));
                     
-                    if (rev && rev->GetSubType() == "EUDRB" && rev->NumBlocks() > 0) {
+                    if (rev && /*rev->GetSubType() == "EUDRB" &&*/ rev->NumBlocks() > 0) {
                         
                         ++num;
                         for (unsigned block = 0; block < rev->NumBlocks(); ++block) {
@@ -128,7 +128,7 @@ int main(int /*argc*/, char ** argv) {
   eudaq::OptionFlag do_zs(op, "z", "zsdump", "Print pixels for zs events");
   eudaq::OptionFlag sync(op, "s", "synctlu", "Resynchronize subevents based on TLU event number");
   eudaq::OptionFlag do_event_to_ttree(op, "r", "event-to-ttree", "Convert a file into a TTree .root format");
-  eudaq::Option<std::string> level(op, "l", "log-level", "NONE", "level",
+  eudaq::Option<std::string> level(op, "l", "log-level", "INFO", "level",
 				     "The minimum level for displaying log messages locally");
   try {
         
