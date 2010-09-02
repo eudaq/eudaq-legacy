@@ -148,7 +148,6 @@ namespace tlu {
     m_triggernum((unsigned)-1),
     m_timestamp(0),
     m_oldbuf(0),
-    m_old_timestamp0(0),
     m_particles(0),
     m_lasttime(0),
     m_errorhandler(errorhandler),
@@ -765,9 +764,9 @@ namespace tlu {
     result = ZestSC1ReadData(m_handle, &m_working_buffer, sizeof m_working_buffer );
 
     if ( m_debug_level & TLU_DEBUG_BLOCKREAD ) {
-    char * errmsg = 0;
-    ZestSC1GetErrorMessage(static_cast<ZESTSC1_STATUS>(result), &errmsg);
-    std::cout << (result == ZESTSC1_SUCCESS ? "" : "#### Warning: ") << errmsg << std::endl;
+      char * errmsg = 0;
+      ZestSC1GetErrorMessage(static_cast<ZESTSC1_STATUS>(result), &errmsg);
+      std::cout << (result == ZESTSC1_SUCCESS ? "" : "#### Warning: ") << errmsg << std::endl;
     }
 
 
@@ -778,12 +777,6 @@ namespace tlu {
         EUDAQ_WARN("### Warning: m_working_buffer[buf][0] != 0. This shouldn't happen. buf = " + eudaq::to_string(tries) );
         num_uncorrectable_errors++;
       }
-
-//    m_old_timestamp0 = m_oldbuf[0];
-    m_old_timestamp0 = buffer[0];
-
-    for (unsigned i =0 ; i < m_addr->TLU_BUFFER_DEPTH; i++ ){
-      m_oldbuf[i] = buffer[i];
     }
 
     for (unsigned i = buffer_offset; i < entries+buffer_offset; ++i) {
