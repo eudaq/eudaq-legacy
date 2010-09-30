@@ -1,5 +1,5 @@
 SHELL=/bin/bash -O extglob
-TARGETS := all main gui root tlu eudrb depfet
+TARGETS := all main gui root tlu eudrb depfet onlinemon
 
 default: main
 
