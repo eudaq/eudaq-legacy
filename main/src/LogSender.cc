@@ -44,7 +44,7 @@ namespace eudaq {
   }
 
   void LogSender::SendLogMessage(const LogMessage & msg, bool show) {
-    //std::cout << "Sending: " << msg << std::endl;
+    std::cout << "Sending: " << msg << std::endl;
     if (!m_logclient) {
       if (m_shownotconnected) std::cerr << "### Logger not connected ###\n";
     } else {

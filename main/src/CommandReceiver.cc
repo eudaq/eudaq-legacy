@@ -4,6 +4,7 @@
 #include "eudaq/Exception.hh"
 #include "eudaq/Logger.hh"
 #include "eudaq/Utils.hh"
+#include "eudaq/Status.hh"
 #include <iostream>
 #include <ostream>
 
@@ -77,10 +78,12 @@ namespace eudaq {
 
   void CommandReceiver::SetStatus(Status::Level level, const std::string & info) {
     m_status = Status(level, info);
+	  //std::cout << "SetStatus" << std::endl;
   }
 
   void CommandReceiver::Process(int timeout) {
     m_cmdclient->Process(timeout);
+	  std::cout << "Process" << std::endl;
   }
 
   void CommandReceiver::OnClear() {
@@ -89,6 +92,7 @@ namespace eudaq {
 
   void CommandReceiver::OnLog(const std::string & param) {
     EUDAQ_LOG_CONNECT(m_type, m_name, param);
+    std::cout << "Called CommandReceiver::OnLog()" << std::endl;
     //return false;
   }
 
@@ -104,6 +108,7 @@ namespace eudaq {
   }
 
   void CommandReceiver::CommandHandler(TransportEvent & ev) {
+	  //std::cout << "Called CommandHandler " << ev.packet << std::endl;
     if (ev.etype == TransportEvent::RECEIVE) {
       std::string cmd = ev.packet, param;
       size_t i = cmd.find('\0');
@@ -111,7 +116,7 @@ namespace eudaq {
         param = std::string(cmd, i+1);
         cmd = std::string(cmd, 0, i);
       }
-      //std::cout << "(" << cmd << ")(" << param << ")" << std::endl;
+      std::cout << "(" << cmd << ")(" << param << ")" << std::endl;
       if (cmd == "CLEAR") {
         OnClear();
       } else if (cmd == "CONFIG") {
@@ -139,6 +144,9 @@ namespace eudaq {
         OnServer();
       } else if (cmd == "GETRUN") {
         OnGetRun();
+      } else if (cmd == "ENV") {
+	std::cout << "Here we are!" << std::endl;
+	OnEnv(param);
       } else {
         OnUnrecognised(cmd, param);
       }
@@ -153,6 +161,12 @@ namespace eudaq {
     m_done = true;
     if (m_threadcreated) pthread_join(m_thread, 0);
     delete m_cmdclient;
+  }
+  
+  void CommandReceiver::OnEnv(const std::string &env) {
+	std::cout << "CommandReceiver: OnEnv() " << env << std::endl;
+	EUDAQ_ENV_CONNECT(m_type, m_name, env);
+	  
   }
 
 }

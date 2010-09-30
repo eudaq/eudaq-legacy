@@ -19,7 +19,7 @@ namespace eudaq {
       typedef bool type;
       PseudoMutex(type & flag) : m_flag(flag) {
         while (m_flag) {
-          mSleep(10);
+          mSleep(25);
         };
         m_flag = true;
       }
@@ -136,17 +136,22 @@ namespace eudaq {
 
   void RunControl::SendCommand(const std::string & cmd, const std::string & param,
                                const ConnectionInfo & id) {
-    PseudoMutex m(m_busy);
+    
+    //PseudoMutex m(m_busy);
+   
     std::string packet(cmd);
     if (param.length() > 0) {
       packet += '\0' + param;
     }
+   
     m_cmdserver->SendPacket(packet, id);
+    
   }
 
   std::string RunControl::SendReceiveCommand(const std::string & cmd, const std::string & param,
                                              const ConnectionInfo & id) {
-    PseudoMutex m(m_busy);
+    
+    //PseudoMutex m(m_busy);
     mSleep(500); // make sure there are no pending replies
     std::string packet(cmd);
     if (param.length() > 0) {
@@ -164,10 +169,11 @@ namespace eudaq {
   }
 
   void RunControl::CommandHandler(TransportEvent & ev) {
-    //std::cout << "Event: ";
+   
+    //std::cout << "Event: " << std::endl;
     switch (ev.etype) {
     case (TransportEvent::CONNECT):
-      std::cout << "Connect:    " << ev.id << std::endl;
+      //std::cout << "Connect:    " << ev.id << std::endl;
       if (m_listening) {
         m_cmdserver->SendPacket("OK EUDAQ CMD RunControl", ev.id, true);
       } else {
@@ -216,6 +222,8 @@ namespace eudaq {
           InitLog(ev.id);
         } else if (ev.id.GetType() == "DataCollector") {
           InitData(ev.id);
+        } else if (ev.id.GetType() == "EnvCollector") {
+          InitEnv(ev.id);
         } else {
           InitOther(ev.id);
         }
@@ -278,8 +286,33 @@ namespace eudaq {
     std::cout << "LogServer responded: " << m_logaddr << std::endl;
     if (m_logaddr == "") EUDAQ_THROW("Invalid response from LogCollector");
     EUDAQ_LOG_CONNECT("RunControl", "", m_logaddr);
+    std::cout << "Sending  LOG" << std::endl;
     SendCommand("LOG", m_logaddr);
 
+    if (m_idata != (size_t)-1) {
+      SendCommand("DATA", m_dataaddr, id);
+    }
+    std::cout << "Initialized LogCollector" << std::endl;
+  }
+  
+   void RunControl::InitEnv(const ConnectionInfo & id) {
+    if (m_ienv != (size_t)-1) EUDAQ_WARN("Log collector already connected");
+
+    for (size_t i = 0; i < NumConnections(); ++i) {
+      if (GetConnection(i).GetType() == "EnvCollector") {
+        m_ienv = i;
+      }
+    }
+    if (m_ienv == (size_t)-1) EUDAQ_THROW("No EnvCollector is connected");
+    eudaq::Status status = m_cmdserver->SendReceivePacket<eudaq::Status>("SERVER", id, 1000000);
+
+    m_envaddr = status.GetTag("_SERVER");
+    std::cout << "EnvServer responded: " << m_envaddr << std::endl;
+    if (m_envaddr == "") EUDAQ_THROW("Invalid response from EnvCollector");
+    if (m_ienv != (size_t)-1) {
+      EUDAQ_ENV_CONNECT("RunControl", "", m_envaddr);
+      SendCommand("ENV", m_envaddr);
+    }
     if (m_idata != (size_t)-1) {
       SendCommand("DATA", m_dataaddr, id);
     }

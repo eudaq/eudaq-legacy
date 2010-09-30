@@ -103,6 +103,7 @@ int main(int /*argc*/, const char ** argv) {
                   << "o msg  Set status=OK\n"
                   << "w msg  Set status=WARN\n"
                   << "e msg  Set status=ERROR\n"
+	          << "t val Send environmentvariable\n"
                   << "q      Quit\n"
                   << "?      \n"
                   << "----------------" << std::endl;
@@ -128,6 +129,9 @@ int main(int /*argc*/, const char ** argv) {
         break;
       case 'l':
         EUDAQ_USER(line);
+        break;
+      case 't':
+        EUDAQ_ENV(line);
         break;
       case 'o':
         producer.SetStatus(eudaq::Status::LVL_OK, line);

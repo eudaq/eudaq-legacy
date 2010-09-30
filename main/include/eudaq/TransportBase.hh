@@ -149,11 +149,11 @@ namespace eudaq {
                             const ConnectionInfo & = ConnectionInfo::ALL,
                             bool duringconnect = false) = 0;
     void SendPacket(const std::string & data, const ConnectionInfo & inf = ConnectionInfo::ALL, bool duringconnect = false) {
-      //std::cout << "SendPacket (string)" << std::endl;
+      //std::cout << "SendPacket (string) " << reinterpret_cast<const unsigned char *>(&data[0]) << std::endl;
       SendPacket(reinterpret_cast<const unsigned char *>(&data[0]), data.length(), inf, duringconnect);
     }
     void SendPacket(const char * str, const ConnectionInfo & inf = ConnectionInfo::ALL, bool duringconnect = false) {
-      //std::cout << "SendPacket (char*)" << std::endl;
+      //std::cout << "SendPacket (char*) " <<reinterpret_cast<const unsigned char *>(str)<< std::endl;
       SendPacket(reinterpret_cast<const unsigned char *>(str), std::strlen(str), inf, duringconnect);
     }
     void SendPacket(const BufferSerializer & t, const ConnectionInfo & inf = ConnectionInfo::ALL, bool duringconnect = false) {

@@ -5,4 +5,8 @@ namespace eudaq {
     static LogSender logger;
     return logger;
   }
+   EnvSender & GetEnvLogger() {
+    static EnvSender envlogger;
+    return envlogger;
+  }
 }

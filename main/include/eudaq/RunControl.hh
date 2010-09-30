@@ -40,6 +40,7 @@ namespace eudaq {
     void InitLog(const ConnectionInfo & id);
     void InitData(const ConnectionInfo & id);
     void InitOther(const ConnectionInfo & id);
+    void InitEnv(const ConnectionInfo & id);
     void SendCommand(const std::string & cmd, const std::string & param = "",
                      const ConnectionInfo & id = ConnectionInfo::ALL);
     std::string SendReceiveCommand(const std::string & cmd, const std::string & param = "",
@@ -52,10 +53,11 @@ namespace eudaq {
     TransportServer * m_cmdserver; ///< Transport for sending commands
     pthread_t m_thread;
     pthread_attr_t m_threadattr;
-    size_t m_idata, m_ilog;
-    std::string m_dataaddr, m_logaddr;
+    size_t m_idata, m_ilog, m_ienv;
+    std::string m_dataaddr, m_logaddr, m_envaddr;
     long long m_runsizelimit;
-    bool m_stopping, m_busy;
+    bool m_stopping;
+    bool m_busy;
   };
 
 }
