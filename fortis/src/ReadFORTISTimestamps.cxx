@@ -14,11 +14,13 @@
 
 #ifdef USE_ROOT
 // Include files for ROOT
-#include "TH3F.h"
-#include "TROOT.h"
-#include "TCanvas.h"
-#include "TStyle.h"
-#include "TFile.h"
+#include "/opt/root/include/TH3F.h"
+#include "/opt/root/include/TROOT.h"
+#include "/opt/root/include/TCanvas.h"
+#include "/opt/root/include/TStyle.h"
+#include "/opt/root/include/TFile.h"
+#include "/opt/root/include/TH2I.h"
+#include "/opt/root/include/TH2F.h"
 #endif
 
 

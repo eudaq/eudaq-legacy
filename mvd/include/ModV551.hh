@@ -77,7 +77,6 @@ public:
   void SetTime(int, int, int, int, int);
   void GetTime(int*, int*, int*, int*, int*);
   void SetVCAL(unsigned int);
-  //void CalibAutoTrig();
   void Init(unsigned int);
 
 };

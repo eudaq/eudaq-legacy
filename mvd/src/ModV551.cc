@@ -31,7 +31,7 @@ ModV551::ModV551(unsigned int adr){
   SetIRQLevel(0); //disabled interrupts
   printf(" v551: Interrupts have been disabled \n"); 
 
-  time1 = 150;
+  time1 = 100;
   time2 = 30; 
   time3 = 20; 
   time4 = 49; 

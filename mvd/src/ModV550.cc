@@ -48,11 +48,11 @@ void ModV550::ModuleInfo(){
 void ModV550::SetTestPattern(unsigned short int tst0, unsigned short int tst1){
 
   unsigned short int tmp = tst0;
-  tmp = ((tmp << 8)&0xFF00 | (tmp >> 8)&0x00FF); 
+  tmp = (  ( (tmp << 8) & 0xFF00 ) | ( (tmp >> 8) & 0x00FF )   );
   vme->Write(Test0,tmp);
 
   tmp = tst1;
-  tmp = ((tmp << 8)&0xFF00 | (tmp >> 8)&0x00FF); 
+  tmp = (  ( (tmp << 8) & 0xFF00 ) | ( (tmp >> 8) & 0x00FF) );
   vme->Write(Test1,tmp);
 
 }//SetTestPattern
@@ -93,7 +93,7 @@ void ModV550::Clear(){
 void ModV550::SetNumberOfChannels(unsigned short int ChN0, unsigned short int ChN1){
 
   unsigned short int tmp = (((ChN1 & 0x3F) << 6) | (ChN0 & 0x3F));
-  tmp = ((tmp << 8)&0xFF00 | (tmp >> 8)&0x00FF);
+  tmp = (  ( (tmp << 8) & 0xFF00 ) | ( (tmp >> 8) & 0x00FF) );
   vme->Write(Nchan,tmp);
 
 }//SetNumberOfChannels
@@ -182,12 +182,12 @@ void ModV550::SetTestMode(unsigned int TM){
 
   if(TM){
     tmp = (tmp | 0x1);
-    tmp = ((tmp << 8)&0xFF00 | (tmp >> 8)&0x00FF);
+    tmp = (  ( (tmp << 8) & 0xFF00 ) | ( (tmp >> 8) & 0x00FF)  ) ;
     vme->Write((Status),tmp);
   }
   else{
     tmp = tmp & 0xFFFE;
-    tmp = ((tmp << 8)&0xFF00 | (tmp >> 8)&0x00FF);
+    tmp = (  ( (tmp << 8) & 0xFF00 ) | ( (tmp >> 8) & 0x00FF )  );
     vme->Write((Status),tmp);
   }
 
@@ -198,12 +198,12 @@ void ModV550::SetMemoryOwner(unsigned int MO){
 
   if(MO){
     tmp = tmp | 0x2;
-    tmp = ((tmp << 8)&0xFF00 | (tmp >> 8)&0x00FF);
+    tmp = (  ( (tmp << 8) & 0xFF00 ) | ( (tmp >> 8) & 0x00FF)  );
     vme->Write((Status),tmp);
   }
   else{
     tmp = tmp & 0xFFFD;
-    tmp = ((tmp << 8)&0xFF00 | (tmp >> 8)&0x00FF);
+    tmp = (  ( (tmp << 8) & 0xFF00 ) | ( (tmp >> 8) & 0x00FF)  );
     vme->Write((Status),tmp);
   }
 
@@ -211,7 +211,7 @@ void ModV550::SetMemoryOwner(unsigned int MO){
 void ModV550::SetInterrupt(unsigned short int IntLev, unsigned short int StatID){
 
   unsigned short int tmp = (((IntLev & 0x7) << 8) | (StatID & 0xFF)); 
-  tmp = ((tmp << 8)&0xFF00 | (tmp >> 8)&0x00FF);
+  tmp = (  ( (tmp << 8) & 0xFF00 ) | ( (tmp >> 8) & 0x00FF)  );
   vme->Write((IRQ),tmp);
 
 }//SetInterrupt

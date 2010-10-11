@@ -155,7 +155,7 @@ CPPFLAGS += $(EXTERNAL_DEFS:%=-D%)
 
 # Build directories
 SRC := src
-INC := include
+INC := ./include
 OBJ := tmp
 DEP := tmp
 BIN := ../bin
