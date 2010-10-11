@@ -1,0 +1,57 @@
+; zestSC1.inf
+;
+; Installation file (.inf) for the ZestSC1 FPGA USB Card device.
+;
+; (c) Copyright 2004 Orange Tree Technologies 
+;
+
+[Version]
+Signature="$Windows NT$"
+Class=Unknown
+Provider="Orange Tree Technologies Ltd"
+DriverVer=08/11/2004,1.00.0000.0
+
+[Manufacturer]
+"Orange Tree Technologies Ltd"=OTT
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[SourceDisksFiles]
+ZestSC1.sys=1
+
+[SourceDisksNames]
+1="Install disk",""
+
+[OTT]
+"ZestSC1 FPGA USB Card"=ZestSC1Install,USB\VID_165D&PID_0001
+
+[ZestSC1Install]
+;CopyFiles=ZestSC1.NewFiles
+AddReg=ZestSC1.AddReg
+
+[ZestSC1.AddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,ZestSC1.sys
+
+[ZestSC1.NewFiles]
+ZestSC1.sys,,,2
+
+[ZestSC1.CopyFiles]
+ZestSC1.sys,,,2
+
+[ZestSC1Install.nt]
+;CopyFiles=ZestSC1.CopyFiles
+
+[ZestSC1Install.nt.services]
+AddService=ZestSC1,2,ZestSC1.Service
+
+[ZestSC1.Service]
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%12%\ZestSC1.sys
+DisplayName="ZestSC1 FPGA USB Card"
+
+[Strings]
+
