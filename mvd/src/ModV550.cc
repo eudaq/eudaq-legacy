@@ -46,21 +46,16 @@ void ModV550::ModuleInfo(){
 
 }//ModuleInfo
 void ModV550::SetTestPattern(unsigned short int tst0, unsigned short int tst1){
-
   unsigned short int tmp = tst0;
   tmp = (  ( (tmp << 8) & 0xFF00 ) | ( (tmp >> 8) & 0x00FF )   );
   vme->Write(Test0,tmp);
-
   tmp = tst1;
   tmp = (  ( (tmp << 8) & 0xFF00 ) | ( (tmp >> 8) & 0x00FF) );
   vme->Write(Test1,tmp);
-
 }//SetTestPattern
 void ModV550::GetWordCounter(unsigned int& NoOTD0, unsigned int& NoOTD1){
-
   NoOTD0 = vme->Read(WC0,data) & 0x7FF;
   NoOTD1 = vme->Read(WC1,data) & 0x7FF;
-
 }//GetWordCounter
 unsigned int ModV550::GetWordCounter(unsigned int n){
   return vme->Read(n ? WC1 : WC0,data) & 0x7FF;

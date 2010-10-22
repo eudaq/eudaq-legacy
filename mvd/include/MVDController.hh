@@ -19,15 +19,15 @@ class MVDController {
 public:
   MVDController();
   void Configure(const eudaq::Configuration & conf);
-  void ReadCalFile();
-  void WriteCalFile();
+  void ReadCalFromFileToHw();
+  void ReadCalFromHwToFile();
+  void CalibAutoTrig();
   bool DataReady();
   bool DataBusy();
   bool ActiveSequence();
   bool GetStatTrigger();
   int swap4(int w4);
   void TimeEvents();
-  void CalibAutoTrig();
   bool Enabled(unsigned adc, unsigned chan);
   std::vector<unsigned int> Read(unsigned adc, unsigned chan);
   std::vector<unsigned int> Time(unsigned adc);
@@ -37,6 +37,7 @@ public:
   const char* pather;
 private:
   unsigned NumOfChan, NumOfSil, NumOfADC;
+  const char* FileName;
 
   struct timeval tv;
   unsigned int sec;
@@ -54,5 +55,6 @@ private:
   unsigned int ChNum;
   unsigned int ChData;
   unsigned int SilcPointer;
+
 
 };

@@ -121,7 +121,7 @@ private:
 };
 
 int main(int /*argc*/, const char ** argv) {
-	eudaq::OptionParser op("EUDAQ MVD Producer", "1.0",
+	eudaq::OptionParser op("EUDAQ MVD Producer", "1.2",
 			"The Producer task for the MVD strip telescope");
 	eudaq::Option < std::string > rctrl(op, "r", "runcontrol",
 			"tcp://localhost:44000", "address",

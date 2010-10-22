@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <vector>
 
+#include<signal.h>
+#include<math.h>
+#include <iostream>
+
+
 using eudaq::to_string;
 using namespace std;
 
@@ -45,7 +50,7 @@ void MVDController::Configure(const eudaq::Configuration & param) {
     }
   }
   //Read and sett calibration from file ./conf/Calibration.dat
-  ReadCalFile();
+  ReadCalFromFileToHw();
 }
 bool MVDController::Enabled(unsigned adc, unsigned subadc) {
   return adc < NumOfADC && subadc < MODV550_CHANNELS && m_enabled[adc*MODV550_CHANNELS + subadc];
@@ -95,9 +100,11 @@ int MVDController::swap4(int w4){
   for(int i = 0; i < 4; i++) 	rw4+=b[i]<<(3-i)*8;
   return (int)rw4;
 }
-void MVDController::ReadCalFile() {
-	//This function read calibration from file what have name "Calibration.dat" in folder ./conf
-	//and set this calibration to the crate
+void MVDController::ReadCalFromFileToHw() {
+	/*
+	 * This function read calibration from file what have name "Calibration.dat" in folder ./conf
+	 * and set this calibration to the crate
+	 */
 
     int ped_tmp, thr_tmp;
     unsigned int tmp;
@@ -105,71 +112,71 @@ void MVDController::ReadCalFile() {
     int ADC_int;
     FILE* SiFile;
     int string = 200;
-    bool ADC_Status[4];
-
-    //only 3 sillicon detectors
-    ADC_Status[0] = true; //telescope module 1
-    ADC_Status[1] = true; //telescope module 2
-    ADC_Status[2] = false; //not active ADC in v550
-    ADC_Status[3] = true; //telescope module 3
+    bool read_from_file;
 
     printf("DAQ: Set the calibration number: ");
     pather = new char[string];
-    pather ="./conf/Calibration.dat";
+    pather ="../conf/Calibration.dat";
 	SiFile = fopen(pather,"r");
-
+	read_from_file = true;
 	if(!SiFile){
 	  cout << "!!! ERROR !!!" << endl;
-	  cout << "File does not exist" << endl;
-	  return ;
+	  cout << "Calibration file does not exist" << endl;
+	  printf("Calibration will be done \n");
+	  CalibAutoTrig();
+	  ReadCalFromHwToFile();
+	  read_from_file = false;
 	}
-    //Run Header
-    char Header[80];
-    for(int i = 0; i < 4; i++){
-      fgets(Header,80,SiFile); printf("%s",Header);
-    }
-    int chan = 0;
-    NumOfCrate = 0;
-    ADC_int=0;
-	for(int i = 0; i < EventLength; i++){//For all channel of strip detector  //EventLength
-		if(feof(SiFile) || ferror(SiFile)) return ;
+	if (read_from_file){
+		//Run Header
+		char Header[80];
+		for(int i = 0; i < 4; i++){
+			fgets(Header,80,SiFile);
+			printf("%s",Header);
+		}
+		int chan = 0;
+		NumOfCrate = 0;
+		ADC_int=0;
+		for(int i = 0; i < EventLength; i++){//For all channel of strip detector  //EventLength
+			if(feof(SiFile) || ferror(SiFile)) return ;
 
-	    ped_tmp = 0;
-	    thr_tmp = 0;
-	    fread(&tmp,4,1,SiFile);
-	    if(tmp == 0xAABBCCDD)  break;
-	    //end of the first telescope
-	    if(tmp == 0xAABBCC00){
-	    	NumOfCrate = 0;
-	    	ADC_int = 0;
-	    	chan = 0;
-	    	printf("ADC=1\n");
-	    	continue;
-	    }
-	    //end of second telescope
-	    if(tmp == 0xAABBCC01){
-	    	NumOfCrate = 0;
-	    	ADC_int = 1;
-	    	chan = 0;
-	    	printf("ADC=2\n");
-	    	continue;
-	    }
-	    //end of second telescope
-	    if(tmp == 0xAABBCC03){
-	    	NumOfCrate = 1;
-	    	ADC_int = 0;
-	    	chan = 0;
-	    	printf("ADC=3\n");
-	    	continue;
-	    }
-	    ped_tmp = (tmp >> 12) & 0xFFF;
-	    thr_tmp = tmp & 0xFFF;
-	    m_modv550[NumOfCrate]->ModV550::SetPedestalThresholdFull(ADC_int,chan, tmp);
-	    if (NumOfCrate == 1)	    m_modv550[NumOfCrate]->SetPedestalThreshold(1, chan, ped_tmp, thr_tmp);
-	    chan++;
+			ped_tmp = 0;
+			thr_tmp = 0;
+			fread(&tmp,4,1,SiFile);
+			if(tmp == 0xAABBCCDD)  break;
+			//end of the first telescope
+			if(tmp == 0xAABBCC00){
+				NumOfCrate = 0;
+				ADC_int = 0;
+				chan = 0;
+				printf("ADC=1\n");
+				continue;
+			}
+			//end of second telescope
+			if(tmp == 0xAABBCC01){
+				NumOfCrate = 0;
+				ADC_int = 1;
+				chan = 0;
+				printf("ADC=2\n");
+				continue;
+			}
+			//end of second telescope
+			if(tmp == 0xAABBCC03){
+				NumOfCrate = 1;
+				ADC_int = 0;
+				chan = 0;
+				printf("ADC=3\n");
+				continue;
+			}
+			ped_tmp = (tmp >> 12) & 0xFFF;
+			thr_tmp = tmp & 0xFFF;
+			m_modv550[NumOfCrate]->ModV550::SetPedestalThresholdFull(ADC_int,chan, tmp);
+			if (NumOfCrate == 1)	    m_modv550[NumOfCrate]->SetPedestalThreshold(1, chan, ped_tmp, thr_tmp);
+			chan++;
 	  }//for
 	  if(feof(SiFile) || ferror(SiFile)) { return ; }
 	  return ;
+	}
 }
 void MVDController::CalibAutoTrig(){
 	int Ped[3840];
@@ -177,48 +184,112 @@ void MVDController::CalibAutoTrig(){
 	int Noi [3840];
 	int Norm[3840];
 
-  for(int tmp = 0; tmp < 3840; tmp++) {
-    Ped[tmp] = 0;
-    Ped2[tmp] = 0;
-    Norm[tmp] = 0;
-    Noi[tmp] = 0;
-  }
+	int SilcPointer;
 
-  for(int i_trig = 0; i_trig < 5; i_trig++) {
-	  printf("Calibration: Event - %d \n\r",i_trig);
-	  m_modv551->SoftwareTrigger();
-	  while (! DataBusy())	;
-	  while (! DataReady())	;
-	  SilcPointer = 0;
-	  for(unsigned int i = 0; i < NumOfADC; i++) {
-		  printf("NumOfADC=%d ", i  );
-		  for(int ADC_int = 0; ADC_int < 2; ADC_int++) {
-    		if(ADC_int == 0){
-    			unsigned int hits = m_modv550[i]->GetWordCounter(ADC_int);
-    			for(unsigned int chan = 0; chan < hits; chan++){
-    				ChTmp = m_modv550[i]->GetEvent(ADC_int);
-    				ChNum = (ChTmp >> 12) & 0xfff;
-    				ChData = (ChTmp & 0xfff);
-    				Ped[  ChNum + (SilcPointer*NumOfCha) ] += ChData;
-    				Ped2[ ChNum + (SilcPointer*NumOfCha) ] += ChData*ChData;
-    				Norm[ ChNum + (SilcPointer*NumOfCha) ] += 1;
-    			}//chan
-    			SilcPointer++;
-    		}//ADC0
-    		if(ADC_int == 1){
-    			unsigned hits = m_modv550[i]->GetWordCounter(ADC_int);
-    			for(unsigned int chan = 0; chan < hits; chan++){
-    				ChTmp = m_modv550[i]->GetEvent(ADC_int);
-    				ChNum = (ChTmp >> 12) & 0xfff;
-    				ChData = (ChTmp & 0xfff);
-    				Ped[  ChNum + (SilcPointer*NumOfCha) ] += ChData;
-    				Ped2[ ChNum + (SilcPointer*NumOfCha) ] += ChData*ChData;
-    				Norm[ ChNum + (SilcPointer*NumOfCha) ] += 1;
-    			}//chan
-    			SilcPointer++;
-    		}//ADC1
-    	}//ADC_int
-    }//i
-  }//i_trig
-  printf("!!!!!=====Calibration=====!!!!! ");
+	for(int tmp = 0; tmp < 3840; tmp++) {
+		Ped[tmp] = 0;
+		Ped2[tmp] = 0;
+		Norm[tmp] = 0;
+		Noi[tmp] = 0;
+	}
+	m_modv551->SetAutoTrigger(0);
+
+ 	for(int i_trig = 0; i_trig < 1000; i_trig++) {
+ 		if((i_trig%100) == 0) printf("Calibration: Event - %d \n",i_trig); //\r
+ 		m_modv551->SoftwareTrigger();
+ 		while (! DataBusy()) ;//printf("data  busy \n")	;
+ 		while (! DataReady());//  printf("data  ready \n")	;
+ 		SilcPointer = 0;
+ 		for (unsigned int adc = 0; adc < NumOfADC; adc++) {
+ 			for(int sub_adc = 0; sub_adc < 2; sub_adc++) {
+ 				if (!Enabled(adc, sub_adc))	continue;
+ 				//printf("adc=%d sub=%d \n", adc, sub_adc );
+ 				unsigned int hits = m_modv550[adc]->GetWordCounter(sub_adc);
+ 				//printf("hits=%d \n", hits);
+ 				for(unsigned int chan = 0; chan < hits; chan++){
+ 					ChTmp = m_modv550[adc]->GetEvent(sub_adc);
+ 					ChNum = (ChTmp >> 12) & 0xfff;
+ 					ChData = (ChTmp & 0xfff);
+ 					Ped[  ChNum + (SilcPointer*NumOfCha) ] += ChData;
+ 					Ped2[ ChNum + (SilcPointer*NumOfCha) ] += ChData*ChData;
+ 					Norm[ ChNum + (SilcPointer*NumOfCha) ] += 1;
+ 				}//chan
+ 				SilcPointer++;
+ 			}//sub_adc
+ 		}//adc
+ 	}//i_trig
+
+ 	for(int tmp = 0; tmp < 3840; tmp++){
+ 		if(Norm[tmp] > 1){
+ 			Ped[tmp] = Ped[tmp]/Norm[tmp];
+ 			Ped2[tmp] = Ped2[tmp]/Norm[tmp];
+ 			Noi[tmp] = (int)( sqrt( (double)(Norm[tmp]/(Norm[tmp] - 1) )*( Ped2[tmp] - Ped[tmp]*Ped[tmp]))  );
+ 		}
+ 		else{
+ 			Ped[tmp] = 0;
+ 			Noi[tmp] = 0;
+ 		}
+ 	}//tmp
+ 	int ped_tmp, thr_tmp;
+ 	SilcPointer = 0;
+ 	for(int adc = 0; adc < NumOfADC; adc++){
+ 		for(int sub_adc = 0; sub_adc < 2; sub_adc++){
+ 			if (!Enabled(adc, sub_adc))	continue;
+ 			for(int chan = 0; chan < NumOfChan; chan++){
+ 				ped_tmp = Ped[chan + SilcPointer*NumOfCha];
+ 				thr_tmp = ped_tmp + 3*Noi[chan + SilcPointer*NumOfCha];
+ 				printf("adc=%d sub=%d ped=%d thr=%d\n", adc, sub_adc, ped_tmp, thr_tmp);
+ 				m_modv550[adc]->SetPedestalThreshold(sub_adc, chan, ped_tmp, thr_tmp);
+ 			}//chan
+ 			SilcPointer++;
+ 		}//ADC_int
+ 	}//i
+ 	printf("!!!!!=====Calibration done=====!!!!! \n");
 }//CalibAutoTrig
+void MVDController::ReadCalFromHwToFile(){
+	/*
+	 * This function read calibration data from file hardware and save to file
+	 * This file will have location in folder ./conf
+	 */
+	int string=200;
+	int iev;
+	unsigned int CalVal[BuffSize + 8];
+
+	FILE* fp;
+
+	FileName = new char[string];
+	FileName = "../conf/Calibration.dat";
+	fp = fopen(FileName, "w");
+
+	//event time
+	time_t timer;
+	struct tm *date;
+
+	time(&timer);
+	date = localtime(&timer);
+	fprintf(fp, "*Calibration file:  \n");
+	fprintf(fp, "*time %d:%d, date %d/%d/%d \n", date->tm_hour, date->tm_min, date->tm_mday, date->tm_mon + 1, date->tm_year + 1900);
+	fprintf(fp, "*init_SEQ: t1=%d, t2=%d, t3=%d, t4=%d, t5=%d \n", m_modv551->time1, m_modv551->time1, m_modv551->time3, m_modv551->time4, m_modv551->time5);
+	fprintf(fp, "*REM = %s \n", FileName);
+
+	int ped_tmp, thr_tmp, PedThr;
+
+	iev = 0;
+	CalVal[iev] = 0xAABBCC00;
+	for (int adc = 0; adc < NumOfADC; adc++) {//number of crate
+		for (int sub_adc = 0; sub_adc < 2; sub_adc++) {//number of ADC
+			if (!Enabled(adc, sub_adc))	continue;
+			printf("adc=%d sub=%d \n", adc, sub_adc );
+			CalVal[iev++] = ((0xAABBCC00 | adc << 1) | sub_adc);
+			for (int chan = 0; chan < NumOfChan; chan++) {
+				m_modv550[adc]->GetPedestalThresholdFull(sub_adc, chan, &PedThr);
+				CalVal[iev++] = PedThr;
+			}//chan
+		}//ADC_int
+	}//i
+	CalVal[iev++] = 0xAABBCCDD;
+	fwrite(CalVal, 4, iev + 1, fp);
+	fclose(fp);
+	printf("!!!!!=====Calibration saved to file=====!!!!! \n");
+}//ReadCalFromHwToFile
+
