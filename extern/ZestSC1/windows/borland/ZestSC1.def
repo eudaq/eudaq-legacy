@@ -1,0 +1,22 @@
+EXPORTS
+  ZestSC1CountCards
+  ZestSC1OpenCard
+  ZestSC1SetTimeOut
+  ZestSC1SetCardID
+  ZestSC1GetCardInfo
+  ZestSC1CloseCard
+  ZestSC1RegisterErrorHandler
+  ZestSC1GetErrorMessage
+  ZestSC1ConfigureFromFile
+  ZestSC1LoadFile
+  ZestSC1Configure
+  ZestSC1RegisterImage
+  ZestSC1FreeImage
+  ZestSC1WriteRegister
+  ZestSC1ReadRegister
+  ZestSC1ReadData
+  ZestSC1WriteData
+  ZestSC1SetSignalDirection
+  ZestSC1SetSignals
+  ZestSC1ReadSignals
+  ZestSC1WaitForInterrupt
