@@ -58,7 +58,7 @@
     </ClCompile>
     <PostBuildEvent>
       <Message>Copying pthread</Message>
-      <Command>copy ..\extern\pthread-win32\lib\pthreadVC2.dll $(OutDir)</Command>
+      <Command>copy $(SolutionDir)..\extern\pthread-win32\lib\pthreadVC2.dll $(OutDir)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -73,7 +73,7 @@
       <AdditionalIncludeDirectories>..\main\include;..\extern\pthread-win32\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy ..\extern\pthread-win32\lib\pthreadVC2.dll $(OutDir)</Command>
+      <Command>copy $(SolutionDir)..\extern\pthread-win32\lib\pthreadVC2.dll $(OutDir)</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Copying pthread</Message>
@@ -85,9 +85,20 @@
     <ClCompile Include="..\main\src\Configuration.cc" />
     <ClCompile Include="..\main\src\DataCollector.cc" />
     <ClCompile Include="..\main\src\DataSender.cc" />
+    <ClCompile Include="..\main\src\DetectorEvent.cc" />
     <ClCompile Include="..\main\src\DummyProducer.cc" />
     <ClCompile Include="..\main\src\Event.cc" />
     <ClCompile Include="..\main\src\Exception.cc" />
+    <ClCompile Include="..\main\src\FileNamer.cc" />
+    <ClCompile Include="..\main\src\FileWriter.cc" />
+    <ClCompile Include="..\main\src\FileWriterLCIO.cc" />
+    <ClCompile Include="..\main\src\FileWriterMimoloop.cc" />
+    <ClCompile Include="..\main\src\FileWriterNative.cc" />
+    <ClCompile Include="..\main\src\FileWriterNative2.cc" />
+    <ClCompile Include="..\main\src\FileWriterNull.cc" />
+    <ClCompile Include="..\main\src\FileWriterRoot.cc" />
+    <ClCompile Include="..\main\src\FileWriterStandard.cc" />
+    <ClCompile Include="..\main\src\FileWriterText.cc" />
     <ClCompile Include="..\main\src\Logger.cc" />
     <ClCompile Include="..\main\src\LogMessage.cc" />
     <ClCompile Include="..\main\src\LogSender.cc" />
