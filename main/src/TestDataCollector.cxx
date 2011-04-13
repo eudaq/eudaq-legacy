@@ -8,8 +8,6 @@
 #include "eudaq/Logger.hh"
 #include "eudaq/OptionParser.hh"
 
-#include <unistd.h>
-
 class TestDataCollector : public eudaq::DataCollector {
 public:
   TestDataCollector(const std::string & runcontrol,
