@@ -17,7 +17,7 @@ INCPATH       = -I"." -I"inc" -I"$(INCLUDE)" -I"$(ROOTSYS)\include" \
 				/I"..\extern\pthread-win32\include" /I..\main\include
 LINK          = link
 LFLAGS        = /LIBPATH:"$(ROOTSYS)\lib" \
-				/LIBPATH:"..\ports\Release" \
+				/LIBPATH:"..\bin" \
 				/LIBPATH:"..\extern\pthread-win32\lib" \
 				/LTCG /TLBID:1 /LTCG /INCREMENTAL:NO /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF \
 				/MACHINE:X86 /NXCOMPAT /DYNAMICBASE 
