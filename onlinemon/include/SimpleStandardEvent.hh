@@ -143,6 +143,7 @@ public:
 	int getBinsX() {return _binsX;}
 	int getBinsY() {return _binsY;}
 	void doClustering();
+	void addSuffix( const std::string suf ) { _name = _name + suf; }
 	void reducePixels(const int reduceX, const int reduceY) {
 		
 		_binsX = reduceX;
@@ -169,7 +170,15 @@ protected:
 
 public:
 	SimpleEvent() {_planes.reserve(20);}
-	void addPlane(SimpleStandardPlane &plane) {_planes.push_back(plane); }
+	void addPlane(SimpleStandardPlane &plane) {
+		// Check si plane with same name and id is registered already
+		bool found = false;
+		for (int  i = 0; i < _planes.size(); ++i) {
+			if (_planes.at(i) == plane) found = true;
+		}
+		if (found) plane.addSuffix("-2");
+		_planes.push_back(plane); 
+	}
 	SimpleStandardPlane getPlane (const int i) const {return _planes.at(i);}
 	int getNPlanes() const {return _planes.size(); }
 	void doClustering() {

@@ -150,11 +150,19 @@ public:
 			
 			sprintf(out,"%s %i TOT Single Pixels",_sensor.c_str(), _id);
 			sprintf(out2,"h_totsingle_%s_%i",_sensor.c_str(), _id);
-			_totSingle = new TH1I(out2, out,256,0,255);
+			if (_sensor == "USBPIXI4")
+				_totSingle = new TH1I(out2, out,16,0,15);
+			else
+				_totSingle = new TH1I(out2, out,256,0,255);
 			
+
+			std::cout << "Sensorname: " << _sensor << std::endl;			
 			sprintf(out,"%s %i TOT Clusters",_sensor.c_str(), _id);
 			sprintf(out2,"h_totcluster_%s_%i",_sensor.c_str(), _id);
-			_totCluster= new TH1I(out2, out,256,0,255);
+			if (_sensor == "USBPIXI4")
+				_totCluster= new TH1I(out2, out,80,0,79);
+			else
+				_totCluster= new TH1I(out2, out,256,0,255);
 			
 			sprintf(out,"%s %i Hitoccupancy",_sensor.c_str(), _id);
 			sprintf(out2,"h_hitocc%s_%i",_sensor.c_str(), _id);
@@ -194,7 +202,8 @@ public:
 	*/
 	void Fill(const SimpleStandardHit hit) {
 		if (_hitmap != NULL) _hitmap->Fill(hit.getX(), hit.getY());
-		if (_sensor == std::string("APIX")) {
+		//if (_sensor == std::string("APIX")) {
+		if (_sensor == std::string("APIX") || _sensor == std::string("USBPIX") || _sensor == std::string("USBPIXI4") ) {
 			if (_totSingle != NULL) _totSingle->Fill(hit.getTOT());
 			if (_lvl1Distr != NULL) _lvl1Distr->Fill(hit.getLVL1());
 		}
@@ -210,7 +219,8 @@ public:
 	void Fill(const SimpleStandardCluster cluster) {
 		if (_clusterMap != NULL) _clusterMap->Fill(cluster.getX(), cluster.getY());
 		if (_clusterSize != NULL) _clusterSize->Fill(cluster.getNPixel());
-		if (_sensor == std::string("APIX")) {
+		//if (_sensor == std::string("APIX")) {
+		if (_sensor == std::string("APIX") || _sensor == std::string("USBPIX") || _sensor == std::string("USBPIXI4") ) {
 			if (_lvl1Width != NULL)   _lvl1Width->Fill(cluster.getLVL1Width());
 			if (_totCluster != NULL ) _totCluster->Fill(cluster.getTOT());
 			if (_lvl1Cluster != NULL) _lvl1Cluster->Fill(cluster.getFirstLVL1());

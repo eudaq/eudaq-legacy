@@ -12,7 +12,7 @@ using namespace std;
 
 
 OnlineMonWindow::OnlineMonWindow(const TGWindow* p, UInt_t w, UInt_t h) 
-: TGMainFrame(p,w,h,kVerticalFrame), _eventnum(0), _runnum(0) {
+: TGMainFrame(p,w,h,kVerticalFrame), _eventnum(0), _runnum(0), _analysedEvents(0) {
 	cout << "Opening Window" << endl;
 	
 	Hfrm_windows = new TGHorizontalFrame(this);
@@ -80,16 +80,18 @@ OnlineMonWindow::OnlineMonWindow(const TGWindow* p, UInt_t w, UInt_t h)
 		Hfrm_right = new TGVerticalFrame(Hfrm_windows);
 			ECvs_right = new TRootEmbeddedCanvas("Canvas", Hfrm_right);
 			Hfrm_right->AddFrame(ECvs_right, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY,5,5,5,5));
+			ECvs_right->GetCanvas()->Connect("ProcessedEvent(Int_t,Int_t,Int_t,TObject*)","OnlineMonWindow",this,"ExecuteEvent(Int_t,Int_t,Int_t,TObject*)");
 		
 		Hfrm_windows->AddFrame(Hfrm_left, new TGLayoutHints( kLHintsExpandY,2,2,2,2));
 		Hfrm_windows->AddFrame(Hfrm_right, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY,2,2,2,2));
 	AddFrame(Hfrm_windows, new TGLayoutHints(kLHintsExpandY | kLHintsExpandX | kLHintsLeft,0,0,0,0));	
 		fStatusBar = new TGStatusBar(this,510,10,kHorizontalFrame);
-		int parts[] = {33,33,34};
-		fStatusBar->SetParts(parts,3);
+		int parts[] = {25,25,25,25};
+		fStatusBar->SetParts(parts,4);
 		fStatusBar->SetText("IDLE",0);
 		fStatusBar->SetText("run: 0",1);
-		fStatusBar->SetText("event: ",2);
+		fStatusBar->SetText("Curr. event: ",2);
+		fStatusBar->SetText("Analysed events: ",3);
 		
 	AddFrame(fStatusBar, new TGLayoutHints(kLHintsBottom | kLHintsExpandX, 0,0,2,0));
 	
@@ -103,7 +105,7 @@ OnlineMonWindow::OnlineMonWindow(const TGWindow* p, UInt_t w, UInt_t h)
 	h1 = new TH2F("h1","hu h1",11,0,10,11,0,10);
 	h2 = new TH2F("h2","hu h2",11,0,10,11,0,10);
 	//a->Draw();
-	SetWindowName("ATLAS Pixels Eudet-Online-Monitor");
+	SetWindowName("ATLAS Pixels Eudet-Online-Monitor V4.1");
 	MapSubwindows();
 	//Resize(GetDefaultSize());
 	Resize(w,h);
@@ -116,6 +118,20 @@ OnlineMonWindow::OnlineMonWindow(const TGWindow* p, UInt_t w, UInt_t h)
 	
 }
 
+void OnlineMonWindow::ExecuteEvent(Int_t event, Int_t px, Int_t py, TObject *sel) {
+	if (event == kButton1Down) {
+		cout << "Being in ExecuteEvent " << sel->ClassName() <<endl;
+		_activeHistos.clear();
+		//ECvs_right->GetCanvas()->BlockAllSignals(1);
+		ECvs_right->GetCanvas()->Clear();
+		ECvs_right->GetCanvas()->cd();
+		sel->Draw("COLZ");
+		ECvs_right->GetCanvas()->Update();
+		MapSubwindows();
+		MapWindow();
+	}
+}
+
 void OnlineMonWindow::Write() {
 	cout << "Pressed Write!" << endl;
 	TFile *f = new TFile(_rootfilename.c_str(),"RECREATE");
@@ -126,9 +142,11 @@ void OnlineMonWindow::Write() {
 }
 
 void OnlineMonWindow::Reset() {
+	UpdateStatus("Resetting..");
 	for (int i = 0 ; i < _colls.size(); ++i) {
 		_colls.at(i)->Reset();
 	}
+	_analysedEvents = 0;
 }
 
 void OnlineMonWindow::AutoReset() {
@@ -227,6 +245,7 @@ void OnlineMonWindow::autoUpdate() {
 		}
 		UpdateEventNumber(_eventnum);
 		UpdateRunNumber(_runnum);
+		UpdateTotalEventNumber(_analysedEvents);
 		
 		MapSubwindows();
 		MapWindow();
@@ -308,11 +327,17 @@ void OnlineMonWindow::actor(TGListTreeItem* item, Int_t btn) {
 		if(s>16) {d1=5;d2=4;}
 		if(s>20) {d1=5;d2=5;}
 		if(s>25){d1=6;d2=5;}
+		if(s>30){d1=6;d2=6;}
+		if(s>36){d1=7;d2=6;}
+		if(s>42){d1=7;d2=7;}
 		fCanvas->Divide(d2,d1);
 		
 		for (int i = 0; i < s; ++i) {
 			fCanvas->cd(i+1);
 			_activeHistos.push_back(v.at(i));
+			fCanvas->GetPad(i+1)->SetLogx(bool(_logScaleMap[v.at(i)] & kLogX)); 
+			fCanvas->GetPad(i+1)->SetLogy(bool(_logScaleMap[v.at(i)] & kLogY)); 
+			fCanvas->GetPad(i+1)->SetLogz(bool(_logScaleMap[v.at(i)] & kLogZ));
 			_hitmapMap[v.at(i)]->Draw(_hitmapOptions[v.at(i)].c_str());
 		}
 		
@@ -337,10 +362,17 @@ void OnlineMonWindow::UpdateRunNumber(const int num) {
 void OnlineMonWindow::UpdateEventNumber(const int event) {
 	char out[64]="";
 	
-	sprintf(out,"event: %u", event);
+	sprintf(out,"Curr. event: %u", event);
 	fStatusBar->SetText(out,2);
 	
 	//cout << out << endl;
+}
+
+void OnlineMonWindow::UpdateTotalEventNumber(const int num) {
+	char out[64]="";
+	
+	sprintf(out,"Analysed events: %u", num);
+	fStatusBar->SetText(out,3);
 }
 
 void OnlineMonWindow::setReduce(const unsigned int red) { 

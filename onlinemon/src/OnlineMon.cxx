@@ -117,10 +117,13 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 	if (reduce) {
 		int num = ev.NumPlanes();
 		  SimpleEvent simpEv;
-		
+		if (ev.GetEventNumber() == 1) onlinemon->UpdateStatus("Getting data..");
+		//cout << "GetNum: " << ev.NumPlanes() << endl;		
 		  for (int i = 0; i < num;i++) {
 			const eudaq::StandardPlane & plane = ev.GetPlane(i);
-			if (strcmp(plane.Sensor().c_str(), "FORTIS") != 0) {
+			if (strcmp(plane.Sensor().c_str(), "FORTIS") != 0 ) {
+				 //int tmpId = plane.ID();
+				//if ( plane.Sensor() == "MIMOSA26" && i > 2) tmpId += 3;
 				 SimpleStandardPlane simpPlane(plane.Sensor(),plane.ID(),plane.XSize(),plane.YSize());
 				 for (int lvl1 = 0; lvl1 < plane.NumFrames(); lvl1++) {
 					 // if (lvl1 > 2 && plane.HitPixels(lvl1) > 0) std::cout << "LVLHits: " << lvl1 << ": " << plane.HitPixels(lvl1) << std::endl;
@@ -133,6 +136,7 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 					  }
 				 }
 				 simpEv.addPlane(simpPlane);
+				//cout << "Type: " << plane.Type() << endl;
 				//cout << "StandardPlane: "<< plane.Sensor() <<  " " << plane.ID() << " " << plane.XSize() << " " << plane.YSize() << endl;
 				//cout << "PlaneAddress: " << &plane << endl;
 			}
@@ -150,7 +154,10 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 			_colls.at(i)->Calculate(ev.GetEventNumber());
 		}
 		
-		if (_offline <= 0) onlinemon->setEventNumber(ev.GetEventNumber());
+		if (_offline <= 0) {
+			onlinemon->setEventNumber(ev.GetEventNumber());
+			onlinemon->increaseAnalysedEventsCounter();
+		}
 	}
 	  if (ev.IsBORE()) {
 		std::cout << "This is a BORE" << std::endl;
@@ -178,6 +185,7 @@ void RootMonitor::OnStopRun() {
 	}
 	
 	if (onlinemon->getAutoReset()) {
+		onlinemon->UpdateStatus("Resetting..");
 		for (int i = 0 ; i < _colls.size(); ++i) {
 		_colls.at(i)->Reset();
 		}
@@ -192,11 +200,13 @@ void RootMonitor::OnStopRun() {
     	    corrCollection->Write(file);
     	    gDirectory->cd("..");
     	    */
+	onlinemon->UpdateStatus("Run stopped");
 }
 
 void RootMonitor::OnStartRun(unsigned param) {
 		Monitor::OnStartRun(param);
 		std::cout << "Called on start run" << param <<std::endl;
+		onlinemon->UpdateStatus("Starting run..");
 		char out[255];
 		sprintf(out, "run%d.root",param);
 		rootfilename = std::string(out);

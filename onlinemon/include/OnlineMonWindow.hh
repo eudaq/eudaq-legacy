@@ -18,6 +18,8 @@
 #include <TGNumberEntry.h>
 
 #include <TContextMenu.h>
+#include <TPad.h>
+#include <TApplication.h>
 
 
 
@@ -77,6 +79,7 @@ protected:
 	unsigned int _eventnum, _runnum;
 	bool _autoreset;
 	unsigned int _reduce, _reduceUpdate;
+	unsigned int _analysedEvents;
 	
 	TContextMenu *CtxMenu;
 	
@@ -105,6 +108,7 @@ public:
 	void UpdateRunNumber(const int num);
 	void UpdateEventNumber(const int event);
 	void UpdateStatus(const std::string status);
+	void UpdateTotalEventNumber(const int num);
 	void setEventNumber(const int num) {_eventnum = num;}
 	void setRunNumber(const int num) {_runnum = num; }
 	void setAutoReset(bool reset);
@@ -112,6 +116,9 @@ public:
 	void setReduce(const unsigned int red);
 	unsigned int getReduce() {return _reduce; }
 	void setUpdate(const unsigned int up);
+	void increaseAnalysedEventsCounter() {++_analysedEvents;}
+	void ExecuteEvent(Int_t event, Int_t px, Int_t py, TObject *sel);
+	
 	
 	
 };

@@ -50,7 +50,7 @@ protected:
 public:
  
 	RootMonitor(const std::string & runcontrol, const std::string & datafile, int x, int y, int w, int h, int argc, int offline);
-	~RootMonitor() { }//gApplication->Terminate();}
+	~RootMonitor() {gApplication->Terminate();}
 	void registerSensorInGUI(std::string name, int id);
   
  
@@ -63,7 +63,7 @@ public:
 	}
 	virtual void OnTerminate() {
 		std::cout << "Terminating" << std::endl;
-		// gApplication->Terminate();
+		gApplication->Terminate();
 	}
 	virtual void OnReset() {
 		std::cout << "Reset" << std::endl;

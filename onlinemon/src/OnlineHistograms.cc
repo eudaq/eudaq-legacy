@@ -73,7 +73,7 @@ void HitmapCollection::registerPlane(const SimpleStandardPlane &p) {
 		char tree[64], folder[64];
 		sprintf(tree,"%s/%i/RawHitmap",p.getName().c_str(),p.getID());
 		_mon->getOnlineMon()->registerTreeItem(tree);
-		_mon->getOnlineMon()->registerHisto(tree,getHitmapHistos(p.getName(),p.getID())->getHitmapHisto(), "COLZ");
+		_mon->getOnlineMon()->registerHisto(tree,getHitmapHistos(p.getName(),p.getID())->getHitmapHisto(), "COLZ",kLogZ);
 	
 	
 		sprintf(folder,"%s",p.getName().c_str());
@@ -82,9 +82,9 @@ void HitmapCollection::registerPlane(const SimpleStandardPlane &p) {
 	
 		sprintf(tree,"%s/%i/Clustermap",p.getName().c_str(),p.getID());
 		_mon->getOnlineMon()->registerTreeItem(tree);
-		_mon->getOnlineMon()->registerHisto(tree,getHitmapHistos(p.getName(),p.getID())->getClusterMapHisto(), "COLZ");
+		_mon->getOnlineMon()->registerHisto(tree,getHitmapHistos(p.getName(),p.getID())->getClusterMapHisto(), "COLZ",kLogZ);
 		
-		if (p.getName() == std::string("APIX")) {
+		if (p.getName() == std::string("APIX") || p.getName() == std::string("USBPIX") || p.getName() == std::string("USBPIXI4")) {
 			sprintf(tree,"%s/%i/LVL1Distr",p.getName().c_str(),p.getID());
 			_mon->getOnlineMon()->registerTreeItem(tree);
 			_mon->getOnlineMon()->registerHisto(tree,getHitmapHistos(p.getName(),p.getID())->getLVL1Histo());
