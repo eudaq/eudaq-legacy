@@ -12,7 +12,9 @@
 #else
 //#  include <afxwin.h>
 #endif
-#include <winsock.h>
+//#include <winsock.h>
+//artem
+#include <winsock2.h>
 
 namespace eudaq {
 
