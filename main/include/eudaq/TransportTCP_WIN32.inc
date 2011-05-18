@@ -1,11 +1,3 @@
-#define MSG_NOSIGNAL 0
-#ifndef EINPROGRESS
-#define EINPROGRESS WSAEINPROGRESS
-#endif
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#endif
-
 #include <map>
 #if EUDAQ_PLATFORM_IS(MINGW)
 #  include <windows.h>
@@ -15,6 +7,21 @@
 //#include <winsock.h>
 //artem
 #include <winsock2.h>
+
+#define MSG_NOSIGNAL 0
+#ifdef WSAEINPROGRESS
+#ifdef EINPROGRESS
+#undef EINPROGRESS
+#endif
+#define EINPROGRESS WSAEINPROGRESS
+#endif
+
+#ifdef WSAEWOULDBLOCK
+#ifdef EWOULDBLOCK
+#undef EWOULDBLOCK
+#endif
+#define EWOULDBLOCK WSAEWOULDBLOCK
+#endif
 
 namespace eudaq {
 
