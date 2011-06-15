@@ -56,7 +56,7 @@ namespace eudaq {
     virtual unsigned GetTriggerID(Event const & ev) const {
       const RawDataEvent & rawev = dynamic_cast<const RawDataEvent &>(ev);
       if (rawev.NumBlocks() < 1 || rawev.GetBlock(0).size() < 8) return (unsigned)-1;
-      return GET(rawev.GetBlock(0), 1) & 0xffff;
+      return GET(rawev.GetBlock(0), 1) >> 16;
     }
 
     virtual bool GetStandardSubEvent(StandardEvent & result, const Event & source) const {
@@ -80,7 +80,7 @@ namespace eudaq {
       unsigned header1 = GET(data1, 0);
       unsigned tluid = GetTriggerID(source);
       if (dbg) std::cout << "TLU id = " << hexdec(tluid, 4) << std::endl;
-      unsigned pivot = GET(data0, 1) >> 16;
+      unsigned pivot = GET(data0, 1) & 0xffff;
       if (dbg) std::cout << "Pivot = " << hexdec(pivot, 4) << std::endl;
       datait it0 = data0.begin() + 8;
       datait it1 = data1.begin() + 8;
