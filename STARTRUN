@@ -1,14 +1,14 @@
 #!/bin/sh
 
 RCPORT=44000
-BONNIP=192.76.172.51
+BONNIP=bonnDaqPC
 
 
 [ "$1" != "" ] && RCPORT=$1
 
 #export /opt/products/root/root_v5.26.00
-export HOSTNAME=localhost
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/data/artem/eudaq_bonn_telescope_gmail/bin
+export HOSTNAME=192.168.1.3
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/data/artem/eudaq_hepforge_bonn_telescope/bin
 
 cd `dirname $0`
 
@@ -56,22 +56,18 @@ printf '\033[22;33m\t TestDataCollector \033[0m \n'
 xterm -sb -sl 1000 -geom 80x10-800-350 -fn fixed -T "Data Collector" -e './TestDataCollector.exe -r tcp://$BONNIP:$RCPORT' &
 sleep 1
 ######################################################################
+# NI Producer
+###############
 printf '\033[22;33m\t  NiProducer for linux  \033[0m \n'
 xterm -sb -sl 1000 -geom 130x60-0-350 -T 'Ni Producer for Linux' -e './NiProducer.exe -r tcp://$BONNIP:$RCPORT' &
 sleep 1
 ######################################################################
+# TLU producer
+###############
 #printf '\033[22;33m\t  TLUProducer  \033[0m \n'
 #xterm -sb -sl 1000 -geom 130x60-0-350 -T 'TLU Producer' -e './TLUProducer.exe -r tcp://$TLUIP:$RCPORT' &
 #sleep 1
 ######################################################################
-#printf '\033[22;33m\t MVDProducer \033[0m \n'
-#ssh -XY eudet@$MVDIP "(xterm -sb -sl 1000 -geom 140x10-0-30 -T 'MVD Producer' -e 'cd /home/eudet/artem/eudaq3/bin; ./MVDProducer.exe -r tcp://$TLUIP:$RCPORT ' )" &
-#sleep 1
-######################################################################
-#printf '\033[22;33m\t MVD Monitor \033[0m \n'
-#./hit
-#sleep 1
-#####################################################################
 printf ' \n'
 printf ' \n'
 printf ' \n'
