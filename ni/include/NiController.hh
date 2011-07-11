@@ -41,7 +41,7 @@ public:
   void DatatransportClientSocket_Open();
   void DatatransportClientSocket_Close();
   unsigned int DataTransportClientSocket_ReadLength(const char string[4]);
-  char *DataTransportClientSocket_ReadData(int datalength);
+  std::vector<unsigned char> DataTransportClientSocket_ReadData(int datalength);
 
   void ConfigClientSocket_Open();
   void ConfigClientSocket_Close();

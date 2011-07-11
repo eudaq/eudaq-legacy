@@ -100,77 +100,143 @@ void RootMonitor::setReduce(const unsigned int red) {
 }
 
 void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
-	  //cout << "called onEvent " << ev.GetEventNumber()<< endl;
+#ifdef DEBUG
+     cout << "Called onEvent " << ev.GetEventNumber()<< endl;
+     cout << "Number of Planes " << ev.NumPlanes()<< endl;
+#endif
 	_checkEOF.EventReceived();
-	bool reduce;
-	if (_offline > 0) {
-		if (_offline < ev.GetEventNumber()) { //FIXME
+
+	//start timing to measure processing time
+	my_event_processing_time.Start(true);
+
+
+
+	bool reduce=false; //do we use Event reduction
+	bool skip_dodgy_event=false; // do we skip this event because we consider it dodgy
+
+
+	if (_offline > 0) //are we in offline mode , activated with -o
+	{
+		if (_offline <(int)  ev.GetEventNumber())
+		{
 			TFile *f = new TFile(rootfilename.c_str(),"RECREATE");
-			for (unsigned int i = 0 ; i < _colls.size(); ++i) {
-				_colls.at(i)->Write(f);
+			if (f!=NULL)
+			{
+				for (unsigned int i = 0 ; i < _colls.size(); ++i)
+				{
+					_colls.at(i)->Write(f);
+				}
+				f->Close();
 			}
-			f->Close();    
+			else
+			{
+				cout<< "Can't open "<<rootfilename<<endl;
+			}
 			exit(0); // Kill the program
 		}
 		reduce = true;
-		
-	} else {
+
+	}
+	else
+	{
 		reduce = (ev.GetEventNumber() % onlinemon->getReduce() == 0);
 	}
+
+
 	if (reduce) {
 		int num = ev.NumPlanes();
-		  SimpleEvent simpEv;
-		if (ev.GetEventNumber() == 1) onlinemon->UpdateStatus("Getting data..");
-		//cout << "GetNum: " << ev.NumPlanes() << endl;		
-		  for (int i = 0; i < num;i++) {
-			const eudaq::StandardPlane & plane = ev.GetPlane(i);
-			if (strcmp(plane.Sensor().c_str(), "FORTIS") != 0 ) {
-				 //int tmpId = plane.ID();
-				//if ( plane.Sensor() == "MIMOSA26" && i > 2) tmpId += 3;
-				 SimpleStandardPlane simpPlane(plane.Sensor(),plane.ID(),plane.XSize(),plane.YSize());
-				 for (unsigned int lvl1 = 0; lvl1 < plane.NumFrames(); lvl1++) {
-					 // if (lvl1 > 2 && plane.HitPixels(lvl1) > 0) std::cout << "LVLHits: " << lvl1 << ": " << plane.HitPixels(lvl1) << std::endl;
-					  for (unsigned int index = 0; index < plane.HitPixels(lvl1);index++) {
-						  SimpleStandardHit hit((int)plane.GetX(index,lvl1),(int)plane.GetY(index,lvl1));
-						  hit.setTOT((int)plane.GetPixel(index,lvl1));
-						  hit.setLVL1(lvl1);
-						  simpPlane.addHit(hit);
-					  
-					  }
-				 }
-				 simpEv.addPlane(simpPlane);
-				//cout << "Type: " << plane.Type() << endl;
-				//cout << "StandardPlane: "<< plane.Sensor() <<  " " << plane.ID() << " " << plane.XSize() << " " << plane.YSize() << endl;
-				//cout << "PlaneAddress: " << &plane << endl;
+		// some simple consistency checks
+		if (ev.GetEventNumber() < 1)
+		{
+			myevent.setNPlanes(ev.NumPlanes());
+		}
+		else
+		{
+			if (myevent.getNPlanes()!=ev.NumPlanes())
+			{
+				cout << " Plane Mismatch on " <<ev.GetEventNumber()<<endl;
+				skip_dodgy_event=true; //we may want to skip this FIXME
 			}
-		  }
-		 
+			else
+			{
+				myevent.setNPlanes(ev.NumPlanes());
+			}
+		}
+
+		SimpleEvent simpEv;
+
+		if ((ev.GetEventNumber() == 1) && (_offline <0)) //only update Display, when GUI is active
+		{
+			onlinemon->UpdateStatus("Getting data..");
+		}
+		for (int i = 0; i < num;i++)
+		{
+			const eudaq::StandardPlane & plane = ev.GetPlane(i);
+
+
+#ifdef DEBUG
+			cout << "Plane ID         " << plane.ID()<<endl;
+			cout << "Plane Size       " << sizeof(plane) <<endl;
+			cout << "Plane Frames     " << plane.NumFrames() <<endl;
+			cout << "Plane Pixels Hit " << plane.HitPixels(0) <<endl;
+			cout << "Plane Pixels Hit " << plane.HitPixels(1) <<endl;
+#endif
+			if (strcmp(plane.Sensor().c_str(), "FORTIS") != 0 ) {
+				//int tmpId = plane.ID();
+				//if ( plane.Sensor() == "MIMOSA26" && i > 2) tmpId += 3;
+				SimpleStandardPlane simpPlane(plane.Sensor(),plane.ID(),plane.XSize(),plane.YSize());
+				for (unsigned int lvl1 = 0; lvl1 < plane.NumFrames(); lvl1++) {
+					// if (lvl1 > 2 && plane.HitPixels(lvl1) > 0) std::cout << "LVLHits: " << lvl1 << ": " << plane.HitPixels(lvl1) << std::endl;
+					for (unsigned int index = 0; index < plane.HitPixels(lvl1);index++) {
+						SimpleStandardHit hit((int)plane.GetX(index,lvl1),(int)plane.GetY(index,lvl1));
+						hit.setTOT((int)plane.GetPixel(index,lvl1));
+						hit.setLVL1(lvl1);
+						simpPlane.addHit(hit);
+
+					}
+				}
+				simpEv.addPlane(simpPlane);
+#ifdef DEBUG
+				cout << "Type: " << plane.Type() << endl;
+				cout << "StandardPlane: "<< plane.Sensor() <<  " " << plane.ID() << " " << plane.XSize() << " " << plane.YSize() << endl;
+				cout << "PlaneAddress: " << &plane << endl;
+#endif
+			}
+		}
+
 		simpEv.doClustering();
 		if (ev.GetEventNumber() < 1) {
 			cout << "Waiting for booking of Histograms..." << endl;
 			sleep(1);
 			cout << "...long enough"<< endl;
 		}
-		
+//Filling
+		//stop the Stop watch
+		my_event_processing_time.Stop();
+		cout << "Analysing"<<   " "<< my_event_processing_time.RealTime()<<endl;
+		my_event_processing_time.Start(true);
 		for (unsigned int i = 0 ; i < _colls.size(); ++i) {
 			_colls.at(i)->Fill(simpEv);
 			_colls.at(i)->Calculate(ev.GetEventNumber());
 		}
-		
+
 		if (_offline <= 0) {
 			onlinemon->setEventNumber(ev.GetEventNumber());
 			onlinemon->increaseAnalysedEventsCounter();
 		}
 	}
-	  if (ev.IsBORE()) {
+	my_event_processing_time.Stop();
+	cout << "Filling " << " "<< my_event_processing_time.RealTime()<<endl;
+	cout << "----------------------------------------"  <<endl<<endl;
+	if (ev.IsBORE()) {
 		std::cout << "This is a BORE" << std::endl;
 
-	//std::cout << "end of OnEvent" << std::endl;		  
-		 
-   
-    } 
-    
-    }
+		//std::cout << "end of OnEvent" << std::endl;
+
+
+	}
+
+}
     
 void RootMonitor::autoReset(const bool reset) { 
 	//_autoReset = reset; 
@@ -184,7 +250,8 @@ void RootMonitor::OnStopRun() {
 		for (unsigned int i = 0 ; i < _colls.size(); ++i) {
 		_colls.at(i)->Write(f);
 		}
-		f->Close();    
+		f->Close();
+
 	}
 	
 	if (onlinemon->getAutoReset()) {
@@ -193,6 +260,7 @@ void RootMonitor::OnStopRun() {
 		_colls.at(i)->Reset();
 		}
 	}
+
 	
 	
 	/*TFile *file = new TFile(rootfilename.c_str(),"RECREATE");
@@ -266,12 +334,28 @@ try {
 	op.Parse(argv);
 	EUDAQ_LOG_LEVEL(level.Value());
 	if (file.IsSet() && !rctrl.IsSet()) rctrl.SetValue("null://");
-	gROOT->Reset();
-	gROOT->SetStyle("Plain");
-	gStyle->SetPalette(1);
-	gStyle->SetOptStat(0100);
-	gStyle->SetStatH(0.03);
-	
+	if (gROOT!=NULL)
+	{
+		gROOT->Reset();
+		gROOT->SetStyle("Plain");
+	}
+	else
+	{
+		cout<<"Global gROOT Object not found" <<endl;
+		exit(-1);
+	}
+	if (gStyle!=NULL)
+	{
+		gStyle->SetPalette(1);
+		gStyle->SetNumberContours(99);
+		gStyle->SetOptStat(0111);
+		gStyle->SetStatH(0.03);
+	}
+	else
+	{
+		cout<<"Global gStyle Object not found" <<endl;
+		exit(-1);
+	}
 	
 // start the GUI
 	TApplication theApp("App", &argc, const_cast<char**>(argv),0,0);
@@ -280,7 +364,16 @@ try {
 	mon.autoReset(do_resetatend.IsSet());
 	mon.setReduce(reduce.Value());
 	mon.setUpdate(update.Value());
-	//mon.Run();
+
+	cout <<"Monitor Settings:" <<endl;
+	cout <<"Update Interval :" <<update.Value() <<" ms" <<endl;
+	cout <<"Reduce Events   :" <<reduce.Value() <<endl;
+	if (offline.Value() >0)
+	{
+		cout <<"Offline Mode   :" <<"active" <<endl;
+		cout <<"Events         :" <<offline.Value()<<endl;
+	}
+			//mon.Run();
 
 	theApp.Run(); //execute
 } catch (...) {

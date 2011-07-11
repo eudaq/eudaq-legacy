@@ -34,7 +34,7 @@ tmp/ex2aDictOnlineMon.o: tmp/ex2aDictOnlineMon.cc
 #	@echo "  ** Compiling  `basename $@`"
 #	$V$(CXX) -o $@ $< -c $(CXXFLAGS)
 
-$(BIN)/OnlineMon.exe: tmp/OnlineMonWindow.o  tmp/SimpleStandardEvent.o tmp/ex2aDictOnlineMon.o tmp/OnlineMon_exe.o tmp/OnlineHistograms.o tmp/CheckEOF.o
+$(BIN)/OnlineMon.exe: tmp/OnlineMonWindow.o  tmp/SimpleStandardEvent.o tmp/SimpleStandardPlane.o tmp/ex2aDictOnlineMon.o tmp/OnlineMon_exe.o tmp/OnlineHistograms.o tmp/CheckEOF.o tmp/EventSanityChecker.o tmp/HitmapHistos.o tmp/CorrelationHistos.o  tmp/BaseCollection.o tmp/HitmapCollection.o tmp/CorrelationCollection.o
 
 # $(BIN)/EnvMon.exe: tmp/ex2aDictEnvMon.o tmp/GraphWindow.o tmp/TGraphSet.o
 

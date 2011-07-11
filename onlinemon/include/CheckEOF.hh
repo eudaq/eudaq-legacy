@@ -1,13 +1,17 @@
 #ifndef CHECK_EOF_HH
 #define CHECK_EOF_HH
 
-#include <vector>
-#include "OnlineHistograms.hh"
 #include <TTimer.h>
+
+#include <vector>
 #include <iostream>
+#include <string>
 
 
+#include "OnlineHistograms.hh"
+#include "BaseCollection.hh"
 class BaseCollection;
+
 
 class CheckEOF {
 	//RQ_OBJECT("CheckEOF")

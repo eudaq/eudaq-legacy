@@ -36,11 +36,9 @@ public:
 				eudaq::RawDataEvent ev("NI", m_run, ++m_ev);
 				//t++;
 				datalength1 = ni_control->DataTransportClientSocket_ReadLength("priv");
-				Buffer1 = ni_control->DataTransportClientSocket_ReadData(datalength1);
-				ev.AddBlock(0, Buffer1, datalength1);
+				ev.AddBlock(0, ni_control->DataTransportClientSocket_ReadData(datalength1));
 				datalength2 = ni_control->DataTransportClientSocket_ReadLength("priv");
-				Buffer2 = ni_control->DataTransportClientSocket_ReadData(datalength2);
-				ev.AddBlock(1, Buffer2, datalength2);
+				ev.AddBlock(1, ni_control->DataTransportClientSocket_ReadData(datalength2));
 
 				//if (t == 1000) {
 				//	r++;
@@ -148,7 +146,6 @@ public:
 				datalength = 0;
 */
 				SendEvent(ev);
-				//eudaq::mSleep(1000);
 			}
 		} while (!done);
 	}

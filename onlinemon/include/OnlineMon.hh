@@ -2,32 +2,40 @@
 #define ONLINE_MON_H
 
 #include <cmath>
+
+//ROOT includes
 #include <TSystem.h>
 #include <TInterpreter.h>
 #include <TQObject.h>
 #include <RQ_OBJECT.h>
 #include <TPRegexp.h>
 #include <TObjString.h>
+#include <TStopwatch.h>
 
-#include "../main/include/eudaq/Monitor.hh"
-#include "../main/include/eudaq/DetectorEvent.hh"
+//EUDAQ includes
+#include "eudaq/Monitor.hh"
+#include "eudaq/DetectorEvent.hh"
+#include "eudaq/Logger.hh"
+#include "eudaq/Utils.hh"
+#include "eudaq/OptionParser.hh"
 
-#include "../main/include/eudaq/Logger.hh"
-#include "../main/include/eudaq/Utils.hh"
-#include "../main/include/eudaq/OptionParser.hh"
+//Project Includes
 
-#include "CheckEOF.hh"
+#include "BaseCollection.hh"
+
 #include "OnlineMonWindow.hh"
 #include "OnlineHistograms.hh"
 #include "SimpleStandardEvent.hh"
+#include "EventSanityChecker.hh"
 
+#include "CheckEOF.hh"
+
+//STL includes
 #include <string>
 
 using namespace std;
 
 class OnlineMonWindow;
-class HitmapCollection;
-class CorrelationCollection;
 class BaseCollection;
 class CheckEOF;
 
@@ -66,6 +74,7 @@ public:
 	}
 	virtual void OnTerminate() {
 		std::cout << "Terminating" << std::endl;
+		sleep(1);
 		gApplication->Terminate();
 	}
 	virtual void OnReset() {
@@ -89,8 +98,9 @@ public:
 	void SetSnapShotDir(string s);
 	string GetSnapShotDir();
 private:
-	string snapshotdir;
-
+	string snapshotdir; //FIXME
+	EventSanityChecker myevent; //FIXME
+	TStopwatch my_event_processing_time;
   
 };
 

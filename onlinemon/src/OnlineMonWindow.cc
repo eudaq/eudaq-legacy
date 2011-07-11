@@ -193,7 +193,7 @@ void OnlineMonWindow::SnapShot() {
 		buffer_seqnum<<snapshot_sequence;
 
 		string filename="Snapshot_"+buffer_runnum.str()+"_"+buffer_seqnum.str()+".png";
-		cout << rmon->GetSnapShotDir()<<endl;
+
 		cout << filename << endl;
 		c1->SaveAs(filename.c_str());
 		snapshot_sequence++;
@@ -251,6 +251,7 @@ void OnlineMonWindow::registerHisto(std::string tree,TH1* h, std::string op, con
 	_hitmapMap[tree] = h;
 	_hitmapOptions[tree]= op;
 	_logScaleMap[tree] = l;
+	cout << h->GetName()<<" "<< l<<" " << tree <<" "<< endl;
 	if (op == "") {
 		const TGPicture *thp = gClient->GetPicture("h2_t.xpm");
 		_treeMap[tree]->SetPictures(thp,thp);
@@ -338,9 +339,10 @@ void OnlineMonWindow::actor(TGListTreeItem* item, Int_t btn) {
 	fCanvas->Clear();
 	std::string tree = _treeBackMap[item];
 
+	cout << "ACTOR " << tree << " "<< (_logScaleMap[tree] & 0)<<endl;
 	fCanvas->SetLogx(bool(_logScaleMap[tree] & 0));
-	fCanvas->SetLogy(bool(_logScaleMap[tree] & 0));
-	fCanvas->SetLogz(bool(_logScaleMap[tree] & 0));
+	fCanvas->SetLogy(bool(_logScaleMap[tree] & 1));
+	fCanvas->SetLogz(bool(_logScaleMap[tree] & 2));
 
 
 
@@ -355,7 +357,6 @@ void OnlineMonWindow::actor(TGListTreeItem* item, Int_t btn) {
 
 	}
 	if (_summaryMap.find(tree)!= _summaryMap.end()) {
-		cout <<"Here we are in the summary map" << endl;
 		std::vector<std::string> v = _summaryMap[tree];
 		size_t s = v.size();
 		int d1=1;
@@ -377,9 +378,9 @@ void OnlineMonWindow::actor(TGListTreeItem* item, Int_t btn) {
 		for (unsigned int i = 0; i < s; ++i) {
 			fCanvas->cd(i+1);
 			_activeHistos.push_back(v.at(i));
-			fCanvas->GetPad(i+1)->SetLogx(bool(_logScaleMap[v.at(i)] & 0)); 
-			fCanvas->GetPad(i+1)->SetLogy(bool(_logScaleMap[v.at(i)] & 0)); 
-			fCanvas->GetPad(i+1)->SetLogz(bool(_logScaleMap[v.at(i)] & 0));
+			fCanvas->GetPad(i+1)->SetLogx(bool(_logScaleMap[v.at(i)] & 0));
+			fCanvas->GetPad(i+1)->SetLogy(bool(_logScaleMap[v.at(i)] & 1));
+			fCanvas->GetPad(i+1)->SetLogz(bool(_logScaleMap[v.at(i)] & 2));
 			_hitmapMap[v.at(i)]->Draw(_hitmapOptions[v.at(i)].c_str());
 		}
 

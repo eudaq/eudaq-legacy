@@ -17,6 +17,7 @@
 #include <TGStatusBar.h>
 #include <TGNumberEntry.h>
 
+#include "BaseCollection.hh"
 #include "OnlineHistograms.hh"
 
 #include <vector>
@@ -28,7 +29,6 @@
 //class RootMonitor;
 #endif
 
-class BaseCollection;
 
 static const unsigned int kLin = 0;
 static const unsigned int kLogX = 1;

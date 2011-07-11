@@ -41,7 +41,7 @@ void NiController::Stop(){
 }
 void NiController::ConfigClientSocket_Open(){
 	/*** Network configuration for NI, NAME and INET ADDRESS ***/
-	data = inet_addr("192.76.172.199");
+	data = inet_addr("192.168.1.2");
 	hconfig = gethostbyaddr(&data, 4, AF_INET);
 	if ( hconfig == NULL) {
 		EUDAQ_ERROR("ConfSocket: get HOST error  " );
@@ -72,7 +72,7 @@ void NiController::ConfigClientSocket_Open(){
 }
 void NiController::DatatransportClientSocket_Open(){
 	/*** Creation for the data transmit socket, NAME and INET ADDRESS ***/
-	data_trans_addres = inet_addr("192.76.172.199");
+	data_trans_addres = inet_addr("192.168.1.2");
 	hdatatransport = gethostbyaddr(&data_trans_addres, 4, AF_INET);
 	if ( hdatatransport == NULL) {
 		EUDAQ_ERROR("DataTransportSocket: get HOST error " );
@@ -103,26 +103,67 @@ void NiController::DatatransportClientSocket_Open(){
 unsigned int NiController::DataTransportClientSocket_ReadLength(const char string[4]) {
 	unsigned int datalengthTmp;
 	unsigned int datalength;
+	unsigned int i;
+	bool dbg =false;
 	if ((numbytes = recv(sock_datatransport, Buffer_length, 2, 0)) == -1) {
 		EUDAQ_ERROR("DataTransportSocket: Read length error " );
 		perror("recv()");
 		exit(1);
 	}
-	datalengthTmp = 0;
-	datalengthTmp = 0xFF & Buffer_length[0];
-	datalengthTmp <<= 8;
-	datalengthTmp += 0xFF & Buffer_length[1];
-	datalength = datalengthTmp;
+	else {
+		if (dbg)printf("|==DataTransportClientSocket_ReadLength ==|    numbytes=%d \n", numbytes);
+		i=0;
+		if (dbg){
+			while (i<numbytes){
+				printf(" 0x%x%x", 0xFF & Buffer_length[i], 0xFF & Buffer_length[i+1]);
+				i=i+2;
+			}
+		}
+		datalengthTmp = 0;
+		datalengthTmp = 0xFF & Buffer_length[0];
+		datalengthTmp <<= 8;
+		datalengthTmp += 0xFF & Buffer_length[1];
+		datalength = datalengthTmp;
 
+		if (dbg) printf(" data= %d", datalength);
+		if (dbg) printf("\n");
+	}
 	return datalength;
 }
-char *NiController::DataTransportClientSocket_ReadData(int datalength) {
-	if ((numbytes = recv(sock_datatransport, Buffer_data, datalength, 0)) == -1) {
-		EUDAQ_ERROR("DataTransportSocket: Read data error " );
-		perror("recv()");
-		exit(1);
+std::vector<unsigned char> NiController::DataTransportClientSocket_ReadData(int datalength) {
+
+	std::vector<unsigned char> mimosa_data(datalength);
+	unsigned int stored_bytes;
+	unsigned int read_bytes_left;
+	unsigned int i;
+	bool dbg =false;
+
+	stored_bytes = 0;
+	read_bytes_left = datalength;
+	while (read_bytes_left > 0 ) {
+		if ((numbytes = recv(sock_datatransport, Buffer_data, read_bytes_left, 0)) == -1) {
+			EUDAQ_ERROR("DataTransportSocket: Read data error " );
+			perror("recv()");
+			exit(1);
+		}
+		else {
+			if (dbg) printf("|==DataTransportClientSocket_ReadData==|    numbytes=%d \n", numbytes);
+			read_bytes_left = read_bytes_left - numbytes;
+			for (int k=0; k< numbytes; k++){
+				mimosa_data[stored_bytes] = Buffer_data[k];
+				stored_bytes++;
+			}
+			i=0;
+			if (dbg){
+				while (i<numbytes){
+					printf(" 0x%x%x", 0xFF & Buffer_data[i], 0xFF & Buffer_data[i+1]);
+					i=i+2;
+				}
+			}
+		}
 	}
-	return Buffer_data;
+	if (dbg) printf("\n");
+	return mimosa_data;
 }
 void NiController::ConfigClientSocket_Send(unsigned char *text, size_t len){
 	printf("size=%d ", len);
