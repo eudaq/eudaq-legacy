@@ -106,77 +106,73 @@ void MVDController::ReadCalFromFileToHw() {
 	 * and set this calibration to the crate
 	 */
 
-    int ped_tmp, thr_tmp;
-    unsigned int tmp;
-    int NumOfCrate;
-    int ADC_int;
-    FILE* SiFile;
-    int string = 200;
-    bool read_from_file;
+	int ped_tmp, thr_tmp;
+	int tmp;
+	int NumOfCrate;
+	int ADC_int;
+	FILE* SiFile;
+	char OFName[200];
+	double 	Trigger[2];
 
-    printf("DAQ: Set the calibration number: ");
-    pather = new char[string];
-    pather ="../conf/Calibration.dat";
-	SiFile = fopen(pather,"r");
-	read_from_file = true;
+	char CharTmp[20];
+	bool ADC_Status[4];
+	  //only 3 sillicon detectors
+	  ADC_Status[0] = true; //telescope module 1
+	  ADC_Status[1] = true; //telescope module 2
+	  ADC_Status[2] = false; //not active ADC in v550
+	  ADC_Status[3] = true; //telescope module 3
+
+	m_modv551->Init(1280);
+	for(int i = 0; i < NumOfADC; i++){
+		m_modv550[i]->Init(NumOfChan);
+		m_modv550[i]->SetPedThrZero();
+	}//i
+
+    printf("DAQ: calibration file is set: ");
+    //printf("DAQ: Set the calibration number: ");
+    //fgets(CharTmp,20,stdin);
+
+	sprintf(OFName,"./DATA/Calibration_1.dat", atoi(CharTmp) );
+	SiFile = fopen(OFName,"r");
+
 	if(!SiFile){
-	  cout << "!!! ERROR !!!" << endl;
-	  cout << "Calibration file does not exist" << endl;
-	  printf("Calibration will be done \n");
-	  CalibAutoTrig();
-	  ReadCalFromHwToFile();
-	  read_from_file = false;
+		printf("!!! ERROR !!!");
+		printf("File does not exist");
+		return ;
 	}
-	if (read_from_file){
-		//Run Header
-		char Header[80];
-		for(int i = 0; i < 4; i++){
-			fgets(Header,80,SiFile);
-			printf("%s",Header);
-		}
-		int chan = 0;
-		NumOfCrate = 0;
-		ADC_int=0;
-		for(int i = 0; i < EventLength; i++){//For all channel of strip detector  //EventLength
-			if(feof(SiFile) || ferror(SiFile)) return ;
+    //Run Header
+    char Header[80];
+    for(int i = 0; i < 4; i++){
+      fgets(Header,80,SiFile); printf("%s",Header);
+    }
+    int chan = 0;
+    NumOfCrate = 0;
+    ADC_int=0;
+    //FLAG_CALIB = 1;
 
-			ped_tmp = 0;
-			thr_tmp = 0;
-			fread(&tmp,4,1,SiFile);
-			if(tmp == 0xAABBCCDD)  break;
-			//end of the first telescope
-			if(tmp == 0xAABBCC00){
-				NumOfCrate = 0;
-				ADC_int = 0;
-				chan = 0;
-				printf("ADC=1\n");
-				continue;
-			}
-			//end of second telescope
-			if(tmp == 0xAABBCC01){
-				NumOfCrate = 0;
-				ADC_int = 1;
-				chan = 0;
-				printf("ADC=2\n");
-				continue;
-			}
-			//end of second telescope
-			if(tmp == 0xAABBCC03){
-				NumOfCrate = 1;
-				ADC_int = 0;
-				chan = 0;
-				printf("ADC=3\n");
-				continue;
-			}
-			ped_tmp = (tmp >> 12) & 0xFFF;
-			thr_tmp = tmp & 0xFFF;
-			m_modv550[NumOfCrate]->ModV550::SetPedestalThresholdFull(ADC_int,chan, tmp);
-			if (NumOfCrate == 1)	    m_modv550[NumOfCrate]->SetPedestalThreshold(1, chan, ped_tmp, thr_tmp);
-			chan++;
+	for(int i = 0; i < EventLength; i++){//For all channel of strip detector  //EventLength
+		if(feof(SiFile) || ferror(SiFile)) return ;
+	    fread(&tmp,4,1,SiFile);
+
+	    chan++;
+
+	    //printf("TMP0=%x \n", tmp);
+	    if(tmp == 0xAABBCCDD)  break; //end of the calibration data
+	    if(tmp == 0xAABBCC00){ NumOfCrate = 0; ADC_int = 0; chan = 0;  continue; 	}   //start for first plane telescope
+	    if(tmp == 0xAABBCC01){ NumOfCrate = 0; ADC_int = 1; chan = 0;  continue;  }		//start for second plane telescope
+	    if(tmp == 0xAABBCC03){ NumOfCrate = 1; ADC_int = 1; chan = 0;  continue;	}	//start for third plane telescope
+
+	    if(!ADC_Status[ADC_int + NumOfCrate*NumOfADC]) continue;
+
+	    m_modv550[NumOfCrate]->SetPedestalThresholdFull(ADC_int, chan, tmp);
+
 	  }//for
-	  if(feof(SiFile) || ferror(SiFile)) { return ; }
+	  //fclose(SiFile);
+
+	  if(feof(SiFile) || ferror(SiFile)) {
+		  return ;
+	  }
 	  return ;
-	}
 }
 void MVDController::CalibAutoTrig(){
 	int Ped[3840];

@@ -19,37 +19,22 @@ public:
 	}
 	void MainLoop() {
 		do {
-			eudaq::RawDataEvent ev("MVD", m_run, m_ev);
+
 			if (!m_running) {
 				continue;
 			}
-			//printf(" m_running ");	}
-			//m_mvd->ActiveSequence();
-			//printf("activ ");
-			//while (  (!m_mvd || !m_running || m_mvd->GetStatTrigger()) ) {printf("wait trig\n");};
-			//ev.AddBlock(0, m_mvd->Time(0)); printf("time  0\n");
-			//ev.AddBlock(0, m_mvd->Time(0));
-			if ( !m_mvd->DataBusy()){
-				continue;
-			}	//{ printf(" busy\n"); }
+			if ( !m_mvd->DataBusy()) 	continue;
+			if (!m_mvd->DataReady())	continue;
+			eudaq::RawDataEvent ev("MVD", m_run, ++m_ev);
 			ev.AddBlock(0, m_mvd->Time(0));
-			if (!m_mvd->DataReady()){
-				continue;
-				//printf(" ready\n");
-			}
-			//ev.AddBlock(2, m_mvd->Time(2));
 			for (unsigned adc = 0; adc < m_mvd->NumADCs(); ++adc) {
-				//printf("ADC=%d\n", adc);
 				for (unsigned sub = 0; sub < 2; ++sub) {
 					unsigned i = adc * 2 + sub + 1;
-					if (!m_mvd->Enabled(adc, sub))
-						continue;
+					if (!m_mvd->Enabled(adc, sub)) 	continue;
 					ev.AddBlock(i, m_mvd->Read(adc, sub));
 				}
 			}
-			//ev.AddBlock(6, m_mvd->Time(3));
 			SendEvent(ev);
-			m_ev++;
 		} while (!done);
 	}
 	virtual void OnConfigure(const eudaq::Configuration & param) {
@@ -118,6 +103,7 @@ private:
 	time_t timer;
 	struct tm *date;
 	counted_ptr<MVDController> m_mvd;
+
 };
 
 int main(int /*argc*/, const char ** argv) {
