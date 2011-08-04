@@ -38,7 +38,7 @@ using eutelescope::EUTELESCOPE;
 #define GET(d, i) getlittleendian<unsigned>(&(d)[(i)*4])
 
 namespace eudaq {
-  static const int dbg = 0; // 0=off, 1=structure, 2=structure+data
+  static const int dbg = 2; // 0=off, 1=structure, 2=structure+data
 
   class NIConverterPlugin : public DataConverterPlugin {
     typedef std::vector<unsigned char> datavect;

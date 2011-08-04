@@ -8,7 +8,7 @@ BONNIP=192.168.1.3
 
 #export /opt/products/root/root_v5.26.00
 export HOSTNAME=192.168.1.3
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/data/artem/eudaq_hepforge_bonn_telescope/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/data/anemone/eudaq/bin
 
 cd `dirname $0`
 
@@ -59,7 +59,7 @@ sleep 1
 # NI Producer
 ###############
 printf '\033[22;33m\t  NiProducer for linux  \033[0m \n'
-#xterm -sb -sl 1000 -geom 130x60-0-350 -T 'Ni Producer for Linux' -e './NiProducer.exe -r tcp://$BONNIP:$RCPORT' &
+xterm -sb -sl 1000 -geom 130x60-0-350 -T 'Ni Producer for Linux' -e './NiProducer.exe -r tcp://$BONNIP:$RCPORT' &
 sleep 1
 ######################################################################
 # TLU producer
@@ -71,7 +71,7 @@ sleep 1
 # Online Monitor
 ###############
 printf '\033[22;33m\t  Online Monitor  \033[0m \n'
-./OnlineMon.exe -r tcp://$BONNIP:$RCPORT &
+#./OnlineMon.exe -r tcp://$BONNIP:$RCPORT &
 sleep 1
 ######################################################################
 
