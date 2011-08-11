@@ -21,130 +21,18 @@ public:
 		std::cout << "NI Producer was started successful " << std::endl;
 	}
 	void MainLoop() {
-		//r=0; t=0;
 		do {
-			/*
-			 * waiting when button was press
-			 * if (!m_running) 			continue;
-			 */
 			if (!running) {
-				//printf("next");
-				eudaq::mSleep(1000);
+				eudaq::mSleep(50);
 				continue;
 			}
 			if (running) {
-				eudaq::RawDataEvent ev("NI", m_run, ++m_ev);
-				//t++;
+				eudaq::RawDataEvent ev("NI", m_run, m_ev++);
 				datalength1 = ni_control->DataTransportClientSocket_ReadLength("priv");
 				ev.AddBlock(0, ni_control->DataTransportClientSocket_ReadData(datalength1));
 				datalength2 = ni_control->DataTransportClientSocket_ReadLength("priv");
 				ev.AddBlock(1, ni_control->DataTransportClientSocket_ReadData(datalength2));
 
-				//if (t == 1000) {
-				//	r++;
-				//	printf("r = %d \n", r);
-				//	t = 0;
-				//}
-				/*
-				 *
-				 *  D A T A    U N C O M P R E S S
-				 *
-				 */
-/*
-				for (int i = 0; i < 3500; i++)
-					data[i] = 0;
-				int i = 0;
-				int k = 0;
-				NumOfData = 0;
-				while (i < datalength) {
-					data[k] = 0xFF & Buffer[i + 1];
-					data[k] <<= 8;
-					data[k] += 0xFF & Buffer[i];
-					//printf("w=0x%x ", data[k] );
-					i = i + 2;
-					k++;
-				}
-				//printf(" \n" );
-				while (1) {
-					if (NumOfData > ((datalength / 2) - 2))
-						break;
-					Header0 = data[NumOfData++];
-					Header1 = data[NumOfData++];
-
-					if ((Header0 == 0x5555) & (Header1 == 0x5551))		NumOfDetector = 1;
-					if ((Header0 == 0x5555) & (Header1 == 0x5552))		NumOfDetector = 2;
-					if ((Header0 == 0x5555) & (Header1 == 0x5553))		NumOfDetector = 3;
-					if ((Header0 == 0x5555) & (Header1 == 0x5554))		NumOfDetector = 4;
-					if ((Header0 == 0x5555) & (Header1 == 0x5555))		NumOfDetector = 5;
-					if ((Header0 == 0x5555) & (Header1 == 0x5556))		NumOfDetector = 6;
-					MIMOSA_Counter0 = data[NumOfData++];
-					MIMOSA_Counter1 = data[NumOfData++];
-					MIMOSA_Datalen0 = data[NumOfData++];
-					MIMOSA_Datalen1 = data[NumOfData++];
-					MIMOSA_Datalen = MIMOSA_Datalen0 + MIMOSA_Datalen1;
-					printf("Header0=%x  ", Header0);
-					printf("Header1=%x  ", Header1);
-					printf("MIMOSA_Counter0=%x  ", MIMOSA_Counter0);
-					printf("MIMOSA_Counter1=%x  ", MIMOSA_Counter1);
-					printf("MIMOSA_Datalen0=%x  ", MIMOSA_Datalen0);
-					printf("MIMOSA_Datalen1=%x  \n", MIMOSA_Datalen1);
-					printf(" \n", Header1);
-					/*
-					 *
-					 * R E A D   S T A T U S
-					 *
-					 */
-/*
-					NumOfLengt = 0;
-					MIMOSA_DatalenTmp = NumOfData + MIMOSA_Datalen;
-					while (1) {
-						if (NumOfData > ((datalength / 2) - 2))
-							break;
-						if (NumOfData >= MIMOSA_DatalenTmp)
-							break;
-						StatusLine = data[NumOfData++];
-						OVF = StatusLine >> 15;
-						NumOfState = StatusLine & 0xF;
-						AddLine = (StatusLine >> 4) & 0x7FF;
-						printf("OVF=%d ", OVF);
-						printf("AddLine=%d ", AddLine);
-						printf("NumOfState=%d  \n", NumOfState);
-						/*
-						 * R E A D   S T A T E
-						 */
-						//*
-/*
-						for (int k = 0; k < NumOfState; k++) {
-							if (NumOfData > ((datalength / 2) - 2))
-								break;
-							if (NumOfData >= MIMOSA_DatalenTmp)
-								break;
-							State = data[NumOfData++];
-							AddColum = (State >> 2) & 0x7FF;
-							HitPix = State & 0x3;
-							printf("                              AddColum=%d ", AddColum);
-							printf("HitPix=%d \n", HitPix);
-						}
-					}
-					MIMOSA_Trailer0 = data[NumOfData++];
-					MIMOSA_Trailer1 = data[NumOfData++];
-					printf("Tr0=%x   ", MIMOSA_Trailer0);
-					printf("Tr1=%x \n", MIMOSA_Trailer1);
-
-				}
-				//printf("NumOfData = %d  \n", NumOfData );
-				//printf("t = %d \n", t);
-
-
-				if (t == 8680) {
-					r++;
-					printf("r = %d \n", r);
-					//printf(" Data=%d ", datalengthAll);
-					datalengthAll = 0;
-					t = 0;
-				}
-				datalength = 0;
-*/
 				SendEvent(ev);
 			}
 		} while (!done);
@@ -177,10 +65,6 @@ public:
 
 			std::cout << "...Configured (" << param.Name() << ")" << std::endl;
 
-			//TriggerType = param.Get("TriggerType", 255);
-
-			//EUDAQ_INFO("Configured (" ")");
-			//EUDAQ_ERROR("Config exception: " );
 			conf_parameters[0] = NiVersion;
 			conf_parameters[1] = TriggerType;
 			conf_parameters[2] = Det;
@@ -214,7 +98,7 @@ public:
 			m_ev = 0;
 			std::cout << "Start Run: " << param << std::endl;
 
-			eudaq::RawDataEvent ev(RawDataEvent::BORE("NI", m_run));
+			eudaq::RawDataEvent ev(RawDataEvent::BORE("NI", m_run, m_ev));
 
 			ev.SetTag("DET", "MIMOSA26");
 			ev.SetTag("MODE", "ZS2");
