@@ -20,6 +20,7 @@ NiController::NiController() {
 	//NI_IP = "192.76.172.199";
 }
 void NiController::Configure(const eudaq::Configuration & param) {
+	//NiIPaddr = param.Get("NiIPaddr", "");
 
 }
 void NiController::TagsSetting(){
@@ -39,9 +40,12 @@ void NiController::Start(){
 void NiController::Stop(){
 	ConfigClientSocket_Send(stop, sizeof(stop) );
 }
-void NiController::ConfigClientSocket_Open(){
+void NiController::ConfigClientSocket_Open(const eudaq::Configuration & param){
 	/*** Network configuration for NI, NAME and INET ADDRESS ***/
-	data = inet_addr("192.168.1.2");
+	std::string adr = param.Get("NiIPaddr", "");
+	const char* psz = adr.c_str();
+	data = inet_addr(psz);
+	//data = inet_addr("192.168.1.2");
 	hconfig = gethostbyaddr(&data, 4, AF_INET);
 	if ( hconfig == NULL) {
 		EUDAQ_ERROR("ConfSocket: get HOST error  " );
@@ -70,9 +74,11 @@ void NiController::ConfigClientSocket_Open(){
 	} else
 		printf("----TCP/NI crate: The CONNECT is OK...\n");
 }
-void NiController::DatatransportClientSocket_Open(){
+void NiController::DatatransportClientSocket_Open(const eudaq::Configuration & param){
 	/*** Creation for the data transmit socket, NAME and INET ADDRESS ***/
-	data_trans_addres = inet_addr("192.168.1.2");
+	std::string adr = param.Get("NiIPaddr", "");
+	const char* psz = adr.c_str();
+	data_trans_addres = inet_addr(psz);
 	hdatatransport = gethostbyaddr(&data_trans_addres, 4, AF_INET);
 	if ( hdatatransport == NULL) {
 		EUDAQ_ERROR("DataTransportSocket: get HOST error " );

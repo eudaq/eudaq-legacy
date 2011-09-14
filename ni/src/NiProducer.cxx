@@ -45,8 +45,8 @@ public:
 			if (!configure){
 				ni_control = new NiController();
 				ni_control->GetProduserHostInfo();
-				ni_control->ConfigClientSocket_Open();
-				ni_control->DatatransportClientSocket_Open();
+				ni_control->ConfigClientSocket_Open(param);
+				ni_control->DatatransportClientSocket_Open(param);
 				std::cout << " " << std::endl;
 				configure = true;
 			}
@@ -98,7 +98,7 @@ public:
 			m_ev = 0;
 			std::cout << "Start Run: " << param << std::endl;
 
-			eudaq::RawDataEvent ev(RawDataEvent::BORE("NI", m_run, m_ev));
+			eudaq::RawDataEvent ev(RawDataEvent::BORE("NI", m_run));
 
 			ev.SetTag("DET", "MIMOSA26");
 			ev.SetTag("MODE", "ZS2");

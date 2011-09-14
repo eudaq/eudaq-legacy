@@ -38,12 +38,12 @@ public:
   void Start();
   void Stop();
   void TagsSetting();
-  void DatatransportClientSocket_Open();
+  void DatatransportClientSocket_Open(const eudaq::Configuration & conf);
   void DatatransportClientSocket_Close();
   unsigned int DataTransportClientSocket_ReadLength(const char string[4]);
   std::vector<unsigned char> DataTransportClientSocket_ReadData(int datalength);
 
-  void ConfigClientSocket_Open();
+  void ConfigClientSocket_Open(const eudaq::Configuration & conf);
   void ConfigClientSocket_Close();
   void ConfigClientSocket_Send(unsigned char *text, size_t len);
   unsigned int ConfigClientSocket_Length(const char string[4]);
@@ -74,6 +74,7 @@ private:
 	int sock_datatransport;
 	int numbytes;
 
+	 //NiIPaddr;
 	unsigned TriggerType;
 	unsigned Det;
 	unsigned Mode;
