@@ -1,0 +1,13 @@
+There is a beta version of a 32/64 bit driver for Windows 7 for the ZestSC1
+available here:
+http://www.orangetreetech.com/downloads/ZestSC1Setup.zip
+ 
+The password for the zip file is 'orangett'. Please note that this is early
+release beta code so there may still be bugs in it. I would be grateful if
+you could report back with your experiences.
+ 
+Regards,
+ 
+Matt Bowen
+Orange Tree Technologies
+
