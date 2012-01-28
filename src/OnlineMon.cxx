@@ -227,7 +227,10 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 		simpEv.setEvent_number(ev.GetEventNumber());
 		simpEv.setEvent_timestamp(ev.GetTimestamp());
 
-
+		if (skip_dodgy_event)
+		{
+		            return;
+		}
 		for (int i = 0; i < num;i++)
 		{
 			const eudaq::StandardPlane & plane = ev.GetPlane(i);
