@@ -229,9 +229,8 @@ void OnlineMonWindow::About()
 }
 void OnlineMonWindow::registerTreeItem(std::string item) {
 	//rootitem?
-	unsigned int f = item.find("/");
-	if (f == string::npos ) { //Yes
-		_treeMap[item] = LTr_left->AddItem(NULL,item.c_str());
+        if (item.find("/") == std::string::npos ) { //Yes
+	        _treeMap[item] = LTr_left->AddItem(NULL,item.c_str());
 		_treeBackMap[_treeMap[item] ] = item;
 		//cout << "Item (Root): " << item << endl;
 	} else { //No
