@@ -11,8 +11,8 @@
 
 HitmapHistos::HitmapHistos(SimpleStandardPlane p, RootMonitor* mon): _sensor(p.getName()), _id(p.getID()), _maxX(p.getMaxX()), _maxY(p.getMaxY()), _wait(false),
 _hitmap(NULL),_clusterMap(NULL),_lvl1Distr(NULL), _lvl1Width(NULL),_lvl1Cluster(NULL),_totSingle(NULL),_totCluster(NULL),
-_hitOcc(NULL), _nClusters(NULL), _nHits(NULL), _clusterXWidth(NULL), _clusterYWidth(NULL),is_MIMOSA26(false), is_APIX(false), is_USBPIX(false)
-,is_USBPIXI4(false)
+_hitOcc(NULL), _nClusters(NULL), _nHits(NULL), _clusterXWidth(NULL), _clusterYWidth(NULL),_nbadHits(NULL),_nHotPixels(NULL),_hitmapSections(NULL),
+is_MIMOSA26(false), is_APIX(false), is_USBPIX(false),is_USBPIXI4(false)
 {
 	char out[1024], out2[1024];
 
@@ -35,28 +35,26 @@ _hitOcc(NULL), _nClusters(NULL), _nHits(NULL), _clusterXWidth(NULL), _clusterYWi
 	{
 		is_USBPIXI4=true;
 	}
-	plane_ptr=&p;
-
-
+	is_DEPFET = p.is_DEPFET;
 
 	std::cout << "HitmapHistos::Sensorname: " << _sensor << " "<< _id<< std::endl;
 
 	if (_maxX != -1 && _maxY != -1) {
 		sprintf(out,"%s %i Raw Hitmap",_sensor.c_str(),_id);
 		sprintf(out2,"h_hitmap_%s_%i",_sensor.c_str(), _id);
-		_hitmap = new TH2I(out2, out, _maxX,0,_maxX, _maxY,0,_maxY);
+		_hitmap = new TH2I(out2, out, _maxX+1,0,_maxX, _maxY+1,0,_maxY);
 		SetHistoAxisLabels(_hitmap,"X","Y");
 		//std::cout << "Created Histogram " << out2 << std::endl;
 
 		sprintf(out,"%s %i Cluster Hitmap",_sensor.c_str(),_id);
 		sprintf(out2,"h_clustermap_%s_%i",_sensor.c_str(), _id);
-		_clusterMap = new TH2I(out2, out, _maxX,0,_maxX, _maxY,0,_maxY);
+		_clusterMap = new TH2I(out2, out, _maxX+1,0,_maxX, _maxY+1,0,_maxY);
 		SetHistoAxisLabels(_clusterMap,"X","Y");
 		//std::cout << "Created Histogram " << out2 << std::endl;
 
 		sprintf(out,"%s %i hot Pixel Map",_sensor.c_str(),_id);
 		sprintf(out2,"h_hotpixelmap_%s_%i",_sensor.c_str(), _id);
-		_HotPixelMap = new TH2I(out2, out, _maxX,0,_maxX, _maxY,0,_maxY);
+		_HotPixelMap = new TH2D(out2, out, _maxX+1,0,_maxX, _maxY+1,0,_maxY);
 		SetHistoAxisLabels(_HotPixelMap,"X","Y");
 
 
@@ -136,6 +134,15 @@ _hitOcc(NULL), _nClusters(NULL), _nHits(NULL), _clusterXWidth(NULL), _clusterYWi
 		sprintf(out2,"h_clustersizeY_%s_%i",_sensor.c_str(), _id);
 		_clusterYWidth = new TH1I(out2, out,20,0,19);
 
+		sprintf(out,"%s %i Hitmap Sections",_sensor.c_str(), _id);
+		sprintf(out2,"h_hitmapSections_%s_%i",_sensor.c_str(), _id);
+		_hitmapSections = new TH1I(out2, out,mimosa26_max_section,_id,_id+1);
+		for (unsigned int section=0; section<mimosa26_max_section;section++)
+		  {
+		    sprintf(out,"%i%c",_id,(section+65));
+		    _hitmapSections->GetXaxis()->SetBinLabel(section+1,out);
+		  }
+	
 		_nHits_section =new TH1I*[mimosa26_max_section];
 		_nClusters_section=new TH1I*[mimosa26_max_section];
 		_nClustersize_section=new TH1I*[mimosa26_max_section];
@@ -240,15 +247,26 @@ void HitmapHistos::Fill(const SimpleStandardHit hit)
 {
 	int pixel_x=hit.getX();
 	int pixel_y=hit.getY();
+	
+	bool pixelIsHot = false;
+	if (_HotPixelMap->GetBinContent(pixel_x+1,pixel_y+1)>_mon->mon_configdata.getHotpixelcut()) pixelIsHot=true;
 
-	if (_hitmap != NULL) _hitmap->Fill(pixel_x,pixel_y);
+	if (_hitmap != NULL && !pixelIsHot) _hitmap->Fill(pixel_x,pixel_y);
+	if ((is_MIMOSA26) && (_hitmapSections != NULL) && (!pixelIsHot)
+	    && _hitOcc->GetEntries()>0) // only fill histogram when occupancies and hotpixels have been determined
+	  { 
+	    char sectionid[3];
+	    sprintf(sectionid,"%i%c",_id,(pixel_x/_mon->mon_configdata.getMimosa26_section_boundary())+65); // determine section label
+	    _hitmapSections->Fill(sectionid,1); // add one hit to the corresponding section bin
+	}
+
 	if ((pixel_x<_maxX) &&  (pixel_y<_maxY))
 	{
 		plane_map_array[pixel_x][pixel_y]=plane_map_array[pixel_x][pixel_y]+1;
 	}
 	//if (_sensor == std::string("APIX")) {
 	//if (_sensor == std::string("APIX") || _sensor == std::string("USBPIX") || _sensor == std::string("USBPIXI4") ) {
-	if ( (plane_ptr->is_APIX) || (plane_ptr->is_USBPIX) || (plane_ptr->is_USBPIXI4) || plane_ptr->is_DEPFET)
+	if ( (is_APIX) || (is_USBPIX) || (is_USBPIXI4) || is_DEPFET)
 	{
 		if (_totSingle != NULL) _totSingle->Fill(hit.getTOT());
 		if (_lvl1Distr != NULL) _lvl1Distr->Fill(hit.getLVL1());
@@ -265,7 +283,7 @@ void HitmapHistos::Fill(const SimpleStandardPlane plane)
 	if (_nClusters != NULL) _nClusters->Fill(plane.getNClusters());
 
 	// we fill the information for the individula mimosa sections, and do a zero-suppression,in case not all sections have hits/clusters
-	if (plane_ptr->is_MIMOSA26)
+	if (is_MIMOSA26)
 	{
 		for (unsigned int section=0; section<mimosa26_max_section; section++)
 		{
@@ -292,7 +310,7 @@ void HitmapHistos::Fill(const SimpleStandardCluster cluster)
 {
 	if (_clusterMap != NULL) _clusterMap->Fill(cluster.getX(), cluster.getY());
 	if (_clusterSize != NULL) _clusterSize->Fill(cluster.getNPixel());
-	if (plane_ptr->is_MIMOSA26)
+	if (is_MIMOSA26)
 	{
 		unsigned int nsection=cluster.getX()/_mon->mon_configdata.getMimosa26_section_boundary(); //get to which section in Mimosa the cluster belongs
 		if ((nsection <mimosa26_max_section) && (_nClustersize_section[nsection]!=NULL)) //check if valid address
@@ -305,7 +323,7 @@ void HitmapHistos::Fill(const SimpleStandardCluster cluster)
 	}
 
 
-	if ( (plane_ptr->is_APIX) || plane_ptr->is_USBPIX || plane_ptr->is_USBPIXI4 )
+	if ( (is_APIX) || is_USBPIX || is_USBPIXI4 )
 	{
 		if (_lvl1Width != NULL)   _lvl1Width->Fill(cluster.getLVL1Width());
 		if (_totCluster != NULL ) _totCluster->Fill(cluster.getTOT());
@@ -333,6 +351,7 @@ void HitmapHistos::Reset() {
 	_HotPixelMap->Reset();
 	_clusterYWidth->Reset();
 	_clusterXWidth->Reset();
+	_hitmapSections->Reset();
 	for (unsigned int  section=0; section<mimosa26_max_section; section++)
 	{
 		_nClusters_section[section]->Reset();
@@ -350,7 +369,6 @@ void HitmapHistos::Reset() {
 
 void HitmapHistos::Calculate(const int currentEventNum)
 {
-
 	_wait = true;
 	_hitOcc->SetBins(currentEventNum/10,0,1);
 	_hitOcc->Reset();
@@ -371,11 +389,12 @@ void HitmapHistos::Calculate(const int currentEventNum)
 			{
 				occupancy=bin/(double)currentEventNum;
 				_hitOcc->Fill(occupancy);
-				if (occupancy>Hotpixelcut)
+				// only count as hotpixel if occupancy larger than minimal occupancy for a single hit
+				if (occupancy>Hotpixelcut && ((1./(double)(currentEventNum))<_mon->mon_configdata.getHotpixelcut())) 
 				{
 					nHotpixels++;
 					_HotPixelMap->SetBinContent(x+1,y+1,occupancy); // ROOT start from 1
-					if (plane_ptr->is_MIMOSA26)
+					if (is_MIMOSA26)
 					{
 						nHotpixels_section[x/_mon->mon_configdata.getMimosa26_section_boundary()];
 					}
@@ -388,7 +407,7 @@ void HitmapHistos::Calculate(const int currentEventNum)
 		_nHotPixels->Fill(nHotpixels);
 		for (unsigned int section=0; section< _mon->mon_configdata.getMimosa26_max_sections(); section++)
 			{
-				if ((nHotpixels_section[section]>0)&&(plane_ptr->is_MIMOSA26))
+				if ((nHotpixels_section[section]>0)&&(is_MIMOSA26))
 				{
 						_nHotPixels_section[section]->Fill(nHotpixels_section[section]);
 				}
@@ -419,6 +438,7 @@ void HitmapHistos::Write()
 	_nHotPixels->Write();
 	_clusterXWidth->Write();
 	_clusterYWidth->Write();
+	_hitmapSections->Write();
 	for (unsigned int  section=0; section<mimosa26_max_section; section++)
 	{
 		_nClusters_section[section]->Write();

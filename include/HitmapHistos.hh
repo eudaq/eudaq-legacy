@@ -31,7 +31,7 @@ protected:
 	bool _wait;
 	TH2I * _hitmap;
 	TH2I * _clusterMap;
-	TH2I * _HotPixelMap;
+	TH2D * _HotPixelMap;
 	TH1I * _lvl1Distr;
 	TH1I * _lvl1Width;
 	TH1I * _lvl1Cluster;
@@ -45,6 +45,7 @@ protected:
 	TH1I * _clusterYWidth;
 	TH1I * _nbadHits;
 	TH1I * _nHotPixels;
+	TH1I * _hitmapSections;
 	TH1I ** _nHits_section;
 	TH1I ** _nClusters_section;
 	TH1I ** _nClustersize_section;
@@ -64,8 +65,9 @@ public:
 
 
 	TH2I * getHitmapHisto() { return _hitmap; }
+	TH1I * getHitmapSectionsHisto() { return _hitmapSections; }
 	TH2I * getClusterMapHisto() { return _clusterMap; }
-	TH2I * getHotPixelMapHisto() { return _HotPixelMap; }
+	TH2D * getHotPixelMapHisto() { return _HotPixelMap; }
 	TH1I * getLVL1Histo() { return _lvl1Distr; }
 	TH1I * getLVL1WidthHisto() { return _lvl1Width; }
 	TH1I * getLVL1ClusterHisto() { return _lvl1Cluster; }
@@ -95,13 +97,13 @@ private:
 
 	RootMonitor * _mon;
 	unsigned int mimosa26_max_section;
-	SimpleStandardPlane *plane_ptr;
 //check what kind sensor we're dealing with
 // for the filling this eliminates a string comparison
 	bool is_MIMOSA26;
 	bool is_APIX;
 	bool is_USBPIX;
 	bool is_USBPIXI4;
+	bool is_DEPFET;
 };
 
 #ifdef __CINT__
