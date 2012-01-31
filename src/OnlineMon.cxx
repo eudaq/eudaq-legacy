@@ -26,6 +26,7 @@
 // C++ INCLUDES
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <map>
@@ -195,23 +196,30 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 	}
 
 
-	if (reduce) {
-		int num = ev.NumPlanes();
+	if (reduce)
+	{
+		unsigned int num = (unsigned int) ev.NumPlanes();
 		// some simple consistency checks
 		if (ev.GetEventNumber() < 1)
 		{
-			myevent.setNPlanes(ev.NumPlanes());
+			myevent.setNPlanes(num);
 		}
 		else
 		{
-			if (myevent.getNPlanes()!=ev.NumPlanes())
+			if (myevent.getNPlanes()!=num)
 			{
-				cout << " Plane Mismatch on " <<ev.GetEventNumber()<<endl;
+
+				cout << "Plane Mismatch on " <<ev.GetEventNumber()<<endl;
+				cout << "Current/Previous " <<num<<"/"<<myevent.getNPlanes()<<endl;
 				skip_dodgy_event=true; //we may want to skip this FIXME
+				ostringstream eudaq_warn_message;
+				eudaq_warn_message << "Plane Mismatch in Event "<<ev.GetEventNumber() <<" "<<num<<"/"<<myevent.getNPlanes();
+				EUDAQ_LOG(WARN,(eudaq_warn_message.str()).c_str());
+
 			}
 			else
 			{
-				myevent.setNPlanes(ev.NumPlanes());
+				myevent.setNPlanes(num);
 			}
 		}
 
@@ -229,9 +237,10 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 
 		if (skip_dodgy_event)
 		{
-		            return;
+		            return; //don't process any further
 		}
-		for (int i = 0; i < num;i++)
+
+		for (unsigned int i = 0; i < num;i++)
 		{
 			const eudaq::StandardPlane & plane = ev.GetPlane(i);
 
@@ -256,7 +265,7 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 				sensorname=plane.Sensor();
 
 			}
-
+// DEAL with Fortis ...
 			if (strcmp(plane.Sensor().c_str(), "FORTIS") == 0 )
 			{
 				continue;
@@ -281,7 +290,7 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 
 
 
-					if (simpPlane.getAnalogPixelType()) //this is analog pixel, appply threshold
+					if (simpPlane.getAnalogPixelType()) //this is analog pixel, apply threshold
 					{
 						if (simpPlane.is_DEPFET)
 						{
@@ -309,7 +318,8 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 		}
 
 		simpEv.doClustering();
-		if (ev.GetEventNumber() < 1) {
+		if (ev.GetEventNumber() < 1)
+		{
 			cout << "Waiting for booking of Histograms..." << endl;
 			sleep(1);
 			cout << "...long enough"<< endl;
@@ -323,32 +333,31 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 		previous_event_analysis_time=my_event_processing_time.RealTime();
 //Filling
 		my_event_processing_time.Start(true); //start the stopwatch again
-		for (unsigned int i = 0 ; i < _colls.size(); ++i) {
+		for (unsigned int i = 0 ; i < _colls.size(); ++i)
+		{
 			_colls.at(i)->Fill(simpEv);
 			// CollType is used to check which kind of Collection we are having
-			if (_colls.at(i)->getCollectionType()==HITMAP_COLLECTION_TYPE) // Calcualte is only implemented for HitMapCollections
+			if (_colls.at(i)->getCollectionType()==HITMAP_COLLECTION_TYPE) // Calculate is only implemented for HitMapCollections
 			{
 				_colls.at(i)->Calculate(ev.GetEventNumber());
 			}
 		}
 
-		if (_offline <= 0) {
+		if (_offline <= 0)
+		{
 			onlinemon->setEventNumber(ev.GetEventNumber());
 			onlinemon->increaseAnalysedEventsCounter();
 		}
-	}
+	} // end of reduce if
 	my_event_processing_time.Stop();
 #ifdef DEBUG
 	cout << "Filling " << " "<< my_event_processing_time.RealTime()<<endl;
 	cout << "----------------------------------------"  <<endl<<endl;
 #endif
 	previous_event_fill_time=my_event_processing_time.RealTime();
-	if (ev.IsBORE()) {
+	if (ev.IsBORE())
+	{
 		std::cout << "This is a BORE" << std::endl;
-
-		//std::cout << "end of OnEvent" << std::endl;
-
-
 	}
 
 }
@@ -359,26 +368,26 @@ void RootMonitor::autoReset(const bool reset) {
 	
 }
 
-void RootMonitor::OnStopRun() {
-    	if (_writeRoot) {
+void RootMonitor::OnStopRun()
+{
+	if (_writeRoot)
+	{
 		TFile *f = new TFile(rootfilename.c_str(),"RECREATE");
-		for (unsigned int i = 0 ; i < _colls.size(); ++i) {
-		_colls.at(i)->Write(f);
+		for (unsigned int i = 0 ; i < _colls.size(); ++i)
+		{
+			_colls.at(i)->Write(f);
 		}
 		f->Close();
 
 	}
-	
-	if (onlinemon->getAutoReset()) {
+	if (onlinemon->getAutoReset())
+	{
 		onlinemon->UpdateStatus("Resetting..");
-		for (unsigned int i = 0 ; i < _colls.size(); ++i) {
-		_colls.at(i)->Reset();
+		for (unsigned int i = 0 ; i < _colls.size(); ++i)
+		{
+			_colls.at(i)->Reset();
 		}
 	}
-
-	
-	
-
 	onlinemon->UpdateStatus("Run stopped");
 }
 
