@@ -135,7 +135,7 @@ int OnlineMonConfiguration::ReadConfigurationFile()
 			}
 			//remove whitespaces
 			stringbuffer=remove_this_character(stringbuffer,' ');
-			unsigned int pos=stringbuffer.find("=");
+			size_t pos=stringbuffer.find("=");
 			if (pos==string::npos)
 			{
 				cerr << "Malformed Key " <<stringbuffer<< endl;
@@ -328,7 +328,7 @@ void OnlineMonConfiguration::PrintConfiguration()
 string OnlineMonConfiguration::remove_this_character(string str,char c)
 {
 	bool character_found=true;
-	unsigned int pos=0;
+	size_t pos=0;
 
 	while(character_found)
 	{
