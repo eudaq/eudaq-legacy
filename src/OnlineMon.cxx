@@ -40,7 +40,7 @@
 
 using namespace std;
 
-RootMonitor::RootMonitor(const std::string & runcontrol, const std::string & datafile, int x, int y, int w, int h, int argc, int offline)
+RootMonitor::RootMonitor(const std::string & runcontrol, const std::string & datafile, int x, int y, int w, int h, int argc, int offline, const std::string & conffile)
 	: eudaq::Holder<int>(argc), eudaq::Monitor("OnlineMon", runcontrol, datafile), _offline(offline){
 
 	if (_offline <= 0)
@@ -75,8 +75,9 @@ RootMonitor::RootMonitor(const std::string & runcontrol, const std::string & dat
 	}
 
 	//initialize with default configuration
-
 	mon_configdata.SetDefaults();
+	configfilename.assign(conffile);
+
 	if (configfilename.length()>1)
 	{
 		mon_configdata.setConfigurationFileName(configfilename);
@@ -474,10 +475,10 @@ try {
 		cout<<"Global gStyle Object not found" <<endl;
 		exit(-1);
 	}
-	
+
 // start the GUI
 	TApplication theApp("App", &argc, const_cast<char**>(argv),0,0);
-	RootMonitor mon(rctrl.Value(), file.Value(), x.Value(), y.Value(), w.Value(), h.Value(), argc, offline.Value());
+	RootMonitor mon(rctrl.Value(), file.Value(), x.Value(), y.Value(), w.Value(), h.Value(), argc, offline.Value(),configfile.Value());
 	mon.setWriteRoot(do_rootatend.IsSet());
 	mon.autoReset(do_resetatend.IsSet());
 	mon.setReduce(reduce.Value());

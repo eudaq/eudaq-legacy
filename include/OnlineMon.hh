@@ -70,7 +70,7 @@ protected:
 	
 public:
  
-	RootMonitor(const std::string & runcontrol, const std::string & datafile, int x, int y, int w, int h, int argc, int offline);
+	RootMonitor(const std::string & runcontrol, const std::string & datafile, int x, int y, int w, int h, int argc, int offline, const std::string & conffile="");
 	~RootMonitor() {gApplication->Terminate();}
 	void registerSensorInGUI(std::string name, int id);
   
@@ -104,7 +104,7 @@ public:
 	void autoReset(const bool reset);
 	void setReduce(const unsigned int red);
 	void setUpdate(const unsigned int up);
-	
+
 	void SetSnapShotDir(string s);
 	string GetSnapShotDir();
 	OnlineMonConfiguration mon_configdata; //FIXME
