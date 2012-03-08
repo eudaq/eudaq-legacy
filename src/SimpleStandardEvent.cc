@@ -5,7 +5,15 @@
 #include <stdio.h>
 #include <string.h>
 
-
+// constructor, reserve some planes and initialize all variables
+SimpleStandardEvent::SimpleStandardEvent()
+{
+	_planes.reserve(20);
+	monitor_eventfilltime=0;
+	monitor_eventanalysistime=0;
+	event_number=0;
+	event_timestamp=0;
+}
 
 void SimpleStandardEvent::addPlane(SimpleStandardPlane &plane) {
 	// Checks if plane with same name and id is registered already

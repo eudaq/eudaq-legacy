@@ -29,7 +29,8 @@ protected:
 	std::vector<SimpleStandardPlane> _planes;
 
 public:
-	SimpleStandardEvent() {_planes.reserve(20);}
+	SimpleStandardEvent();
+
 	void addPlane(SimpleStandardPlane &plane);
 	SimpleStandardPlane getPlane (const int i) const {return _planes.at(i);}
 	int getNPlanes() const {return _planes.size(); }
