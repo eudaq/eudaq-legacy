@@ -8,15 +8,19 @@ void HistoItem::setHisto(const TH1* histo, const std::string opt, const unsigned
 }
 
 void HistoItem::Draw() {
-	if (_fCanvas != NULL) {
+	if (_fCanvas != NULL)
+	{
 		_fCanvas->Clear();
-		if (histo != NULL && _treeItem->GetFirstChild == 0) { // This is a leave
+		if (histo != NULL && _treeItem->GetFirstChild == 0)
+		{ // This is a leave
 			_fCanvas->SetLogx(bool(logOpt & kLogX)); 
 			_fCanvas->SetLogy(bool(logOpt& kLogY)); 
 			_fCanvas->SetLogz(bool(logOpt & kLogZ)); 
 			_fCanvas->cd();
 			_histo->Draw(_histoOptions.c_str());
-		} else {
+		}
+		else
+		{
 			//Count the number of histograms to show
 			unsigned int no = 0;
 			if (histo !=NULL) ++no;
@@ -25,36 +29,38 @@ void HistoItem::Draw() {
 				++no;
 				child = child->GetNextSibling();
 			}
-			
+
 			calculateNumSubpads(no);
 			no = 1;
 			// Now draw them one by one
-				
-			if (histo !=NULL) {
+
+			if (histo !=NULL)
+			{
 				_fCanvas->GetPad(no)->SetLogx(bool(logOpt & kLogX)); 
 				_fCanvas->GetPad(no)->SetLogy(bool(logOpt & kLogY)); 
 				_fCanvas->GetPad(no)->SetLogz(bool(logOpt & kLogZ)); 
 				_fCanvas->cd(no);
 				_histo->Draw(_histoOptions.c_str());
-				++no
+				++no;
 			}
 			TGListTreeItem* child = treeItem->GetFirstChild();
 			//Recursive Draw to All Children
-			while (child != NULL) {
+			while (child != NULL)
+			{
 				child->setCanvas((TCanvas*)_fCanvas->GetPad(no));
 				child->Draw();
 				++no;
 				child = child->GetNextSibling();
 			}
-				
-				
-			}
-			
+
+
 		}
-	} else {
-		cout << "Where should I draw it to?" << endl;
+
 	}
-	
+	else
+	{
+	cout << "Where should I draw it to?" << endl;
+	}
 }
 
 void HistoItem::calculateNumSubpads(const unsigned int no) {

@@ -169,7 +169,6 @@ void OnlineMonWindow::Write() {
 	else
 	{
 		cerr<<"Can't open root file"<<endl;
-		f->Close();
 	}
 }
 
