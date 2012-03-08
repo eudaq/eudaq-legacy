@@ -56,10 +56,28 @@ public:
 		is_USBPIXI4=false;
 		is_FORTIS=false;
 		is_UNKNOWN=true ; // per default we don't know this plane
-
+		isRotated=false;;
+		setPixelType(name); //set the pixel type
 	}
 
-	SimpleStandardPlane(const std::string name, const int id) : _name(name), _id(id), _maxX(-1), _maxY(-1) {}
+	SimpleStandardPlane(const std::string name, const int id) : _name(name), _id(id), _maxX(-1), _maxY(-1)
+	{
+			_hits.reserve(400);
+				_badhits.reserve(400); //
+				_clusters.reserve(40);
+				mon=NULL; // no monitor given
+				AnalogPixelType=false; //per default these are digital pixel planes
+				// init these settings
+				is_MIMOSA26=false;
+				is_DEPFET=false;
+				is_APIX=false;
+				is_USBPIX=false;
+				is_USBPIXI4=false;
+				is_FORTIS=false;
+				is_UNKNOWN=true ; // per default we don't know this plane
+				isRotated=false;;
+				setPixelType(name); //set the pixel type
+	}
 	void addHit(SimpleStandardHit oneHit);
 	void addRawHit(SimpleStandardHit oneHit);
 	void doClustering();

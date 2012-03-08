@@ -149,6 +149,7 @@ void SimpleStandardPlane::doClustering() {
 		//std::cout << "Cluster at: " << cluster.getX() << std::endl;
 	}
 	// if we have a mimosa, we need to fill the section information
+
 	if (_name.compare("MIMOSA26")==0)
 	{
 		for (unsigned int mycluster=0; mycluster<_clusters.size(); mycluster++)
