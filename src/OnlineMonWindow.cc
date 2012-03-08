@@ -226,6 +226,7 @@ void OnlineMonWindow::About()
 
 
 }
+
 void OnlineMonWindow::registerTreeItem(std::string item) {
 	//rootitem?
         if (item.find("/") == std::string::npos ) { //Yes
@@ -250,7 +251,7 @@ void OnlineMonWindow::makeTreeItemSummary(std::string item) {
 
 	std::map<std::string, TH1*>::iterator it;
 	std::vector<std::string> v;
-	for (it = _hitmapMap.begin(); it != _hitmapMap.end(); it++) {
+	for (it = _hitmapMap.begin(); it != _hitmapMap.end(); ++it) {
 		std::string c = std::string(it->first,0,item.length());
 		if (c == item) {
 			//cout << "c is: " << c << " compared to "<< item <<endl;
