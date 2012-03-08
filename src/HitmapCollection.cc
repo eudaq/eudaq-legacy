@@ -77,7 +77,7 @@ void HitmapCollection::Write(TFile *file)
 
 
 		std::map<SimpleStandardPlane,HitmapHistos*>::iterator it;
-		for (it = _map.begin(); it != _map.end(); it++) {
+		for (it = _map.begin(); it != _map.end(); ++it) {
 
 			char sensorfolder[255] = "";
 			sprintf(sensorfolder,"%s_%d",it->first.getName().c_str(), it->first.getID());
@@ -98,7 +98,7 @@ void HitmapCollection::Calculate(const unsigned int currentEventNumber)
   if ((currentEventNumber > 10 && currentEventNumber % 500*_reduce == 0))
 	{
 		std::map<SimpleStandardPlane,HitmapHistos*>::iterator it;
-		for (it = _map.begin(); it != _map.end(); it++)
+		for (it = _map.begin(); it != _map.end(); ++it)
 		{
 			//std::cout << "Calculating ..." << std::endl;
 			it->second->Calculate(currentEventNumber/_reduce);
@@ -109,7 +109,7 @@ void HitmapCollection::Calculate(const unsigned int currentEventNumber)
 void HitmapCollection::Reset()
 {
 	std::map<SimpleStandardPlane,HitmapHistos*>::iterator it;
-	for (it = _map.begin(); it != _map.end(); it++)
+	for (it = _map.begin(); it != _map.end(); ++it)
 	{
 		(*it).second->Reset();
 	}
