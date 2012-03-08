@@ -273,7 +273,7 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 				continue;
 			}
 			SimpleStandardPlane simpPlane(sensorname,plane.ID(),plane.XSize(),plane.YSize(), &mon_configdata);
-			simpPlane.setPixelType(sensorname);
+
 
 			if (simpPlane.is_UNKNOWN)
 			{

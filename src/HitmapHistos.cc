@@ -282,7 +282,7 @@ void HitmapHistos::Fill(const SimpleStandardPlane plane)
 	}
 	if (_nClusters != NULL) _nClusters->Fill(plane.getNClusters());
 
-	// we fill the information for the individula mimosa sections, and do a zero-suppression,in case not all sections have hits/clusters
+	// we fill the information for the individual mimosa sections, and do a zero-suppression,in case not all sections have hits/clusters
 	if (is_MIMOSA26)
 	{
 		for (unsigned int section=0; section<mimosa26_max_section; section++)
@@ -379,7 +379,15 @@ void HitmapHistos::Calculate(const int currentEventNum)
 	double Hotpixelcut= _mon->mon_configdata.getHotpixelcut();
 	double bin=0;
 	double occupancy=0;
-	nHotpixels_section.reserve(_mon->mon_configdata.getMimosa26_max_sections());
+	if (is_MIMOSA26) //probalbly initialize vector
+	{
+		nHotpixels_section.reserve(_mon->mon_configdata.getMimosa26_max_sections());
+		for (unsigned int i=0; i< _mon->mon_configdata.getMimosa26_max_sections(); i++)
+		{
+			nHotpixels_section[i]=0;
+		}
+	}
+
 	for (int x = 0; x < _maxX; ++x) {
 		for (int y = 0; y < _maxY; ++y) {
 
@@ -396,7 +404,7 @@ void HitmapHistos::Calculate(const int currentEventNum)
 					_HotPixelMap->SetBinContent(x+1,y+1,occupancy); // ROOT start from 1
 					if (is_MIMOSA26)
 					{
-						nHotpixels_section[x/_mon->mon_configdata.getMimosa26_section_boundary()];
+						nHotpixels_section[x/_mon->mon_configdata.getMimosa26_section_boundary()]++;
 					}
 				}
 			}
@@ -405,13 +413,16 @@ void HitmapHistos::Calculate(const int currentEventNum)
 	if (nHotpixels>0)
 	{
 		_nHotPixels->Fill(nHotpixels);
-		for (unsigned int section=0; section< _mon->mon_configdata.getMimosa26_max_sections(); section++)
-			{
-				if ((nHotpixels_section[section]>0)&&(is_MIMOSA26))
+		if (is_MIMOSA26)
+		{
+			for (unsigned int section=0; section< _mon->mon_configdata.getMimosa26_max_sections(); section++)
 				{
+					if ((nHotpixels_section[section]>0))
+					{
 						_nHotPixels_section[section]->Fill(nHotpixels_section[section]);
+					}
 				}
-			}
+		}
 	}
 
 	_wait = false;

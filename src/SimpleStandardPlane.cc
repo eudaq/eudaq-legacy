@@ -18,7 +18,7 @@ void SimpleStandardPlane::addHit(SimpleStandardHit oneHit) {//oneHit.reduce(_bin
 		_badhits.push_back(oneHit);
 	}
 
-	if  (_name.compare("MIMOSA26")==0)
+	if  (_name.compare("MIMOSA26")==0) //FIXME
 	{
 		int section =oneHit.getX()/mon->getMimosa26_section_boundary();
 		if ((section <0)||(section >=(int) mon->getMimosa26_max_sections()))
@@ -150,7 +150,7 @@ void SimpleStandardPlane::doClustering() {
 	}
 	// if we have a mimosa, we need to fill the section information
 
-	if (_name.compare("MIMOSA26")==0)
+	if (_name.compare("MIMOSA26")==0)//FIXME
 	{
 		for (unsigned int mycluster=0; mycluster<_clusters.size(); mycluster++)
 		{
