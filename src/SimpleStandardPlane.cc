@@ -135,7 +135,7 @@ void SimpleStandardPlane::doClustering() {
 	nClusters = clusterSet.size();
 
 	std::set<int>::iterator it;
-	for (it=clusterSet.begin();it!=clusterSet.end();it++)
+	for (it=clusterSet.begin();it!=clusterSet.end();++it)
 	{
 		SimpleStandardCluster cluster;
 		for (unsigned int i=0;i< npixels_hit;i++)
