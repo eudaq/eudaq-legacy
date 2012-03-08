@@ -112,8 +112,9 @@ RootMonitor::RootMonitor(const std::string & runcontrol, const std::string & dat
 		}
 		filename=filename+".root";
 		filename.copy(out,filename.length(),0);
-		int n;
-		sscanf(num,"%d",&n);
+		int n=atoi(num);
+
+
 		if (_offline <= 0)
 		{
 			onlinemon->setRunNumber(n);
