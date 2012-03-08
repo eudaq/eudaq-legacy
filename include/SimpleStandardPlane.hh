@@ -41,7 +41,7 @@ protected:
 public:
 
 
-	SimpleStandardPlane(const std::string name, const int id, const int maxX, const int maxY, OnlineMonConfiguration* mymon) : _name(name), _id(id), _maxX(maxX), _maxY(maxY),_binsX(maxX), _binsY(maxY)
+	SimpleStandardPlane(const std::string & name, const int id, const int maxX, const int maxY, OnlineMonConfiguration* mymon) : _name(name), _id(id), _maxX(maxX), _maxY(maxY),_binsX(maxX), _binsY(maxY)
 	{
 		_hits.reserve(400);
 		_badhits.reserve(400); //
@@ -60,7 +60,7 @@ public:
 		setPixelType(name); //set the pixel type
 	}
 
-	SimpleStandardPlane(const std::string name, const int id) : _name(name), _id(id), _maxX(-1), _maxY(-1)
+	SimpleStandardPlane(const std::string & name, const int id) : _name(name), _id(id), _maxX(-1), _maxY(-1) //FIXME we actually only need this type of constructor to form a map for histogramm allocation
 	{
 			_hits.reserve(400);
 				_badhits.reserve(400); //
@@ -77,6 +77,8 @@ public:
 				is_UNKNOWN=true ; // per default we don't know this plane
 				isRotated=false;;
 				setPixelType(name); //set the pixel type
+				_binsX=-1;
+				_binsY=-1;
 	}
 	void addHit(SimpleStandardHit oneHit);
 	void addRawHit(SimpleStandardHit oneHit);
@@ -98,7 +100,7 @@ public:
 	int getMaxY() { return _maxY; }
 	int getBinsX() {return _binsX;}
 	int getBinsY() {return _binsY;}
-	void addSuffix( const std::string suf ) { _name = _name + suf; }
+	void addSuffix( const std::string & suf ) { _name = _name + suf; }
 	void reducePixels(const int reduceX, const int reduceY);
 	void setMonitorConfiguration(OnlineMonConfiguration *mymon)
 	{
