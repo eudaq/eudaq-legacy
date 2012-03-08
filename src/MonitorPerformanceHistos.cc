@@ -12,8 +12,8 @@
 
 MonitorPerformanceHistos::MonitorPerformanceHistos()
 {
-	_AnalysisTimeHisto= new TH1I("Data Analysis Time", "Data Analysis Time",400,0,0.1);
-	_FillTimeHisto=new TH1I("Histo Fill Time", "Histo Fill Time",400,0,0.1);
+	_AnalysisTimeHisto= new TH1I("Data Analysis Time", "Data Analysis Time",400,0,0.01);
+	_FillTimeHisto=new TH1I("Histo Fill Time", "Histo Fill Time",400,0,0.01);
 	if ((_FillTimeHisto==NULL) || (_AnalysisTimeHisto==NULL  ))
 	{
 		std::cout<< "MonitorPerformanceHistos:: Error allocating Histograms" <<std::endl;
