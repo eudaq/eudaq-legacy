@@ -13,8 +13,7 @@
 
 OnlineMonConfiguration::OnlineMonConfiguration()
 {
-	// TODO Auto-generated constructor stub
-
+	SetDefaults();
 }
 
 OnlineMonConfiguration::~OnlineMonConfiguration()
@@ -238,6 +237,7 @@ int OnlineMonConfiguration::ReadConfigurationFile()
 OnlineMonConfiguration::OnlineMonConfiguration(string confname)
 {
 	this->ConfigurationFileName=confname;
+	SetDefaults();
 }
 
 void OnlineMonConfiguration::SetDefaults()
