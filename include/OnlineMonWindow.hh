@@ -116,7 +116,7 @@ public:
 	void setRootFileName(std::string rootfilename) {_rootfilename = rootfilename;}
 	void UpdateRunNumber(const int num);
 	void UpdateEventNumber(const int event);
-	void UpdateStatus(const std::string status);
+	void UpdateStatus(const std::string & status);
 	void UpdateTotalEventNumber(const int num);
 	void setEventNumber(const int num) {_eventnum = num;}
 	void setRunNumber(const int num) {_runnum = num; }

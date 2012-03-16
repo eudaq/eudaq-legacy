@@ -121,7 +121,7 @@ void CorrelationCollection::Reset()
 
 void CorrelationCollection::Fill(const SimpleStandardEvent &simpev)
 {
-	int totalFills = 0;
+	//int totalFills = 0;
 	int nPlanes = simpev.getNPlanes();
 	unsigned int plane_vector_size=0;
 	for (int planeA = 0; planeA < nPlanes; planeA++)
@@ -163,7 +163,7 @@ void CorrelationCollection::Fill(const SimpleStandardEvent &simpev)
 		}
 	}
 	//std::cout << "Fills: " << totalFills << std::endl;
-	totalFills = 0;
+	//totalFills = 0;
 }
 
 

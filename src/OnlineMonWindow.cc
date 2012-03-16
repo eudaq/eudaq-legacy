@@ -29,7 +29,7 @@ OnlineMonWindow::OnlineMonWindow(const TGWindow* p, UInt_t w, UInt_t h)
 // counter for toolbar
 	int i=1;
 	//directory root for Icons
-	string icondir_root="../onlinemon/icons/" ;  //FIXME
+	string icondir_root="../onlinemon/icons/" ;  //FIXME can we fix the hard-coding ?
 	// build tool bar
 	tb = new TGToolBar(Hfrm_left,180,80);
 	if (tb!=NULL)
@@ -457,7 +457,7 @@ void OnlineMonWindow::setReduce(const unsigned int red) {
 	nen_reduce->SetNumber(red);
 }
 
-void OnlineMonWindow::UpdateStatus(const std::string status) {
+void OnlineMonWindow::UpdateStatus(const std::string & status) {
 	fStatusBar->SetText(status.c_str(),0);
 }
 

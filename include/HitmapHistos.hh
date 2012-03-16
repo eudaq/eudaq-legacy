@@ -55,9 +55,9 @@ public:
 	HitmapHistos(SimpleStandardPlane p, RootMonitor * mon);
 
 
-	void Fill(const SimpleStandardHit hit);
-	void Fill(const SimpleStandardPlane plane);
-	void Fill(const SimpleStandardCluster cluster);
+	void Fill(const SimpleStandardHit & hit);
+	void Fill(const SimpleStandardPlane & plane);
+	void Fill(const SimpleStandardCluster & cluster);
 	void Reset();
 
 	void Calculate(const int currentEventNum);

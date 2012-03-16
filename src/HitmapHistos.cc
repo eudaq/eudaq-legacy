@@ -243,7 +243,7 @@ int HitmapHistos::zero_plane_array()
 	return 0;
 }
 
-void HitmapHistos::Fill(const SimpleStandardHit hit)
+void HitmapHistos::Fill(const SimpleStandardHit & hit)
 {
 	int pixel_x=hit.getX();
 	int pixel_y=hit.getY();
@@ -273,7 +273,7 @@ void HitmapHistos::Fill(const SimpleStandardHit hit)
 	}
 }
 
-void HitmapHistos::Fill(const SimpleStandardPlane plane)
+void HitmapHistos::Fill(const SimpleStandardPlane & plane)
 {
 	if (_nHits != NULL) _nHits->Fill(plane.getNHits());
 	if ((_nbadHits != NULL) &&(plane.getNBadHits()>0))
@@ -306,7 +306,7 @@ void HitmapHistos::Fill(const SimpleStandardPlane plane)
 
 }
 
-void HitmapHistos::Fill(const SimpleStandardCluster cluster)
+void HitmapHistos::Fill(const SimpleStandardCluster & cluster)
 {
 	if (_clusterMap != NULL) _clusterMap->Fill(cluster.getX(), cluster.getY());
 	if (_clusterSize != NULL) _clusterSize->Fill(cluster.getNPixel());

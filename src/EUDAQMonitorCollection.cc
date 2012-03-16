@@ -8,8 +8,9 @@
 #include "../include/EUDAQMonitorCollection.hh"
 #include "OnlineMon.hh"
 
-EUDAQMonitorCollection::EUDAQMonitorCollection()
+EUDAQMonitorCollection::EUDAQMonitorCollection(): BaseCollection()
 {
+	mymonhistos=NULL;
 	histos_init=false;
 	cout << " Initialising EUDAQMonitor Collection" <<endl;
 	CollectionType=EUDAQMONITOR_COLLECTION_TYPE;
