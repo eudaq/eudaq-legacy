@@ -140,11 +140,15 @@ OnlineMonWindow::OnlineMonWindow(const TGWindow* p, UInt_t w, UInt_t h)
 
 
 }
+//Execute action corresponding to an event at (px,py). This method
+// must be overridden if an object can react to graphics events. From ROOT doc
 
 void OnlineMonWindow::ExecuteEvent(Int_t event, Int_t px, Int_t py, TObject *sel) {
-	if (event == kButton1Down) {
+	if ((event == kButton1Down) && (strstr(sel->ClassName(),"TH")!=NULL )) // only do this, if a histogramme has been clicked
+	{
 #ifdef DEBUG
 		cout << "Being in ExecuteEvent " << sel->ClassName() <<endl;
+		cout << "CLick at " <<  px << "/"<< py<< "With event "<< event << endl;
 #endif
 		_activeHistos.clear();
 		//ECvs_right->GetCanvas()->BlockAllSignals(1);
@@ -155,6 +159,7 @@ void OnlineMonWindow::ExecuteEvent(Int_t event, Int_t px, Int_t py, TObject *sel
 		MapSubwindows();
 		MapWindow();
 	}
+
 }
 
 void OnlineMonWindow::Write() {
