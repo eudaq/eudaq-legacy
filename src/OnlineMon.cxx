@@ -198,6 +198,8 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 	}
 
 
+
+
 	if (reduce)
 	{
 		unsigned int num = (unsigned int) ev.NumPlanes();
@@ -254,6 +256,7 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 			{
 				cout << "Plane Pixels Hit Frame " << nframes <<" "<<plane.HitPixels(0) <<endl;
 			}
+			cout << i << " "<<plane.TLUEvent() << " "<< plane.PivotPixel() <<endl;
 #endif
 
 
@@ -272,7 +275,7 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 			{
 				continue;
 			}
-			SimpleStandardPlane simpPlane(sensorname,plane.ID(),plane.XSize(),plane.YSize(), &mon_configdata);
+			SimpleStandardPlane simpPlane(sensorname,plane.ID(),plane.XSize(),plane.YSize(), plane.TLUEvent(),plane.PivotPixel(),&mon_configdata);
 
 
 			if (simpPlane.is_UNKNOWN)
