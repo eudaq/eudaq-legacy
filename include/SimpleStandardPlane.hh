@@ -37,14 +37,15 @@ protected:
 	std::vector<SimpleStandardCluster> _clusters;
 	std::vector<SimpleStandardHit> _section_hits[4];//FIXME hard-coded for Mimosa
 	std::vector<SimpleStandardCluster> _section_clusters[4];//FIXME hard-coded for Mimosa
-
+	int _tlu_event;
+	int _pivot_pixel;
 public:
 
 
-	SimpleStandardPlane(const std::string & name, const int id, const int maxX, const int maxY, OnlineMonConfiguration* mymon) : _name(name), _id(id), _maxX(maxX), _maxY(maxY),_binsX(maxX), _binsY(maxY)
+	SimpleStandardPlane(const std::string & name, const int id, const int maxX, const int maxY, const int tlu_event, const int pivot_pixel, OnlineMonConfiguration* mymon) : _name(name), _id(id), _maxX(maxX), _maxY(maxY),_binsX(maxX), _binsY(maxY)
 	{
 		_hits.reserve(400);
-		_badhits.reserve(400); //
+		_badhits.reserve(400); // allocate memory
 		_clusters.reserve(40);
 		mon=mymon;
 		AnalogPixelType=false; //per default these are digital pixel planes
@@ -58,6 +59,8 @@ public:
 		is_UNKNOWN=true ; // per default we don't know this plane
 		isRotated=false;;
 		setPixelType(name); //set the pixel type
+		_tlu_event=tlu_event;
+		_pivot_pixel=pivot_pixel;
 	}
 
 	SimpleStandardPlane(const std::string & name, const int id) : _name(name), _id(id), _maxX(-1), _maxY(-1) //FIXME we actually only need this type of constructor to form a map for histogramm allocation
@@ -100,6 +103,8 @@ public:
 	int getMaxY() { return _maxY; }
 	int getBinsX() {return _binsX;}
 	int getBinsY() {return _binsY;}
+	int getPivotPixel() const { return _pivot_pixel;}
+	int getTLUEvent()const { return _tlu_event;}
 	void addSuffix( const std::string & suf ) { _name = _name + suf; }
 	void reducePixels(const int reduceX, const int reduceY);
 	void setMonitorConfiguration(OnlineMonConfiguration *mymon)
