@@ -173,6 +173,16 @@ int OnlineMonConfiguration::ReadConfigurationFile()
 						cerr <<" Warning Illegal Clustersize used "<< endl;
 					}
 				}
+				else if (key.compare("DisablePlanes")==0)
+				{
+					vector<string> v;
+					stringsplit(value,',',v);
+					for (unsigned int element=0; element<v.size(); element++)
+					{
+						planes_to_be_skipped.push_back(StringToNumber<int>(v[element]));
+					}
+
+				}
 				else
 				{
 					cerr<< "Unknown Key "<< key << endl;
@@ -314,6 +324,11 @@ void OnlineMonConfiguration::PrintConfiguration()
 	cout <<endl;
 	cout << "Correlation Settings" <<endl;
 	cout << "MinClusterSize      : "<< correl_minclustersize<< endl;
+	cout << "Planes to skip      : ";
+	for (unsigned int i=0; i<  planes_to_be_skipped.size(); i++)
+	{
+		cout << planes_to_be_skipped[i]<<" ";
+	}
 	cout <<endl;
 	cout << "Clusterizer Settings" <<endl;
 	cout << "HotPixelFinder Settings" <<endl;
@@ -344,6 +359,36 @@ string OnlineMonConfiguration::remove_this_character(string str,char c)
 	}
 	return str;
 }
+vector<int> OnlineMonConfiguration::getPlanes_to_be_skipped() const
+{
+    return planes_to_be_skipped;
+}
 
+void OnlineMonConfiguration::setPlanes_to_be_skipped(vector<int> planes_to_be_skipped)
+{
+    this->planes_to_be_skipped = planes_to_be_skipped;
+}
+
+// splits a string separated by a charact into a vector of substrings
+unsigned int OnlineMonConfiguration::stringsplit(string str, char c, vector<string>& v)
+{
+	size_t startpos=0;
+	size_t endpos=0;
+
+	while( endpos!= string::npos)
+	{
+		endpos = str.find(c, startpos);
+		if (endpos != string::npos)
+		{
+			v.push_back(str.substr(startpos,endpos-startpos));
+		}
+		else
+		{
+			v.push_back(str.substr(startpos));;
+		}
+		startpos=endpos+1;
+	}
+	return v.size();
+}
 
 

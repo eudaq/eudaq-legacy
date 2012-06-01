@@ -65,7 +65,7 @@ void CorrelationCollection::fillHistograms(const SimpleStandardPlane& p1, const 
 	CorrelationHistos *corrmap = _map[plane];
 	if (corrmap == NULL)
 	{
-		std::cout << "Histogram not registered ...yet  " << p1.getName()<< " "<<p1.getID() <<" / "<< p2.getName()<<" "<<p2.getID()<<std::endl;
+		std::cout << "CorrelationCollection: Histogram not registered ...yet  " << p1.getName()<< " "<<p1.getID() <<" / "<< p2.getName()<<" "<<p2.getID()<<std::endl;
 	}
 	else
 	{
@@ -123,52 +123,84 @@ void CorrelationCollection::Fill(const SimpleStandardEvent &simpev)
 {
 	//int totalFills = 0;
 	int nPlanes = simpev.getNPlanes();
+	selected_planes_to_skip=_mon->mon_configdata.getPlanes_to_be_skipped();
 	unsigned int plane_vector_size=0;
+	if (skip_this_plane.size()==0) // do this only at the very first event
+	{
+		skip_this_plane.reserve(nPlanes);
+		//init vector
+		for (int elements=0; elements<nPlanes; elements++)
+		{
+			skip_this_plane[elements]=false;
+		}
+		// now get vector of planes to be disabled and set the corresponding entries to true
+		for (unsigned int skipplanes=0; skipplanes<selected_planes_to_skip.size(); skipplanes++)
+		{
+			if ((selected_planes_to_skip[skipplanes]>0) && (selected_planes_to_skip[skipplanes]<nPlanes))
+			{
+				skip_this_plane[selected_planes_to_skip[skipplanes]]=true;
+			}
+		}
+	}
+
+
+
 	for (int planeA = 0; planeA < nPlanes; planeA++)
 	{
 		const SimpleStandardPlane& simpPlane = simpev.getPlane(planeA);
-		//std::cout << "Checking Plane " << simpPlane.getName() << " " <<simpPlane.getID() << "..." <<  std::endl;
-		if (!isPlaneRegistered(simpPlane))
+#ifdef DEBUG
+		std::cout << "CorrelationCollection : Checking Plane " << simpPlane.getName() << " " <<simpPlane.getID() << "..." <<  std::endl;
+		std::cout<<  "CorrelationCollection : " << planeA<<  std::endl;
+#endif
+
+		if (!isPlaneRegistered(simpPlane)  )
 		{
-			//std::cout << "Plane " << simpPlane.getName() << " " <<simpPlane.getID() << "is not registered" << std::endl;
-			plane_vector_size=_planes.size();
+#ifdef DEBUG
+			std::cout << "CorrelationCollection: Plane " << simpPlane.getName() << " " <<simpPlane.getID() << " is not registered" << std::endl;
+#endif
+
+			plane_vector_size=_planes.size(); //how many planes we did look at beforehand
 			if (correlateAllPlanes)
 			{
-				for (unsigned int oldPlanes = 0 ; oldPlanes <plane_vector_size ; oldPlanes++) {
+				for (unsigned int oldPlanes = 0 ; oldPlanes <plane_vector_size ; oldPlanes++)
+				{
 					registerPlaneCorrelations(_planes.at(oldPlanes), simpPlane); // Correlating this plane with all the other ones
 				}
 			}
-			if ( plane_vector_size> 0 && !correlateAllPlanes)
+			else // we have deselected a few planes
 			{
-					registerPlaneCorrelations(_planes.at(plane_vector_size-1),simpPlane);
+				if  (!skip_this_plane[planeA])
+				{
+					for (unsigned int oldPlanes = 0 ; oldPlanes <plane_vector_size ; oldPlanes++)
+					{
+						if (!skip_this_plane[oldPlanes])
+						{
+							registerPlaneCorrelations(_planes.at(oldPlanes), simpPlane); // Correlating this plane with all the other ones
+						}
+
+					}
+				}
 			}
-			_planes.push_back(simpPlane);
+			_planes.push_back(simpPlane); // we have to deal with all planes
 
 		}
 		for (int planeB = planeA +1; planeB < nPlanes; planeB++)
 		{
+			if ((skip_this_plane[planeA]==false)&& (skip_this_plane[planeB])==false)
+			{
+				const SimpleStandardPlane & p1=simpev.getPlane(planeA);
+				const SimpleStandardPlane & p2=simpev.getPlane(planeB);
+				fillHistograms(p1,p2);
+			}
 
-			//SimpleStandardPlaneDouble db(simpev.getPlane(planeA), simpev.getPlane(planeB));
-			const SimpleStandardPlane & p1=simpev.getPlane(planeA);
-			const SimpleStandardPlane & p2=simpev.getPlane(planeB);
-			fillHistograms(p1,p2);
-			//fillHistograms(db);
-
-			/*
-			CorrelationHistos *corrmap = _map[db];
-			if (corrmap != NULL) {
-				totalFills += corrmap->getFills();
-				corrmap->resetFills();
-			}*/
 		}
 	}
-	//std::cout << "Fills: " << totalFills << std::endl;
-	//totalFills = 0;
 }
 
 
 void CorrelationCollection::registerPlaneCorrelations(const SimpleStandardPlane& p1, const SimpleStandardPlane& p2)
 {
+
 #ifdef DEBUG
 	std::cout << "CorrelationCollection:: Correlating: " << p1.getName() << " " <<p1.getID() << " with " <<  p2.getName() << " " <<p2.getID() << std::endl;
 
@@ -196,6 +228,26 @@ void CorrelationCollection::registerPlaneCorrelations(const SimpleStandardPlane&
 		sprintf(tree,"Correlation/%s %i",p1.getName().c_str(),p1.getID());
 		_mon->getOnlineMon()->makeTreeItemSummary(tree);
 	}
+}
+
+bool CorrelationCollection::getCorrelateAllPlanes() const
+{
+    return correlateAllPlanes;
+}
+
+std::vector<int> CorrelationCollection::getSelected_planes_to_skip() const
+{
+    return selected_planes_to_skip;
+}
+
+void CorrelationCollection::setCorrelateAllPlanes(bool correlateAllPlanes)
+{
+    this->correlateAllPlanes = correlateAllPlanes;
+}
+
+void CorrelationCollection::setSelected_planes_to_skip(std::vector<int> selected_planes_to_skip)
+{
+    this->selected_planes_to_skip = selected_planes_to_skip;
 }
 
 void CorrelationCollection::Write(TFile *file) {

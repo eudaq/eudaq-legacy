@@ -89,6 +89,8 @@ RootMonitor::RootMonitor(const std::string & runcontrol, const std::string & dat
 
 		}
 	}
+
+
 	// print the configuration
 	mon_configdata.PrintConfiguration();
 

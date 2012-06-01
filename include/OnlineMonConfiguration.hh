@@ -51,6 +51,8 @@ public:
 
     int getCorrel_minclustersize() const;
     void setCorrel_minclustersize(int correl_minclustersize);
+    vector<int> getPlanes_to_be_skipped() const;
+    void setPlanes_to_be_skipped(vector<int> planes_to_be_skipped);
 
 private:
 
@@ -63,6 +65,7 @@ private:
 	unsigned int mimosa26_section_boundary;
 //Correlation settings
 	std::map <int,bool> correlation_xy_flip;
+	vector <int> planes_to_be_skipped;
 	int correl_minclustersize;
 //Clusterizer settings
 
@@ -72,6 +75,8 @@ private:
 //helper functions
 //Removes a specifici character from a string
 	string remove_this_character(string s,char c);
+//splits a string into its elements
+	unsigned int stringsplit(string str, char c, vector<string>& v);
 
 	//taken from http://www.cplusplus.com/forum/articles/9645/
 	template <typename T> T StringToNumber(string Text ) //Text not by constANT reference so that the function can be used with a character array as argument
