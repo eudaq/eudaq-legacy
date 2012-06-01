@@ -70,10 +70,14 @@ void EUDAQMonitorCollection::bookHistograms(const SimpleStandardEvent & simpev)
 		string name_root=performance_folder_name+"/Planes";
 		for (unsigned int i=0; i<mymonhistos->getNplanes(); i++)
 		{
-			stringstream namestring;
-			namestring<<name_root<<"/Plane "<<i;
-			_mon->getOnlineMon()->registerTreeItem(namestring.str());
-			_mon->getOnlineMon()->registerHisto(namestring.str(),mymonhistos->getHits_vs_Events(i));
+			stringstream namestring_hits;
+			stringstream namestring_tlu;
+			namestring_hits<<name_root<<"/Hits Sensor Plane "<<i;
+			namestring_tlu<<name_root<<"/TLU Delta Sensor Plane "<<i;
+			_mon->getOnlineMon()->registerTreeItem(namestring_hits.str());
+			_mon->getOnlineMon()->registerHisto(namestring_hits.str(),mymonhistos->getHits_vs_Events(i));
+			_mon->getOnlineMon()->registerTreeItem(namestring_tlu.str());
+			_mon->getOnlineMon()->registerHisto(namestring_tlu.str(),mymonhistos->getTLUdelta_perEventHisto(i));
 		}
 		_mon->getOnlineMon()->makeTreeItemSummary(name_root.c_str()); //make summary page
 

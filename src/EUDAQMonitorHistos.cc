@@ -11,6 +11,8 @@ EUDAQMonitorHistos::EUDAQMonitorHistos(const SimpleStandardEvent &ev)
 {
     nplanes=ev.getNPlanes();
     Hits_vs_Events=new TProfile*[nplanes];
+    TLUdelta_perEventHisto=new TProfile*[nplanes];
+
 	Planes_perEventHisto= new TH1F("Planes in Event","Planes in Event",nplanes*2,0,nplanes*2);
     Hits_vs_PlaneHisto =new TProfile("Hits vs Plane", "Hits vs Plane",nplanes,0, nplanes);
     Hits_vs_EventsTotal=new TProfile("Hits vs Event", "Hits vs Event",1000,0, 20000);
@@ -20,21 +22,32 @@ EUDAQMonitorHistos::EUDAQMonitorHistos(const SimpleStandardEvent &ev)
 
 		stringstream number;
 		stringstream histolabel;
+		stringstream histolabel_tlu;
 		number<<i;
 		string name=ev.getPlane(i).getName()+" "+number.str();
 		Hits_vs_PlaneHisto->GetXaxis()->SetBinLabel(i+1,name.c_str());
 
 		histolabel<< "Hits vs Event Nr "<< name;
+		histolabel_tlu<<"TLU Delta vs Event Nr " << name;
+
 		Hits_vs_Events[i]=new TProfile(histolabel.str().c_str(), histolabel.str().c_str(),1000,0, 20000);
+		TLUdelta_perEventHisto[i]=new TProfile(histolabel_tlu.str().c_str(), histolabel_tlu.str().c_str(),1000,0, 20000);
+
 		Hits_vs_Events[i]->SetLineColor(i+1);
 		Hits_vs_Events[i]->SetMarkerColor(i+1);
+		TLUdelta_perEventHisto[i]->SetLineColor(i+1);
+		TLUdelta_perEventHisto[i]->SetMarkerColor(i+1);
+
 		//fix for root being stupid
 		if (i==9) //root features //FIXME
 		{
 			Hits_vs_Events[i]->SetLineColor(i+2);
 			Hits_vs_Events[i]->SetMarkerColor(i+2);
+			TLUdelta_perEventHisto[i]->SetLineColor(i+2);
+			TLUdelta_perEventHisto[i]->SetMarkerColor(i+2);
 		}
 		Hits_vs_Events[i]->SetBit(TH1::kCanRebin);
+		TLUdelta_perEventHisto[i]->SetBit(TH1::kCanRebin);
 	}
 
 
@@ -57,9 +70,11 @@ void EUDAQMonitorHistos::Fill(const SimpleStandardEvent &ev)
 	{
 		Hits_vs_PlaneHisto->Fill(i,ev.getPlane(i).getNHits());
 		Hits_vs_Events[i]->Fill(event_nr,ev.getPlane(i).getNHits());
+		TLUdelta_perEventHisto[i]->Fill(event_nr,ev.getPlane(i).getTLUEvent()-(event_nr%32768));// TLU counter can only hnadel 32768 counts
 		nhits_total+=ev.getPlane(i).getNHits();
 	}
 	Hits_vs_EventsTotal->Fill(event_nr,nhits_total);
+
 }
 
 
@@ -71,6 +86,7 @@ void EUDAQMonitorHistos::Write()
 	for (unsigned int i=0; i<nplanes; i++)
 	{
 		Hits_vs_Events[i]->Write();
+		TLUdelta_perEventHisto[i]->Write();
 	}
 	Hits_vs_EventsTotal->Write();
 }
@@ -97,6 +113,11 @@ TH1F *EUDAQMonitorHistos::getPlanes_perEventHisto() const
     return Planes_perEventHisto;
 }
 
+TProfile *EUDAQMonitorHistos::getTLUdelta_perEventHisto(unsigned int i) const
+{
+	return TLUdelta_perEventHisto[i];
+}
+
 unsigned int EUDAQMonitorHistos::getNplanes() const
 {
     return nplanes;
@@ -116,6 +137,7 @@ void EUDAQMonitorHistos::Reset()
 	for (unsigned int i=0; i<nplanes; i++)
 	{
 		Hits_vs_Events[i]->Reset();
+		TLUdelta_perEventHisto[i]->Reset();
 	}
 	Hits_vs_EventsTotal->Reset();
 }

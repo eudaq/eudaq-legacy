@@ -35,6 +35,7 @@ protected:
 	TProfile** Hits_vs_Events;
 	TProfile * Hits_vs_PlaneHisto;
 	TH1F * Planes_perEventHisto;
+	TProfile ** TLUdelta_perEventHisto;
 public:
 	EUDAQMonitorHistos(const SimpleStandardEvent &ev);
 	virtual ~EUDAQMonitorHistos();
@@ -45,6 +46,7 @@ public:
     TProfile *getHits_vs_EventsTotal() const;
     TProfile *getHits_vs_PlaneHisto()const;
     TH1F *getPlanes_perEventHisto() const;
+    TProfile *getTLUdelta_perEventHisto(unsigned int i) const;
     void setPlanes_perEventHisto(TH1F *Planes_perEventHisto);
     unsigned int getNplanes() const;
 private:
