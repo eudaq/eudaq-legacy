@@ -18,6 +18,8 @@ we have the following Section Keywords, to be put in [].
 \begin{description}
 \item[MinClusterSize] {\it int} \\
 Which minimum cluster size to use for the correlation plots  
+\item[DisablePlanes] {\it int,int,int} \\
+List of planes to disbale, separates by a ","
 \end{description}
 \subsection{Configuration options in [Clusterizer]}
 \subsection{Configuration options in [HotPixelFinder]}
@@ -40,6 +42,7 @@ SnapShotFormat = ".pdf"
 
 [Correlations]
 MinClusterSize = 2
+DisablePlanes = 2,3
 
 [Clusterizer]
 
