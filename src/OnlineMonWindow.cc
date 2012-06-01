@@ -128,7 +128,7 @@ OnlineMonWindow::OnlineMonWindow(const TGWindow* p, UInt_t w, UInt_t h)
 	h1 = new TH2F("h1","hu h1",11,0,10,11,0,10);
 	h2 = new TH2F("h2","hu h2",11,0,10,11,0,10);
 	//a->Draw();
-	SetWindowName("EUDET Telescope Online-Monitor 1.0beta3 ");
+	SetWindowName("EUDET Telescope Online-Monitor 1.0beta4 ");
 	MapSubwindows();
 	//Resize(GetDefaultSize());
 	Resize(w,h);
@@ -226,7 +226,7 @@ void OnlineMonWindow::Print()
 }
 void OnlineMonWindow::About()
 {
-	 TGMsgBox *t1= new TGMsgBox(gClient->GetRoot(),this,"About Onlinemon","OnlineMonitor for EUDET/AIDA Telescopes\nVersion 1.0Beta3\n",kMBIconAsterisk,kMBDismiss,  0,  kVerticalFrame, kTextCenterX|kTextCenterY);
+	 TGMsgBox *t1= new TGMsgBox(gClient->GetRoot(),this,"About Onlinemon","OnlineMonitor for EUDET/AIDA Telescopes\nVersion 1.0Beta4\n",kMBIconAsterisk,kMBDismiss,  0,  kVerticalFrame, kTextCenterX|kTextCenterY);
 }
 
 void OnlineMonWindow::registerTreeItem(std::string item) {

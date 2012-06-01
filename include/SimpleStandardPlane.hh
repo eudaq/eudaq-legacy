@@ -44,9 +44,17 @@ public:
 
 	SimpleStandardPlane(const std::string & name, const int id, const int maxX, const int maxY, const int tlu_event, const int pivot_pixel, OnlineMonConfiguration* mymon) : _name(name), _id(id), _maxX(maxX), _maxY(maxY),_binsX(maxX), _binsY(maxY)
 	{
-		_hits.reserve(400);
-		_badhits.reserve(400); // allocate memory
-		_clusters.reserve(40);
+		const int hits_reserve=500;
+		_hits.reserve(hits_reserve);
+		_badhits.reserve(hits_reserve); // allocate memory
+		_clusters.reserve(hits_reserve);
+		_rawhits.reserve(hits_reserve);
+		for (int i=0; i< 4; i++)
+		{
+			_section_hits[i].reserve(hits_reserve);//FIXME hard-coded for Mimosa
+			_section_clusters[i].reserve(hits_reserve);
+		}
+
 		mon=mymon;
 		AnalogPixelType=false; //per default these are digital pixel planes
 		// init these settings
