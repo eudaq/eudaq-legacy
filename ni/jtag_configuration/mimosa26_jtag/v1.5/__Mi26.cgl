@@ -1,0 +1,63 @@
+Functions called:
+ fflush (1 times)
+ fprintf (1 times)
+ fopen (1 times)
+ delete (37 times)
+ strcpy (2 times)
+ vsnprintf (2 times)
+ strcmp (10 times)
+ sprintf (17 times)
+ memset (2 times)
+ SysReallocMem (269 times)
+ realloc (1 times)
+ SysFreeMem (36080 times)
+ SysGetMem (36083 times)
+ lstrlenA (2 times)
+ lstrcpynA (6 times)
+ memcpy (2 times)
+ delete[] (2 times)
+ free (28 times)
+ new[] (14 times)
+ new (42 times)
+ calloc (5 times)
+ malloc (23 times)
+Resource types used:
+ file stream (1 allocs, 1 max)
+ file handle (1 allocs, 1 max)
+ object array (14 allocs, 13 max)
+ object (42 allocs, 30 max)
+ memory block (36112 allocs, 6254 max)
+Modules used:
+ 00400000 08/26/2009 08:42:10 C:\ccmos_sctrl\MIMOSA26_JTAG\__Mi26.exe
+ 00590000 08/26/2009 08:41:58 C:\ccmos_sctrl\MIMOSA26_JTAG\JTAG_MS_DLL.DLL
+ 01220000 04/13/2008 18:39:24 C:\WINDOWS\system32\xpsp2res.dll
+ 0CD00000 03/06/2002 07:00:00 C:\ccmos_sctrl\MIMOSA26_JTAG\CG32.DLL
+ 32600000 03/06/2002 07:00:00 C:\ccmos_sctrl\MIMOSA26_JTAG\CC3260MT.DLL
+ 41000000 04/08/2005 07:58:00 C:\ccmos_sctrl\MIMOSA26_JTAG\BORLNDMM.DLL
+ 5D090000 08/23/2010 17:12:04 C:\WINDOWS\system32\COMCTL32.DLL
+ 5EDD0000 04/14/2008 01:12:02 C:\WINDOWS\system32\OLEPRO32.DLL
+ 74720000 04/14/2008 01:11:58 C:\WINDOWS\system32\MSCTF.dll
+ 755C0000 04/14/2008 01:10:06 C:\WINDOWS\system32\msctfime.ime
+ 76390000 04/14/2008 01:11:54 C:\WINDOWS\system32\IMM32.DLL
+ 763B0000 04/14/2008 01:11:52 C:\WINDOWS\system32\COMDLG32.DLL
+ 76FD0000 04/14/2008 01:11:50 C:\WINDOWS\system32\CLBCATQ.DLL
+ 77050000 04/14/2008 01:11:52 C:\WINDOWS\system32\COMRes.dll
+ 77120000 04/14/2008 01:12:02 C:\WINDOWS\system32\oleaut32.dll
+ 773D0000 08/23/2010 17:12:02
+ C:\WINDOWS\WinSxS\x86_Microsoft.Windows.Common-Controls_6595b64144ccf1df_6.0.
+2600.6028_x-ww_61e65202\comctl32.dll
+ 774E0000 07/16/2010 13:05:56 C:\WINDOWS\system32\ole32.dll
+ 77C00000 04/14/2008 01:12:08 C:\WINDOWS\system32\VERSION.DLL
+ 77C10000 04/14/2008 01:12:02 C:\WINDOWS\system32\msvcrt.dll
+ 77DD0000 02/09/2009 13:10:48 C:\WINDOWS\system32\advapi32.dll
+ 77E70000 08/16/2010 09:45:00 C:\WINDOWS\system32\RPCRT4.dll
+ 77F10000 10/23/2008 13:36:14 C:\WINDOWS\system32\GDI32.dll
+ 77F60000 12/08/2009 10:23:28 C:\WINDOWS\system32\SHLWAPI.dll
+ 77FE0000 06/25/2009 09:25:26 C:\WINDOWS\system32\Secur32.dll
+ 7C800000 03/21/2009 15:06:58 C:\WINDOWS\system32\kernel32.dll
+ 7C900000 02/09/2009 13:10:48 C:\WINDOWS\system32\ntdll.dll
+ 7C9C0000 07/27/2010 07:30:36 C:\WINDOWS\system32\SHELL32.dll
+ 7D1E0000 04/14/2008 01:12:00 C:\WINDOWS\system32\msi.dll
+ 7E410000 04/14/2008 01:12:08 C:\WINDOWS\system32\user32.dll
+ 7E720000 04/14/2008 01:12:08 C:\WINDOWS\system32\SXS.DLL
+==========================================

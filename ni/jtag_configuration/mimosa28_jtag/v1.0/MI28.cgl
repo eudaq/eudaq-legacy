@@ -1,0 +1,75 @@
+Functions called:
+ delete (159 times)
+ sscanf (20368 times)
+ itoa (155 times)
+ vsnprintf (2646 times)
+ sprintf (802 times)
+ lstrcatA (7 times)
+ lstrcpyA (9 times)
+ memset (4 times)
+ SysReallocMem (260 times)
+ lstrlenA (12 times)
+ lstrcpynA (4 times)
+ realloc (1 times)
+ memcpy (3 times)
+ SysFreeMem (59972 times)
+ SysGetMem (59973 times)
+ delete[] (12 times)
+ free (29 times)
+ new[] (24 times)
+ new (164 times)
+ calloc (5 times)
+ malloc (25 times)
+Resource types used:
+ object array (24 allocs, 21 max)
+ object (164 allocs, 31 max)
+ memory block (60004 allocs, 5634 max)
+Modules used:
+ 00320000 04/12/2011 15:29:32 C:\ccmos_sctrl\MIMOSA28_JTAG\JTAG_MS_DLL.DLL
+ 00380000 04/12/2011 15:29:34
+ C:\ccmos_sctrl\MIMOSA28_JTAG\INPOUT32WRAPPER.DLL
+ 00400000 04/12/2011 15:29:40 C:\ccmos_sctrl\MIMOSA28_JTAG\MI28.exe
+ 01C20000 02/13/2006 15:51:24 C:\Program Files\Adobe\ActiveX\PDFShell.FRA
+ 0CD00000 03/06/2002 08:00:00 C:\ccmos_sctrl\MIMOSA28_JTAG\CG32.DLL
+ 10000000 07/22/2003 22:04:08 C:\ccmos_sctrl\MIMOSA28_JTAG\inpout32.dll
+ 20000000 08/19/2004 16:08:58 C:\WINDOWS\system32\xpsp2res.dll
+ 32600000 03/06/2002 08:00:00 C:\ccmos_sctrl\MIMOSA28_JTAG\CC3260MT.DLL
+ 40000000 03/06/2002 08:00:00 C:\ccmos_sctrl\MIMOSA28_JTAG\rtl60.bpl
+ 41000000 04/08/2005 08:58:00 C:\ccmos_sctrl\MIMOSA28_JTAG\BORLNDMM.DLL
+ 58B50000 08/25/2006 17:51:14 C:\WINDOWS\system32\COMCTL32.DLL
+ 5B090000 08/19/2004 16:09:48 C:\WINDOWS\system32\UxTheme.dll
+ 5F140000 08/19/2004 16:09:38 C:\WINDOWS\system32\OLEPRO32.DLL
+ 6FEE0000 10/15/2008 18:59:28 C:\WINDOWS\system32\NETAPI32.dll
+ 719E0000 08/19/2004 16:09:50 C:\WINDOWS\system32\WS2HELP.dll
+ 719F0000 08/19/2004 16:09:50 C:\WINDOWS\system32\WS2_32.dll
+ 71A10000 08/19/2004 16:09:50 C:\WINDOWS\system32\wsock32.dll
+ 71A60000 08/19/2004 16:09:32 C:\WINDOWS\system32\mpr.dll
+ 74690000 02/26/2008 14:00:32 C:\WINDOWS\system32\MSCTF.dll
+ 75140000 08/19/2004 16:08:26 C:\WINDOWS\system32\msctfime.ime
+ 76320000 08/19/2004 16:09:30 C:\WINDOWS\system32\IMM32.DLL
+ 76340000 08/19/2004 16:09:22 C:\WINDOWS\system32\COMDLG32.DLL
+ 76930000 08/19/2004 16:09:38 C:\WINDOWS\system32\ntshrui.dll
+ 76960000 08/19/2004 16:09:48 C:\WINDOWS\system32\USERENV.dll
+ 76AC0000 07/17/2009 20:56:44 C:\WINDOWS\system32\ATL.DLL
+ 76F80000 07/26/2005 06:39:56 C:\WINDOWS\system32\CLBCATQ.DLL
+ 77000000 08/19/2004 16:09:22 C:\WINDOWS\system32\COMRes.dll
+ 770E0000 12/04/2007 20:41:36 C:\WINDOWS\system32\oleaut32.dll
+ 77210000 10/20/2006 03:38:44 C:\WINDOWS\system32\SXS.DLL
+ 77390000 08/25/2006 17:51:12
+ C:\WINDOWS\WinSxS\x86_Microsoft.Windows.Common-Controls_6595b64144ccf1df_6.0.
+2600.2982_x-ww_ac3f9c03\comctl32.dll
+ 774A0000 07/26/2005 06:40:00 C:\WINDOWS\system32\ole32.dll
+ 778E0000 08/19/2004 16:09:42 C:\WINDOWS\system32\SETUPAPI.dll
+ 77B50000 08/19/2004 16:09:20 C:\WINDOWS\system32\appHelp.dll
+ 77BD0000 08/19/2004 16:09:48 C:\WINDOWS\system32\VERSION.DLL
+ 77BE0000 08/19/2004 16:09:36 C:\WINDOWS\system32\msvcrt.dll
+ 77DA0000 02/09/2009 12:20:32 C:\WINDOWS\system32\advapi32.dll
+ 77E50000 04/15/2009 17:30:32 C:\WINDOWS\system32\RPCRT4.dll
+ 77EF0000 10/23/2008 15:00:16 C:\WINDOWS\system32\GDI32.dll
+ 77F40000 12/08/2009 11:12:34 C:\WINDOWS\system32\SHLWAPI.dll
+ 7C800000 03/21/2009 16:20:10 C:\WINDOWS\system32\kernel32.dll
+ 7C910000 02/09/2009 12:20:30 C:\WINDOWS\system32\ntdll.dll
+ 7C9D0000 07/03/2008 15:03:12 C:\WINDOWS\system32\SHELL32.dll
+ 7D200000 04/18/2007 18:14:18 C:\WINDOWS\system32\msi.dll
+ 7E390000 03/08/2007 17:37:50 C:\WINDOWS\system32\user32.dll
+==========================================

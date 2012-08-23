@@ -1,0 +1,1 @@
+copy porttalk.sys C:\WINDOWS\system32\drivers

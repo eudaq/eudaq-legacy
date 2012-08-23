@@ -1,0 +1,9 @@
+#JTAG_MS MASTER CONFIGURATION FILE Sun Mar 04 17:45:23 2012
+6 ; number of devices 
+C:\!_user_data_!\jtag\config_files\chip7_pos0_thresh6    ; (0)  
+C:\!_user_data_!\jtag\config_files\chip9_pos1_thresh6    ; (1)  
+C:\!_user_data_!\jtag\config_files\chip53_pos2_thresh6    ; (2)  
+C:\!_user_data_!\jtag\config_files\chip65_pos3_thresh6    ; (3)  
+C:\!_user_data_!\jtag\config_files\chip58_pos4_thresh6    ; (4)  
+C:\!_user_data_!\jtag\config_files\chip60_pos5_thresh6    ; (5)  
+#END OF JTAG_MS MASTER CONFIGURATION FILE

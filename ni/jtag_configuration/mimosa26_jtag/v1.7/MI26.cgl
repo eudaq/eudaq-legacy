@@ -1,0 +1,88 @@
+Functions called:
+ delete (36 times)
+ vsnprintf (4 times)
+ fopen (2 times)
+ sprintf (16 times)
+ lstrcatA (7 times)
+ lstrcpyA (9 times)
+ memset (1 times)
+ SysReallocMem (275 times)
+ lstrlenA (3 times)
+ lstrcpynA (3 times)
+ realloc (1 times)
+ memcpy (1 times)
+ SysFreeMem (36967 times)
+ SysGetMem (36968 times)
+ delete[] (12 times)
+ free (27 times)
+ new[] (24 times)
+ new (41 times)
+ calloc (5 times)
+ malloc (21 times)
+Resource types used:
+ object array (24 allocs, 21 max)
+ object (41 allocs, 29 max)
+ memory block (36995 allocs, 6344 max)
+Modules used:
+ 00020000 02/01/2010 01:00:00
+ G:\desy\aida\projects\jtag_configuration\jtag\INPOUT32WRAPPER.DLL
+ 00400000 02/01/2010 01:00:00
+ G:\desy\aida\projects\jtag_configuration\jtag\MI26.exe
+ 00590000 02/01/2010 01:00:00
+ G:\desy\aida\projects\jtag_configuration\jtag\JTAG_MS_DLL.DLL
+ 02D50000 05/05/2007 20:00:00
+ D:\install\Total.Commander\Plugins\wlx\IEView\IEView.wlx
+ 0CD00000 03/06/2002 01:00:00
+ G:\desy\aida\projects\jtag_configuration\jtag\CG32.DLL
+ 10000000 07/22/2003 00:00:00
+ G:\desy\aida\projects\jtag_configuration\jtag\inpout32.dll
+ 32600000 03/06/2002 01:00:00
+ G:\desy\aida\projects\jtag_configuration\jtag\CC3260MT.DLL
+ 3AA00000 05/26/2011 04:36:32 D:\ProgramFiles\ABBYYLingvox5\LvHook.dll
+ 40000000 03/06/2002 01:00:00
+ G:\desy\aida\projects\jtag_configuration\jtag\rtl60.bpl
+ 41000000 04/08/2005 00:00:00
+ G:\desy\aida\projects\jtag_configuration\jtag\BORLNDMM.DLL
+ 707C0000 11/20/2010 14:18:24
+ C:\Windows\WinSxS\x86_microsoft.windows.common-controls_6595b64144ccf1df_5.82
+.7601.17514_none_ec83dffa859149af\COMCTL32.DLL
+ 70C10000 11/20/2010 14:21:28 C:\Windows\system32\SXS.DLL
+ 719E0000 07/14/2009 03:17:56 C:\Windows\system32\rsaenh.dll
+ 71A20000 07/14/2009 03:15:08 C:\Windows\system32\CRYPTSP.dll
+ 71EA0000 07/14/2009 03:11:26 C:\Windows\system32\uxtheme.dll
+ 71F50000 07/14/2009 03:15:14 C:\Windows\system32\dwmapi.dll
+ 725F0000 07/14/2009 03:16:22 C:\Windows\system32\wsock32.dll
+ 72600000 11/20/2010 13:55:10
+ C:\Windows\WinSxS\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0.
+7601.17514_none_41e6975e2bd6f2b2\comctl32.DLL
+ 73130000 11/20/2010 14:21:04 C:\Windows\system32\RpcRtRemote.dll
+ 73200000 07/14/2009 03:15:42 C:\Windows\system32\mpr.dll
+ 73480000 07/14/2009 03:16:14 C:\Windows\system32\profapi.dll
+ 73490000 11/20/2010 14:21:34 C:\Windows\system32\USERENV.dll
+ 734B0000 07/14/2009 03:16:18 C:\Windows\system32\VERSION.DLL
+ 74720000 05/26/2011 04:35:32 D:\ProgramFiles\ABBYYLingvox5\Detoured.dll
+ 74960000 11/20/2010 14:20:50 C:\Windows\system32\OLEPRO32.DLL
+ 74DA0000 07/14/2009 03:15:08 C:\Windows\syswow64\CRYPTBASE.dll
+ 74DB0000 11/17/2011 07:28:50 C:\Windows\syswow64\SspiCli.dll
+ 74E20000 11/20/2010 14:21:40 C:\Windows\syswow64\WS2_32.dll
+ 74F50000 08/27/2011 06:26:28 C:\Windows\syswow64\oleaut32.dll
+ 75010000 07/14/2009 03:15:04 C:\Windows\syswow64\CLBCatQ.DLL
+ 750A0000 07/14/2009 03:11:24 C:\Windows\syswow64\LPK.dll
+ 750B0000 07/14/2009 03:16:12 C:\Windows\syswow64\NSI.dll
+ 750C0000 11/20/2010 14:08:58 C:\Windows\syswow64\user32.dll
+ 751C0000 07/14/2009 03:16:14 C:\Windows\SysWOW64\sechost.dll
+ 751F0000 07/14/2009 03:15:44 C:\Windows\syswow64\MSCTF.dll
+ 752C0000 12/16/2011 09:53:00 C:\Windows\syswow64\msvcrt.dll
+ 75370000 07/16/2011 06:24:24 C:\Windows\syswow64\kernel32.dll
+ 75480000 11/20/2010 14:08:52 C:\Windows\syswow64\GDI32.dll
+ 75510000 11/20/2010 14:08:52 C:\Windows\system32\IMM32.DLL
+ 75570000 11/20/2010 14:21:34 C:\Windows\syswow64\USP10.dll
+ 75630000 11/20/2010 14:18:24 C:\Windows\syswow64\COMDLG32.DLL
+ 756B0000 01/04/2012 10:59:40 C:\Windows\syswow64\SHELL32.dll
+ 76420000 07/16/2011 06:24:24 C:\Windows\syswow64\KERNELBASE.dll
+ 76470000 11/20/2010 14:20:50 C:\Windows\syswow64\ole32.dll
+ 765D0000 11/20/2010 14:18:04 C:\Windows\syswow64\ADVAPI32.dll
+ 76670000 11/20/2010 14:21:20 C:\Windows\syswow64\SHLWAPI.dll
+ 768E0000 11/20/2010 14:08:58 C:\Windows\syswow64\RPCRT4.dll
+ 776D0000 11/17/2011 07:38:40 C:\Windows\SysWOW64\ntdll.dll
+==========================================

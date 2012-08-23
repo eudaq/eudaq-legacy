@@ -1,0 +1,110 @@
+Functions called:
+ delete (36 times)
+ sscanf (1354 times)
+ itoa (85 times)
+ vsnprintf (232 times)
+ fflush (2 times)
+ fprintf (2 times)
+ fopen (1 times)
+ sprintf (530 times)
+ lstrcatA (7 times)
+ lstrcpyA (9 times)
+ memset (2 times)
+ SysReallocMem (295 times)
+ lstrlenA (12 times)
+ lstrcpynA (3 times)
+ realloc (1 times)
+ memcpy (3 times)
+ SysFreeMem (41183 times)
+ SysGetMem (41184 times)
+ delete[] (12 times)
+ free (29 times)
+ new[] (24 times)
+ new (41 times)
+ calloc (5 times)
+ malloc (25 times)
+Resource types used:
+ file stream (1 allocs, 1 max)
+ file handle (1 allocs, 1 max)
+ object array (24 allocs, 21 max)
+ object (41 allocs, 29 max)
+ memory block (41215 allocs, 7048 max)
+Modules used:
+ 00330000 03/10/2010 16:05:42 C:\ccmos_sctrl\MIMOSA26_JTAG\JTAG_MS_DLL.DLL
+ 003B0000 03/10/2010 16:05:44
+ C:\ccmos_sctrl\MIMOSA26_JTAG\INPOUT32WRAPPER.DLL
+ 00400000 03/10/2010 16:05:52 C:\ccmos_sctrl\MIMOSA26_JTAG\MI26.exe
+ 01470000 04/14/2008 14:00:00 C:\WINDOWS\system32\xpsp2res.dll
+ 01B50000 01/24/2009 23:12:54 C:\Program
+ Files\TortoiseSVN\bin\TortoiseSVN.dll
+ 01C20000 01/07/2009 19:20:36 C:\WINDOWS\system32\Normaliz.dll
+ 01C50000 01/24/2009 22:45:50 C:\Program Files\TortoiseSVN\bin\intl3_tsvn.dll
+ 05940000 01/24/2009 23:10:56 C:\Program
+ Files\TortoiseSVN\bin\TortoiseStub.dll
+ 05960000 01/16/2008 17:52:50 C:\Program Files\Common
+ Files\TortoiseOverlays\TortoiseOverlays.dll
+ 0CD00000 03/06/2002 07:00:00 C:\ccmos_sctrl\MIMOSA26_JTAG\CG32.DLL
+ 10000000 07/22/2003 21:04:08 C:\ccmos_sctrl\MIMOSA26_JTAG\inpout32.dll
+ 32600000 03/06/2002 07:00:00 C:\ccmos_sctrl\MIMOSA26_JTAG\CC3260MT.DLL
+ 3D930000 06/23/2011 20:36:30 C:\WINDOWS\system32\WININET.dll
+ 3DFD0000 06/23/2011 20:36:30 C:\WINDOWS\system32\iertutil.dll
+ 40000000 03/06/2002 07:00:00 C:\ccmos_sctrl\MIMOSA26_JTAG\rtl60.bpl
+ 41000000 04/08/2005 07:58:00 C:\ccmos_sctrl\MIMOSA26_JTAG\BORLNDMM.DLL
+ 5AD70000 04/14/2008 14:00:00 C:\WINDOWS\system32\uxtheme.dll
+ 5B860000 10/15/2008 18:34:24 C:\WINDOWS\system32\NETAPI32.dll
+ 5D090000 08/23/2010 18:12:04 C:\WINDOWS\system32\COMCTL32.DLL
+ 5EDD0000 04/14/2008 14:00:00 C:\WINDOWS\system32\OLEPRO32.DLL
+ 6EE60000 01/24/2009 23:08:32 C:\Program
+ Files\TortoiseSVN\bin\libaprutil_tsvn.dll
+ 6EEC0000 01/24/2009 23:08:28 C:\Program
+ Files\TortoiseSVN\bin\libapr_tsvn.dll
+ 71A50000 06/20/2008 18:02:48 C:\WINDOWS\system32\MSWSOCK.dll
+ 71AA0000 04/14/2008 14:00:00 C:\WINDOWS\system32\WS2HELP.dll
+ 71AB0000 04/14/2008 14:00:00 C:\WINDOWS\system32\WS2_32.dll
+ 71AD0000 04/14/2008 14:00:00 C:\WINDOWS\system32\wsock32.dll
+ 71B20000 04/14/2008 14:00:00 C:\WINDOWS\system32\mpr.dll
+ 71BF0000 04/14/2008 14:00:00 C:\WINDOWS\System32\SAMLIB.dll
+ 71C10000 04/14/2008 14:00:00 C:\WINDOWS\System32\ntlanman.dll
+ 71C80000 04/14/2008 14:00:00 C:\WINDOWS\System32\NETRAP.dll
+ 71C90000 04/14/2008 14:00:00 C:\WINDOWS\System32\NETUI1.dll
+ 71CD0000 04/14/2008 14:00:00 C:\WINDOWS\System32\NETUI0.dll
+ 74720000 04/14/2008 14:00:00 C:\WINDOWS\system32\MSCTF.dll
+ 755C0000 04/14/2008 14:00:00 C:\WINDOWS\system32\msctfime.ime
+ 75F60000 04/14/2008 14:00:00 C:\WINDOWS\System32\drprov.dll
+ 75F70000 04/14/2008 14:00:00 C:\WINDOWS\System32\davclnt.dll
+ 76390000 04/14/2008 14:00:00 C:\WINDOWS\system32\IMM32.DLL
+ 763B0000 04/14/2008 14:00:00 C:\WINDOWS\system32\COMDLG32.DLL
+ 76780000 04/14/2008 14:00:00 C:\WINDOWS\system32\SHFOLDER.dll
+ 76990000 04/14/2008 14:00:00 C:\WINDOWS\system32\ntshrui.dll
+ 769C0000 04/14/2008 14:00:00 C:\WINDOWS\system32\USERENV.dll
+ 76B20000 07/17/2009 21:01:06 C:\WINDOWS\system32\ATL.DLL
+ 76F60000 04/14/2008 14:00:00 C:\WINDOWS\system32\WLDAP32.dll
+ 76FD0000 04/14/2008 14:00:00 C:\WINDOWS\system32\CLBCATQ.DLL
+ 77050000 04/14/2008 14:00:00 C:\WINDOWS\system32\COMRes.dll
+ 77120000 12/20/2010 19:32:16 C:\WINDOWS\system32\oleaut32.dll
+ 773D0000 08/23/2010 18:12:02
+ C:\WINDOWS\WinSxS\x86_Microsoft.Windows.Common-Controls_6595b64144ccf1df_6.0.
+2600.6028_x-ww_61e65202\comctl32.dll
+ 774E0000 07/16/2010 14:05:56 C:\WINDOWS\system32\ole32.dll
+ 77920000 04/14/2008 14:00:00 C:\WINDOWS\system32\SETUPAPI.dll
+ 77B40000 04/14/2008 14:00:00 C:\WINDOWS\system32\appHelp.dll
+ 77C00000 04/14/2008 14:00:00 C:\WINDOWS\system32\VERSION.DLL
+ 77C10000 04/14/2008 14:00:00 C:\WINDOWS\system32\msvcrt.dll
+ 77DD0000 02/09/2009 14:10:48 C:\WINDOWS\system32\advapi32.dll
+ 77E70000 08/16/2010 10:45:00 C:\WINDOWS\system32\RPCRT4.dll
+ 77F10000 10/23/2008 14:36:14 C:\WINDOWS\system32\GDI32.dll
+ 77F60000 12/08/2009 11:23:28 C:\WINDOWS\system32\SHLWAPI.dll
+ 77FE0000 06/25/2009 10:25:26 C:\WINDOWS\system32\Secur32.dll
+ 78130000 06/23/2011 20:36:30 C:\WINDOWS\system32\urlmon.dll
+ 78480000 04/18/2011 22:51:18
+ C:\WINDOWS\WinSxS\x86_Microsoft.VC90.CRT_1fc8b3b9a1e18e3b_9.0.30729.6161_x-ww
+_31a54e43\MSVCP90.dll
+ 78520000 04/18/2011 22:51:18
+ C:\WINDOWS\WinSxS\x86_Microsoft.VC90.CRT_1fc8b3b9a1e18e3b_9.0.30729.6161_x-ww
+_31a54e43\MSVCR90.dll
+ 7C800000 03/21/2009 16:06:58 C:\WINDOWS\system32\kernel32.dll
+ 7C900000 12/09/2010 17:15:10 C:\WINDOWS\system32\ntdll.dll
+ 7C9C0000 01/21/2011 16:44:38 C:\WINDOWS\system32\SHELL32.dll
+ 7E410000 04/14/2008 14:00:00 C:\WINDOWS\system32\user32.dll
+ 7E720000 04/14/2008 14:00:00 C:\WINDOWS\system32\SXS.DLL
+==========================================

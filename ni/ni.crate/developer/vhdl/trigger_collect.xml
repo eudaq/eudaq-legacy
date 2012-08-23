@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<!-- National Instruments recommends that you do not change this CLIP declaration file outside of the Configure Component-Level IP wizard. You can modify this declaration file on the Component-Level IP page of the FPGA Target Properties dialog box. -->
+
+<CLIPDeclaration Name="trigger_collect">
+ <FormatVersion>3.0</FormatVersion>
+ <Description></Description>
+ <TopLevelEntityAndArchitecture>
+  <SynthesisModel>
+   <Entity>trigger_collect</Entity>
+   <Architecture>Behavioral</Architecture>
+  </SynthesisModel>
+  <SimulationModel>
+   <Entity>trigger_collect</Entity>
+   <Architecture>Behavioral</Architecture>
+  </SimulationModel>
+ </TopLevelEntityAndArchitecture>
+ <SupportedDeviceFamilies>Unlimited</SupportedDeviceFamilies>
+ <InterfaceList>
+  <Interface Name="LabVIEW">
+   <InterfaceType>LabVIEW</InterfaceType>
+   <SignalList>
+    <Signal Name="clk">
+     <HDLName>clk</HDLName>
+     <HDLType>STD_LOGIC</HDLType>
+     <Direction>ToCLIP</Direction>
+     <SignalType>clock</SignalType>
+     <Description></Description>
+     <DataType>
+      <Boolean/>
+     </DataType>
+     <FreqInHertz>
+      <Max>200.000000M</Max>
+      <Min>1.000000M</Min>
+     </FreqInHertz>
+    </Signal>
+    <Signal Name="trigger_clk">
+     <HDLName>trigger_clk</HDLName>
+     <HDLType>std_logic_vector (15 downto 0)</HDLType>
+     <Direction>ToCLIP</Direction>
+     <SignalType>data</SignalType>
+     <Description></Description>
+     <DataType>
+      <U16/>
+     </DataType>
+     <RequiredClockDomain></RequiredClockDomain>
+     <UseInLabVIEWSingleCycleTimedLoop>Allowed</UseInLabVIEWSingleCycleTimedLoop>
+    </Signal>
+    <Signal Name="trigger_info_out">
+     <HDLName>trigger_info_out</HDLName>
+     <HDLType>STD_LOGIC_VECTOR (31 downto 0)</HDLType>
+     <Direction>FromCLIP</Direction>
+     <SignalType>data</SignalType>
+     <Description></Description>
+     <DataType>
+      <U32/>
+     </DataType>
+     <RequiredClockDomain></RequiredClockDomain>
+     <UseInLabVIEWSingleCycleTimedLoop>Allowed</UseInLabVIEWSingleCycleTimedLoop>
+    </Signal>
+    <Signal Name="trigger_num">
+     <HDLName>trigger_num</HDLName>
+     <HDLType>std_logic_vector (15 downto 0)</HDLType>
+     <Direction>ToCLIP</Direction>
+     <SignalType>data</SignalType>
+     <Description></Description>
+     <DataType>
+      <U16/>
+     </DataType>
+     <RequiredClockDomain></RequiredClockDomain>
+     <UseInLabVIEWSingleCycleTimedLoop>Allowed</UseInLabVIEWSingleCycleTimedLoop>
+    </Signal>
+   </SignalList>
+  </Interface>
+  <Interface Name="Fabric">
+   <InterfaceType>Fabric</InterfaceType>
+   <SignalList>
+    <Signal Name="reset">
+     <HDLName>reset</HDLName>
+     <HDLType>std_logic</HDLType>
+     <Direction>ToCLIP</Direction>
+     <SignalType>reset</SignalType>
+     <Description></Description>
+     <DataType>
+      <Boolean/>
+     </DataType>
+    </Signal>
+   </SignalList>
+  </Interface>
+ </InterfaceList>
+ <ImplementationList>
+  <Path Name="trigger_collect.vhd">
+   <TopLevel/>
+   <MD5>58fd5e9b8a80666529e92d3e5cd8b4cc</MD5>
+   <SimulationFileList>
+    <SimulationModelType>Same as synthesis</SimulationModelType>
+   </SimulationFileList>
+  </Path>
+ </ImplementationList>
+ <NumberOfDCMsNeeded>0</NumberOfDCMsNeeded>
+ <NumberOfMMCMsNeeded>0</NumberOfMMCMsNeeded>
+ <NumberOfBufGsNeeded>0</NumberOfBufGsNeeded>
+</CLIPDeclaration>
