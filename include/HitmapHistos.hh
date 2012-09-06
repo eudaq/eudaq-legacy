@@ -57,7 +57,7 @@ public:
 	HitmapHistos(SimpleStandardPlane p, RootMonitor * mon);
 
 
-	void Fill(const SimpleStandardHit & hit);
+    void Fill(const SimpleStandardHit & hit);
 	void Fill(const SimpleStandardPlane & plane);
 	void Fill(const SimpleStandardCluster & cluster);
 	void Reset();
@@ -96,6 +96,7 @@ private:
 	int SetHistoAxisLabelx(TH1* histo,string xlabel);
 	int SetHistoAxisLabely(TH1* histo,string ylabel);
 	int SetHistoAxisLabels(TH1* histo,string xlabel, string ylabel);
+    int filling_counter; //we don't need occupancy to be refreshed for every single event
 
 	RootMonitor * _mon;
 	unsigned int mimosa26_max_section;

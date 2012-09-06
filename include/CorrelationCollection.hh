@@ -45,6 +45,21 @@ inline bool operator<(SimpleStandardPlaneDouble const &a, SimpleStandardPlaneDou
 }
 
 
+struct SortClustersByXY
+{
+    bool operator()(SimpleStandardCluster const& L, SimpleStandardCluster const& R) const
+    {
+        if (L.getX() < R.getX())
+            return true;
+        else if (L.getX() > R.getX())
+            return false;
+        else
+            if (L.getY() < R.getY())
+                return true;
+            else
+                return false;
+    }
+};
 
 
 class CorrelationCollection : public BaseCollection {
@@ -54,8 +69,17 @@ protected:
 	std::map<std::pair<SimpleStandardPlane,SimpleStandardPlane>, CorrelationHistos*> _map;
 	std::vector<SimpleStandardPlane> _planes;
 	bool isPlaneRegistered(SimpleStandardPlane p);
+	
+	bool checkCorrelations(const SimpleStandardCluster &cluster1, const SimpleStandardCluster &cluster2);
+	void fillHistograms(std::vector < vector<
+                        pair<int, SimpleStandardCluster> > > tracks,
+                        const SimpleStandardEvent & simpEv);
+
 	void fillHistograms(const SimpleStandardPlaneDouble &simpPlaneDouble);
 	void fillHistograms(const SimpleStandardPlane& p1, const SimpleStandardPlane& p2);
+
+        int counter;
+
 public:
 	CorrelationCollection() : BaseCollection()
 	{
@@ -63,8 +87,9 @@ public:
 		CollectionType = CORRELATION_COLLECTION_TYPE;
 		correlateAllPlanes=false;
 
-
+	        counter = 0;
 	}
+
 	void Fill(const SimpleStandardEvent &simpev);
 	virtual void Reset();
 	void setRootMonitor(RootMonitor *mon);
@@ -74,10 +99,10 @@ public:
 	void registerPlaneCorrelations(const SimpleStandardPlane &p1, const SimpleStandardPlane &p2);
 
 	virtual void Write(TFile *file);
-    bool getCorrelateAllPlanes() const;
-    std::vector<int> getSelected_planes_to_skip() const;
-    void setCorrelateAllPlanes(bool correlateAllPlanes);
-    void setSelected_planes_to_skip(std::vector<int> selected_planes_to_skip);
+	bool getCorrelateAllPlanes() const;
+	std::vector<int> getSelected_planes_to_skip() const;
+	void setCorrelateAllPlanes(bool correlateAllPlanes);
+	void setSelected_planes_to_skip(std::vector<int> selected_planes_to_skip);
 	virtual void Calculate(const unsigned int currentEventNumber)
 	{
 

@@ -31,7 +31,7 @@ protected:
 	int _maxY;
 	int _binsX;
 	int _binsY;
-	std::vector<SimpleStandardHit> _hits;
+    std::vector<SimpleStandardHit> _hits;
 	std::vector<SimpleStandardHit> _badhits; //stores hits which appear to be corrupted
 	std::vector<SimpleStandardHit> _rawhits; //stores hits without a threshold in case of analog pixels
 	std::vector<SimpleStandardCluster> _clusters;
@@ -65,7 +65,7 @@ public:
 		is_USBPIXI4=false;
 		is_FORTIS=false;
 		is_UNKNOWN=true ; // per default we don't know this plane
-		isRotated=false;;
+        isRotated=false;
 		setPixelType(name); //set the pixel type
 		_tlu_event=tlu_event;
 		_pivot_pixel=pivot_pixel;
@@ -73,7 +73,7 @@ public:
 
 	SimpleStandardPlane(const std::string & name, const int id) : _name(name), _id(id), _maxX(-1), _maxY(-1) //FIXME we actually only need this type of constructor to form a map for histogramm allocation
 	{
-			_hits.reserve(400);
+                _hits.reserve(400);
 				_badhits.reserve(400); //
 				_clusters.reserve(40);
 				mon=NULL; // no monitor given
@@ -86,7 +86,7 @@ public:
 				is_USBPIXI4=false;
 				is_FORTIS=false;
 				is_UNKNOWN=true ; // per default we don't know this plane
-				isRotated=false;;
+                isRotated=false;
 				setPixelType(name); //set the pixel type
 				_binsX=-1;
 				_binsY=-1;
@@ -96,7 +96,7 @@ public:
 	void doClustering();
 	std::vector<SimpleStandardHit> getHits() const { return _hits; }
 	std::vector<SimpleStandardHit> getRawHits() const { return _rawhits; }
-	std::vector<SimpleStandardCluster> getClusters() const { return _clusters; }
+    std::vector<SimpleStandardCluster> getClusters() const { return _clusters; }
 	int getNHits() const { return _hits.size(); }
 	int getNBadHits() const { return _badhits.size(); }
 	int getNSectionHits(unsigned int section) const { return _section_hits[section].size(); }
@@ -140,6 +140,22 @@ private:
 	bool AnalogPixelType; // dealing with pixels, that have analog information
 	bool isRotated; //dealing with planes rotated by 90 degrees
 
+};
+
+struct SortHitsByXY
+{
+    bool operator()(SimpleStandardHit const& L, SimpleStandardHit const& R) const
+    {
+        if (L.getX() < R.getX())
+            return true;
+        else if (L.getX() > R.getX())
+            return false;
+        else
+            if (L.getY() < R.getY())
+                return true;
+            else
+                return false;
+    }
 };
 
 

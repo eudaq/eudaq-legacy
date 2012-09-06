@@ -11,6 +11,8 @@ SimpleStandardEvent::SimpleStandardEvent()
 	_planes.reserve(20);
 	monitor_eventfilltime=0;
 	monitor_eventanalysistime=0;
+    monitor_clusteringtime=0;
+    monitor_correlationtime=0;
 	event_number=0;
 	event_timestamp=0;
 }
@@ -34,6 +36,16 @@ double SimpleStandardEvent::getMonitor_eventfilltime() const
     return monitor_eventfilltime;
 }
 
+double SimpleStandardEvent::getMonitor_clusteringtime() const
+{
+    return monitor_clusteringtime;
+}
+
+double SimpleStandardEvent::getMonitor_correlationtime() const
+{
+    return monitor_correlationtime;
+}
+
 void SimpleStandardEvent::setMonitor_eventanalysistime(double monitor_eventanalysistime)
 {
     this->monitor_eventanalysistime = monitor_eventanalysistime;
@@ -44,8 +56,18 @@ void SimpleStandardEvent::setMonitor_eventfilltime(double monitor_eventfilltime)
     this->monitor_eventfilltime = monitor_eventfilltime;
 }
 
+void SimpleStandardEvent::setMonitor_eventclusteringtime(double monitor_clusteringtime)
+{
+    this->monitor_clusteringtime = monitor_clusteringtime;
+}
+
+void SimpleStandardEvent::setMonitor_eventcorrelationtime(double monitor_correlationtime)
+{
+    this->monitor_correlationtime = monitor_correlationtime;
+}
+
 void SimpleStandardEvent::doClustering() {
-	for (int plane = 0 ; plane < getNPlanes(); plane++) {
+    for (int plane = 0 ; plane < getNPlanes(); plane++) {
 		_planes.at(plane).doClustering();
 		//std::cout << "Found " << _planes.at(plane).getNClusters() << " on Plane " << _planes.at(plane).getName() << " " << _planes.at(plane).getID() << std::endl;
 	}

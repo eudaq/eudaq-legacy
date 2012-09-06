@@ -53,7 +53,6 @@ CorrelationHistos::CorrelationHistos(SimpleStandardPlane p1, SimpleStandardPlane
 	}
 }
 
-
 void CorrelationHistos::Fill(const SimpleStandardCluster &cluster1, const SimpleStandardCluster &cluster2)
 {
 	//std::cout << "Filling Histogram: " << _2dcorrX->GetName() << " (" << cluster1.getX() << ", " << cluster2.getX() << ")" << std::endl;

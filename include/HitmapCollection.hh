@@ -24,8 +24,6 @@
 #include "HitmapHistos.hh"
 #include "BaseCollection.hh"
 
-
-
 class HitmapCollection : public BaseCollection
 {
 	RQ_OBJECT("HitmapCollection")
@@ -36,6 +34,7 @@ protected:
 	void fillHistograms(const SimpleStandardPlane &simpPlane);
 
 public:
+
 	void registerPlane(const SimpleStandardPlane &p);
 	void bookHistograms(const SimpleStandardEvent &simpev);
 	void setRootMonitor(RootMonitor *mon)  {_mon = mon; }

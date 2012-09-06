@@ -99,7 +99,7 @@ is_MIMOSA26(false), is_APIX(false), is_USBPIX(false),is_USBPIXI4(false)
 		sprintf(out2,"h_hitocc%s_%i",_sensor.c_str(), _id);
 
 		_hitOcc= new TH1F(out2, out,250,0.01, 1);
-		SetHistoAxisLabelx(_hitOcc,"Occupancy");
+        SetHistoAxisLabelx(_hitOcc,"Frequency");
 
 		sprintf(out,"%s %i Clustersize",_sensor.c_str(), _id);
 		sprintf(out2,"h_clustersize_%s_%i",_sensor.c_str(), _id);
@@ -251,20 +251,36 @@ int HitmapHistos::zero_plane_array()
 
 void HitmapHistos::Fill(const SimpleStandardHit & hit)
 {
-	int pixel_x=hit.getX();
-	int pixel_y=hit.getY();
+    int pixel_x=hit.getX();
+    int pixel_y=hit.getY();
 	
 	bool pixelIsHot = false;
 	if (_HotPixelMap->GetBinContent(pixel_x+1,pixel_y+1)>_mon->mon_configdata.getHotpixelcut()) pixelIsHot=true;
 
-	if (_hitmap != NULL && !pixelIsHot) _hitmap->Fill(pixel_x,pixel_y);
-	if ((is_MIMOSA26) && (_hitmapSections != NULL) && (!pixelIsHot)
-	    && _hitOcc->GetEntries()>0) // only fill histogram when occupancies and hotpixels have been determined
-	  { 
-	    char sectionid[3];
-	    sprintf(sectionid,"%i%c",_id,(pixel_x/_mon->mon_configdata.getMimosa26_section_boundary())+65); // determine section label
+    if (_hitmap != NULL && !pixelIsHot) _hitmap->Fill(pixel_x,pixel_y);
+    if ((is_MIMOSA26) && (_hitmapSections != NULL) && (!pixelIsHot))
+        //&& _hitOcc->GetEntries()>0) // only fill histogram when occupancies and hotpixels have been determined
+      {
+        char sectionid[3];
+        sprintf(sectionid,"%i%c",_id,(pixel_x/_mon->mon_configdata.getMimosa26_section_boundary())+65); // determine section label
 	    _hitmapSections->Fill(sectionid,1); // add one hit to the corresponding section bin
-	}
+        //tab[pixel_x/_mon->mon_configdata.getMimosa26_section_boundary()]++;
+    }
+    /*else
+    {
+        bool MIMOSA, PIXEL, HITMAP;
+        MIMOSA = true;
+        PIXEL = true;
+        HITMAP = true;
+
+        if (!is_MIMOSA26)
+            cout << "MIMOSA IS FALSE" << endl;
+        if (_hitmapSections == NULL)
+            cout << "_hitmapSections IS NULL" << endl;
+        if (pixelIsHot)
+            cout << "pixelIsHot IS TRUE" << endl;
+
+    }*/
 
 	if ((pixel_x<_maxX) &&  (pixel_y<_maxY))
 	{
@@ -281,6 +297,7 @@ void HitmapHistos::Fill(const SimpleStandardHit & hit)
 
 void HitmapHistos::Fill(const SimpleStandardPlane & plane)
 {
+    //std::cout<< "FILL with a plane." << std::endl;
 	if (_nHits != NULL) _nHits->Fill(plane.getNHits());
 	if ((_nbadHits != NULL) &&(plane.getNBadHits()>0))
 	{
@@ -298,7 +315,8 @@ void HitmapHistos::Fill(const SimpleStandardPlane & plane)
 			{
 				if (plane.getNSectionHits(section)> 0)
 				{
-					_nHits_section[section]->Fill(plane.getNSectionHits(section));
+                    _nHits_section[section]->Fill(plane.getNSectionHits(section));
+                    //std::cout<< "Section " << section << " filling with " << plane.getNSectionHits(section) << std::endl;
 				}
 			}
 			if (_nClusters_section[section]!=NULL)
@@ -403,10 +421,11 @@ void HitmapHistos::Calculate(const int currentEventNum)
 
 			if (bin != 0)
 			{
-				occupancy=bin/(double)currentEventNum;
+                occupancy=bin/(double)currentEventNum; //FIXME it's not occupancy, it's frequency
 				_hitOcc->Fill(occupancy);
 				// only count as hotpixel if occupancy larger than minimal occupancy for a single hit
-				if (occupancy>Hotpixelcut && ((1./(double)(currentEventNum))<_mon->mon_configdata.getHotpixelcut())) 
+                if (occupancy>Hotpixelcut && ((1./(double)(currentEventNum))<_mon->mon_configdata.getHotpixelcut()))
+                //if (occupancy>Hotpixelcut && )
 				{
 					nHotpixels++;
 					_HotPixelMap->SetBinContent(x+1,y+1,occupancy); // ROOT start from 1
@@ -428,6 +447,8 @@ void HitmapHistos::Calculate(const int currentEventNum)
 					if ((nHotpixels_section[section]>0))
 					{
 						_nHotPixels_section[section]->Fill(nHotpixels_section[section]);
+                        //cout<<"nHotPixels is being filled for plane " << _id << " with " <<  ++counter_nhotpixels_being_filled << " time in section " <<
+                        //      section << endl;
 					}
 				}
 		}

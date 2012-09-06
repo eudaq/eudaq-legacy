@@ -50,7 +50,7 @@ OnlineMonWindow::OnlineMonWindow(const TGWindow* p, UInt_t w, UInt_t h)
 
 		/*------*/
 		string path_autoreset= icondir_root+"autodel_btn.xpm";
-		ToolBarData_t icondata_autoreset= {path_autoreset.c_str(),"Autoreset Histograms on StopRun",kTRUE,i,0};	     
+        ToolBarData_t icondata_autoreset= {path_autoreset.c_str(),"Autoreset Histograms on StartRun",kTRUE,i,0};
 		i++;
 		button_autoreset = tb->AddButton(Hfrm_left, &icondata_autoreset,0);
 		button_autoreset->Connect("Clicked()","OnlineMonWindow",this, "AutoReset()");

@@ -40,8 +40,13 @@
 
 using namespace std;
 
-RootMonitor::RootMonitor(const std::string & runcontrol, const std::string & datafile, int x, int y, int w, int h, int argc, int offline, const std::string & conffile)
-	: eudaq::Holder<int>(argc), eudaq::Monitor("OnlineMon", runcontrol, datafile), _offline(offline){
+//static double clst_clock = 0;
+//static struct timeval then, now;
+
+RootMonitor::RootMonitor(const std::string & runcontrol, const std::string & datafile, int x, int y, int w,
+                         int h, int argc, int offline, const unsigned lim, const unsigned skip_,
+                         const std::string & conffile)
+    : eudaq::Holder<int>(argc), eudaq::Monitor("OnlineMon", runcontrol, lim, skip_, datafile), _offline(offline){
 
 	if (_offline <= 0)
 	{
@@ -53,8 +58,8 @@ RootMonitor::RootMonitor(const std::string & runcontrol, const std::string & dat
 		}
 	}
 
-	HitmapCollection *hmCollection = new HitmapCollection();
-	CorrelationCollection *corrCollection = new CorrelationCollection();
+    hmCollection = new HitmapCollection();
+    corrCollection = new CorrelationCollection();
 	MonitorPerformanceCollection *monCollection =new MonitorPerformanceCollection();
 	EUDAQMonitorCollection* eudaqCollection = new EUDAQMonitorCollection();
 
@@ -141,6 +146,9 @@ RootMonitor::RootMonitor(const std::string & runcontrol, const std::string & dat
 	snapshotdir=mon_configdata.getSnapShotDir();
 	previous_event_analysis_time=0;
 	previous_event_fill_time=0;
+    previous_event_clustering_time=0;
+    previous_event_correlation_time=0;
+
 	if (_offline < 0)
 	{
 		onlinemon->SetOnlineMon(this);
@@ -166,8 +174,6 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 
 	//start timing to measure processing time
 	my_event_processing_time.Start(true);
-
-
 
 	bool reduce=false; //do we use Event reduction
 	bool skip_dodgy_event=false; // do we skip this event because we consider it dodgy
@@ -237,6 +243,8 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 		// store the processing time of the previous EVENT, as we can't track this during the  processing
 		simpEv.setMonitor_eventanalysistime(previous_event_analysis_time);
 		simpEv.setMonitor_eventfilltime(previous_event_fill_time);
+        simpEv.setMonitor_eventclusteringtime(previous_event_clustering_time);
+        simpEv.setMonitor_eventcorrelationtime(previous_event_correlation_time);
 // add some info into the simple event header
 		simpEv.setEvent_number(ev.GetEventNumber());
 		simpEv.setEvent_timestamp(ev.GetTimestamp());
@@ -324,7 +332,11 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 
 		}
 
-		simpEv.doClustering();
+        my_event_inner_operations_time.Start(true);
+        simpEv.doClustering();
+        my_event_inner_operations_time.Stop();
+        previous_event_clustering_time = my_event_inner_operations_time.RealTime();
+
 		if (ev.GetEventNumber() < 1)
 		{
 			cout << "Waiting for booking of Histograms..." << endl;
@@ -342,7 +354,16 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 		my_event_processing_time.Start(true); //start the stopwatch again
 		for (unsigned int i = 0 ; i < _colls.size(); ++i)
 		{
-			_colls.at(i)->Fill(simpEv);
+            if (_colls.at(i) == corrCollection)
+            {
+                my_event_inner_operations_time.Start(true);
+                _colls.at(i)->Fill(simpEv);
+                my_event_inner_operations_time.Stop();
+                previous_event_correlation_time = my_event_inner_operations_time.RealTime();
+            }
+            else
+                _colls.at(i)->Fill(simpEv);
+
 			// CollType is used to check which kind of Collection we are having
 			if (_colls.at(i)->getCollectionType()==HITMAP_COLLECTION_TYPE) // Calculate is only implemented for HitMapCollections
 			{
@@ -362,6 +383,7 @@ void RootMonitor::OnEvent(const eudaq::StandardEvent & ev) {
 	cout << "----------------------------------------"  <<endl<<endl;
 #endif
 	previous_event_fill_time=my_event_processing_time.RealTime();
+
 	if (ev.IsBORE())
 	{
 		std::cout << "This is a BORE" << std::endl;
@@ -385,20 +407,21 @@ void RootMonitor::OnStopRun()
 			_colls.at(i)->Write(f);
 		}
 		f->Close();
-
-	}
-	if (onlinemon->getAutoReset())
-	{
-		onlinemon->UpdateStatus("Resetting..");
-		for (unsigned int i = 0 ; i < _colls.size(); ++i)
-		{
-			_colls.at(i)->Reset();
-		}
 	}
 	onlinemon->UpdateStatus("Run stopped");
 }
 
 void RootMonitor::OnStartRun(unsigned param) {
+
+        if (onlinemon->getAutoReset())
+        {
+            onlinemon->UpdateStatus("Resetting..");
+            for (unsigned int i = 0 ; i < _colls.size(); ++i)
+            {
+                _colls.at(i)->Reset();
+            }
+        }
+
 		Monitor::OnStartRun(param);
 		std::cout << "Called on start run" << param <<std::endl;
 		onlinemon->UpdateStatus("Starting run..");
@@ -433,9 +456,8 @@ string RootMonitor::GetSnapShotDir()
 	return snapshotdir;
 }
 
-
-
 int main(int argc, const char ** argv) {
+
 	eudaq::OptionParser op("EUDAQ Root Monitor", "1.0", "A Monitor using root for gui and graphics");
 	eudaq::Option<std::string> rctrl(op, "r", "runcontrol", "tcp://localhost:44000", "address",
 		"The address of the RunControl application");
@@ -449,6 +471,8 @@ int main(int argc, const char ** argv) {
 	eudaq::Option<int>             w(op, "w", "width",  1400, "pos");
 	eudaq::Option<int>             h(op, "g", "height",  700, "pos", "The initial position of the window");
 	eudaq::Option<int>             reduce(op, "rd", "reduce",  1, "Reduce the number of events");
+    eudaq::Option<int>             limit(op, "n", "limit", 0, "Event number limit for analysis");
+    eudaq::Option<int>             skipping(op, "s", "skip", 0, "Percentage of events to skip");
 	eudaq::Option<int>             update(op, "u", "update",  1000, "update every ms");
 	eudaq::Option<int>             offline(op, "o", "offline",  0, "running is offlinemode - analyse until event <num>");
 	eudaq::Option<std::string>     configfile(op, "c", "config_file"," ", "filename","Config file to use for onlinemon");
@@ -483,8 +507,11 @@ try {
 	}
 
 // start the GUI
+//    cout<< "DEBUG: LIMIT VALUE " << (unsigned)limit.Value();
 	TApplication theApp("App", &argc, const_cast<char**>(argv),0,0);
-	RootMonitor mon(rctrl.Value(), file.Value(), x.Value(), y.Value(), w.Value(), h.Value(), argc, offline.Value(),configfile.Value());
+    RootMonitor mon(rctrl.Value(), file.Value(), x.Value(), y.Value(),
+                    w.Value(), h.Value(), argc, offline.Value(), (unsigned)limit.Value(),
+                    (unsigned)skipping.Value(), configfile.Value());
 	mon.setWriteRoot(do_rootatend.IsSet());
 	mon.autoReset(do_resetatend.IsSet());
 	mon.setReduce(reduce.Value());

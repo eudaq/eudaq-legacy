@@ -69,10 +69,13 @@ protected:
 	//bool _autoReset;
 	
 public:
- 
-	RootMonitor(const std::string & runcontrol, const std::string & datafile, int x, int y, int w, int h, int argc, int offline, const std::string & conffile="");
+    RootMonitor(const std::string & runcontrol, const std::string & datafile, int x, int y,
+                int w, int h, int argc, int offline, const unsigned lim, const unsigned skip_,
+                const std::string & conffile="");
 	~RootMonitor() {gApplication->Terminate();}
 	void registerSensorInGUI(std::string name, int id);
+    HitmapCollection *hmCollection;
+    CorrelationCollection *corrCollection;
   
  
 	virtual void StartIdleing() { }
@@ -103,7 +106,7 @@ public:
 	void setWriteRoot(const bool write) {_writeRoot = write; } 
 	void autoReset(const bool reset);
 	void setReduce(const unsigned int red);
-	void setUpdate(const unsigned int up);
+    void setUpdate(const unsigned int up);
 
 	void SetSnapShotDir(string s);
 	string GetSnapShotDir();
@@ -112,9 +115,11 @@ private:
 	string snapshotdir;
 	EventSanityChecker myevent; //FIXME
 	TStopwatch my_event_processing_time;
+    TStopwatch my_event_inner_operations_time;
 	double previous_event_analysis_time;
 	double previous_event_fill_time;
-
+    double previous_event_clustering_time;
+    double previous_event_correlation_time;
 };
 
 

@@ -8,6 +8,9 @@
 #include "HitmapCollection.hh"
 #include "OnlineMon.hh"
 
+static int counting = 0;
+static int events = 0;
+
 bool HitmapCollection::isPlaneRegistered(SimpleStandardPlane p)
 {
 	std::map<SimpleStandardPlane,HitmapHistos*>::iterator it;
@@ -17,6 +20,12 @@ bool HitmapCollection::isPlaneRegistered(SimpleStandardPlane p)
 
 void HitmapCollection::fillHistograms(const SimpleStandardPlane &simpPlane)
 {
+    /*
+    section_counter[0] = 0;
+    section_counter[1] = 0;
+    section_counter[2] = 0;
+    section_counter[3] = 0;
+    */
 
 	if (!isPlaneRegistered(simpPlane))
 	{
@@ -29,12 +38,39 @@ void HitmapCollection::fillHistograms(const SimpleStandardPlane &simpPlane)
 	HitmapHistos *hitmap = _map[simpPlane];
 	hitmap->Fill(simpPlane);
 
+    ++counting;
+    events += simpPlane.getNHits();
+
+//    if(counting == 60000)
+//        std::cout << "Final AVG: " << std::scientific << (double)events / (double)10000 << std::endl;
+
 	for (int hitpix = 0; hitpix < simpPlane.getNHits();hitpix++)
 	{
 		const SimpleStandardHit& onehit = simpPlane.getHit(hitpix);
 
-		hitmap->Fill(onehit);
+        hitmap->Fill(onehit);
 	}
+
+    /*bool flag = true;
+    std::cout<< "FILL with plane" <<std::endl;
+    for(int i=0; i<4; i++)
+    {
+        std::cout<< "Section " << i << " filling with " << simpPlane.getNSectionHits(i) << std::endl;
+
+    }
+
+    cout<<"FILL with events." << endl;
+    for(int i=0; i<4; i++)
+    {
+        std::cout<<"Section " << i << " filling with " << section_counter[i] << std::endl;
+         simpPlane.getNSectionHits(i) != section_counter[i] )
+            flag = false;
+        if (flag == true)
+            ;//cout << "(DEBUG)Flag: True" << endl;
+        else
+            ;
+            //cout << "(DEBUG)Flag: False" << endl;
+    }*/
 
 	for (int cluster = 0; cluster < simpPlane.getNClusters();cluster++)
 	{
@@ -95,7 +131,7 @@ void HitmapCollection::Write(TFile *file)
 
 void HitmapCollection::Calculate(const unsigned int currentEventNumber)
 {
-  if ((currentEventNumber > 10 && currentEventNumber % 500*_reduce == 0))
+  if ((currentEventNumber > 10 && currentEventNumber % 1000*_reduce == 0))
 	{
 		std::map<SimpleStandardPlane,HitmapHistos*>::iterator it;
 		for (it = _map.begin(); it != _map.end(); ++it)

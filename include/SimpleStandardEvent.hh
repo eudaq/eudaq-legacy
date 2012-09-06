@@ -6,13 +6,6 @@
 
 #include "include/SimpleStandardPlane.hh"
 
-
-
-
-
-
-
-
 inline bool operator==(SimpleStandardPlane const &a, SimpleStandardPlane const &b) {
 	return (a.getName()==b.getName() && a.getID() == b.getID());
 }
@@ -37,8 +30,12 @@ public:
 	void doClustering();
     double getMonitor_eventanalysistime() const;
     double getMonitor_eventfilltime() const;
+    double getMonitor_clusteringtime() const;
+    double getMonitor_correlationtime() const;
     void setMonitor_eventanalysistime(double monitor_eventanalysistime);
     void setMonitor_eventfilltime(double monitor_eventfilltime);
+    void setMonitor_eventclusteringtime(double monitor_eventclusteringtime);
+    void setMonitor_eventcorrelationtime(double monitor_eventcorrelationtime);
 
     unsigned int getEvent_number() const;
     void setEvent_number(unsigned int event_number);
@@ -47,6 +44,8 @@ public:
 private:
     double monitor_eventfilltime; //stores the time to fill the histogram
     double monitor_eventanalysistime;
+    double monitor_clusteringtime; //stores the time to fill the histogram
+    double monitor_correlationtime;
     unsigned int event_number;
     unsigned long long int event_timestamp;
 };
