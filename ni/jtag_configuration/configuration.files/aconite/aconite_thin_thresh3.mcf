@@ -1,0 +1,9 @@
+#JTAG_MS MASTER CONFIGURATION FILE Thu Aug 11 11:05:59 2011
+6 ; number of devices 
+C:\user\aconite\jtag\config_files\chip55_thresh3.txt    ; (0)
+C:\user\aconite\jtag\config_files\chip66_thresh3.txt    ; (1)
+C:\user\aconite\jtag\config_files\chip67_thresh3.txt    ; (2)
+C:\user\aconite\jtag\config_files\chip68_thresh3.txt    ; (3)  
+C:\user\aconite\jtag\config_files\chip69_thresh3.txt    ; (4)
+C:\user\aconite\jtag\config_files\chip72_thresh3.txt    ; (5)
+#END OF JTAG_MS MASTER CONFIGURATION FILE
