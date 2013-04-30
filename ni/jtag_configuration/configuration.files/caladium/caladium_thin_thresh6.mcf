@@ -1,9 +1,0 @@
-#JTAG_MS MASTER CONFIGURATION FILE Tue Jan 29 15:32:19 2013
-6 ; number of devices 
-C:\user\caladium\jtag\config_files\chip15b_thresh6.txt    ; (0)  
-C:\user\caladium\jtag\config_files\chip71b_thresh6.txt    ; (1)  
-C:\user\caladium\jtag\config_files\chip17b_thresh6.txt    ; (2)  
-C:\user\caladium\jtag\config_files\chip18b_thresh6.txt    ; (3)  
-C:\user\caladium\jtag\config_files\chip19b_thresh6.xt    ; (4)  
-C:\user\caladium\jtag\config_files\chip20b_thresh6.txt    ; (5)  
-#END OF JTAG_MS MASTER CONFIGURATION FILE

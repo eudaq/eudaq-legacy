@@ -1,9 +1,0 @@
-#JTAG_MS MASTER CONFIGURATION FILE Thu Jul 19 15:54:56 2012
-6 ; number of devices 
-C:\!_user_!\artem\jtag\config_files_DATURA\threshold7\pos0_chip73_thresh7.txt    ; (0)  
-C:\!_user_!\artem\jtag\config_files_DATURA\threshold7\pos1_chip74_thresh7.txt    ; (1)  
-C:\!_user_!\artem\jtag\config_files_DATURA\threshold7\pos2_chip75_thresh7.txt    ; (2)  
-C:\!_user_!\artem\jtag\config_files_DATURA\threshold7\pos3_chip76_thresh7.txt    ; (3)  
-C:\!_user_!\artem\jtag\config_files_DATURA\threshold7\pos4_chip77_thresh7.txt    ; (4)  
-C:\!_user_!\artem\jtag\config_files_DATURA\threshold7\pos5_chip79_thresh7.txt    ; (5)  
-#END OF JTAG_MS MASTER CONFIGURATION FILE

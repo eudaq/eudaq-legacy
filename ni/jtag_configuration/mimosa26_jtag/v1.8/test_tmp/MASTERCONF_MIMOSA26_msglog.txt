@@ -1,2 +1,0 @@
-MSG    0 => Mimosa26 Application: 1.8 (Mar 10 2010 16:05:43),  DLL Version: JTAG_MS LIB 1.8.1 (Mar 10 2010 16:05:40) IPHC-STRASBOURG 2009 (KKJ) 
-MSG    1 => Mimosa26 Application: 1.8 (Mar 10 2010 16:05:43),  DLL Version: JTAG_MS LIB 1.8.1 (Mar 10 2010 16:05:40) IPHC-STRASBOURG 2009 (KKJ) 

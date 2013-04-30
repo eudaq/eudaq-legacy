@@ -1,1 +1,0 @@
-MSG    6 => Force following values regardless the configuration file: RoMode0: JTAGSTART=0,ByPass=0 
