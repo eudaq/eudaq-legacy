@@ -1,0 +1,15 @@
+﻿Build started 7/10/2013 5:22:28 PM.
+     1>Project "C:\Program Files (x86)\Orange Tree Technologies\ZestSC1\Examples\Example1\Example1.vcxproj" on node 2 (Build target(s)).
+     1>Link:
+         Example1.vcxproj -> C:\Program Files (x86)\Orange Tree Technologies\ZestSC1\Examples\Example1\Debug32\Example1.exe
+       PostBuildEvent:
+         copy C:\Program Files (x86)\Orange Tree Technologies\ZestSC1\Examples\Example1\Debug32\Example1.exe ..
+         :VCEnd
+         The system cannot find the file specified.
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V110\Microsoft.CppCommon.targets(134,5): error MSB3073: The command "copy C:\Program Files (x86)\Orange Tree Technologies\ZestSC1\Examples\Example1\Debug32\Example1.exe ..
+C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V110\Microsoft.CppCommon.targets(134,5): error MSB3073: :VCEnd" exited with code 1.
+     1>Done Building Project "C:\Program Files (x86)\Orange Tree Technologies\ZestSC1\Examples\Example1\Example1.vcxproj" (Build target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:00.10

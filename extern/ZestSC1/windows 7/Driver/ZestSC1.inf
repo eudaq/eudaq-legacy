@@ -1,0 +1,100 @@
+; ZestSC1.inf
+;
+; Installation file (.inf) for the ZestSC1 FPGA USB Card device.
+;
+; (c) Copyright 2011 Orange Tree Technologies 
+;
+
+[Version]
+Signature = "$Windows NT$"
+Class="FPGA Cards"
+ClassGUID={F06A28C1-3D3D-4f47-B5A8-4A51155ACA6F}
+Provider = %ProviderName%
+DriverVer=24/03/2011,2.00.0000.0
+;CatalogFile=ZestSC1.cat
+
+; ================== Class section ==================
+
+[ClassInstall32]
+Addreg=ZestSC1ClassAddReg
+
+[ZestSC1ClassAddReg]
+HKR,,,,"FPGA Cards"
+HKR,,Icon,,-15
+HKR,,Security,,"D:P(A;;GA;;;WD)" ;Allow generic all access to whole world
+
+; ========== Manufacturer/Models sections ===========
+
+[Manufacturer]
+%ProviderName% = ZestSC1,NTx86,NTamd64
+
+[ZestSC1.NTx86]
+%USB\ZestSC1.DeviceDesc% = USB_Install, USB\VID_165D&PID_0001
+
+[ZestSC1.NTamd64]
+%USB\ZestSC1.DeviceDesc% = USB_Install, USB\VID_165D&PID_0001
+
+; =================== Installation ===================
+
+[USB_Install]
+Include=winusb.inf
+Needs=WINUSB.NT
+
+[USB_Install.Services]
+Include=winusb.inf
+AddService=WinUSB,0x00000002,WinUSB_ServiceInstall
+
+[WinUSB_ServiceInstall]
+DisplayName     = %WinUSB_SvcDesc%
+ServiceType     = 1
+StartType       = 3
+ErrorControl    = 1
+ServiceBinary   = %12%\WinUSB.sys
+
+[USB_Install.Wdf]
+KmdfService=WINUSB, WinUsb_Install
+
+[WinUSB_Install]
+KmdfLibraryVersion=1.9
+
+[USB_Install.HW]
+AddReg=Dev_AddReg
+
+[Dev_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,"{F616D764-A9DC-4185-895E-33B16B4874FE}"
+
+[USB_Install.CoInstallers]
+AddReg=CoInstallers_AddReg
+CopyFiles=CoInstallers_CopyFiles
+
+[CoInstallers_AddReg]
+HKR,,CoInstallers32,0x00010000,"WdfCoInstaller01009.dll,WdfCoInstaller","WinUSBCoInstaller2.dll"
+
+[CoInstallers_CopyFiles]
+WinUSBCoInstaller2.dll
+WdfCoInstaller01009.dll
+
+[DestinationDirs]
+CoInstallers_CopyFiles=11
+
+; ================= Source Media Section =====================
+
+[SourceDisksNames]
+1 = %DISK_NAME%,,,\x86
+2 = %DISK_NAME%,,,\amd64
+
+[SourceDisksFiles.x86]
+WinUSBCoInstaller2.dll=1
+WdfCoInstaller01009.dll=1
+
+[SourceDisksFiles.amd64]
+WinUSBCoInstaller2.dll=2
+WdfCoInstaller01009.dll=2
+
+; =================== Strings ===================
+
+[Strings]
+ProviderName="Orange Tree Technologies Ltd"
+USB\ZestSC1.DeviceDesc="ZestSC1 FPGA USB Card"
+WinUSB_SvcDesc="WinUSB ZestSC1"
+DISK_NAME="ZestSC1 Install Disk"
