@@ -15,9 +15,9 @@ echo “Start Eudaq“
 # starting the Przesses
  Start-Process .\TestRunControl.exe
  start-sleep -s 1
- Start-Process .\TestLogCollector.exe
+ Start-Process .\TestLogCollector.exe -r tcp://127.0.0.1:44000
  start-sleep -s 1
- Start-Process .\TestDataCollector.exe
+ Start-Process .\TestDataCollector.exe -r tcp://127.0.0.1:44000
  start-sleep -s 1
  #rezisizing the windows
   $h=Get-Process | Where { $_.Name -Eq "testruncontrol" }
