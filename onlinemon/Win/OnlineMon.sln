@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OnlineMon", "OnlineMon\OnlineMon.vcxproj", "{E42204D8-9B04-4F95-BAAA-E249939DD3A3}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libEudaq", "..\..\Win\libEudaq\libEudaq.vcxproj", "{632ABF66-C5ED-4557-882C-7B1A69EC1971}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E42204D8-9B04-4F95-BAAA-E249939DD3A3}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E42204D8-9B04-4F95-BAAA-E249939DD3A3}.Debug|Win32.Build.0 = Debug|Win32
+		{E42204D8-9B04-4F95-BAAA-E249939DD3A3}.Release|Win32.ActiveCfg = Release|Win32
+		{E42204D8-9B04-4F95-BAAA-E249939DD3A3}.Release|Win32.Build.0 = Release|Win32
+		{632ABF66-C5ED-4557-882C-7B1A69EC1971}.Debug|Win32.ActiveCfg = Debug|Win32
+		{632ABF66-C5ED-4557-882C-7B1A69EC1971}.Debug|Win32.Build.0 = Debug|Win32
+		{632ABF66-C5ED-4557-882C-7B1A69EC1971}.Release|Win32.ActiveCfg = Release|Win32
+		{632ABF66-C5ED-4557-882C-7B1A69EC1971}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
