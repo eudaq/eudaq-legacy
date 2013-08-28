@@ -1,0 +1,6 @@
+===============================================
+Abnormal exit of EUDAQ Data Collector(1.0) at 2013-08-28 14:32:40.908
+Uncaught exception:
+No response from RunControl server
+  From ..\..\main\src\CommandReceiver.cc:38
+-----------------------------------------------
