@@ -1,0 +1,95 @@
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:15:32.679
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:16:18.995
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:16:26.078
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:16:30.500
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:16:43.501
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:16:56.797
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:17:11.679
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:17:19.265
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:17:44.860
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:18:53.686
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:19:03.179
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:19:16.564
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:19:22.064
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:19:26.666
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:19:33.823
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:19:39.059
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:19:43.436
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:19:49.278
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:20:06.128
+Uncaught exception:
+invalid argument
+-----------------------------------------------

@@ -1,6 +1,6 @@
 ===============================================
-Abnormal exit of EUDAQ Data Collector(1.0) at 2013-08-28 14:32:40.908
+Abnormal exit of EUDAQ Log Collector(1.0) at 2013-08-30 19:29:54.194
 Uncaught exception:
-No response from RunControl server
-  From ..\..\main\src\CommandReceiver.cc:38
+Are you sure the server is running? - Error 10061 connecting to localhost:44000: Connection refused
+  From ..\..\main\src\TransportTCP.cc:533
 -----------------------------------------------
