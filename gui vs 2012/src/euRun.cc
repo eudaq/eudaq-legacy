@@ -139,6 +139,8 @@ RunControlGUI::RunControlGUI(const std::string & listenaddress,
   resize(geom.size());
   connect(this, SIGNAL(StatusChanged(const QString &, const QString &)), this, SLOT(ChangeStatus(const QString &, const QString &)));
   connect(&m_statustimer, SIGNAL(timeout()), this, SLOT(timer()));
+  connect(this,SIGNAL(SetStatus_btnLog(bool)),this,SLOT(ChangeStatus_btnLog(bool)));
+  connect(this,SIGNAL(SetState(int)),this,SLOT(Slot_SetState(int)));
   m_statustimer.start(500);
   txtGeoID->setText(QString::number(eudaq::ReadFromFile(GEOID_FILE, 0U)));
   txtGeoID->installEventFilter(this);
@@ -215,7 +217,8 @@ void RunControlGUI::OnConnect(const eudaq::ConnectionInfo & id) {
     SetState(ST_NONE);
   }
   if (id.GetType() == "LogCollector") {
-    btnLog->setEnabled(true);
+    //btnLog->setEnabled(true);
+	SetStatus_btnLog(true);
   }
 }
 

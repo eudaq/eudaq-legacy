@@ -93,3 +93,8 @@ Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-30 19:20:06.128
 Uncaught exception:
 invalid argument
 -----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-02 09:32:53.260
+Uncaught exception:
+invalid argument
+-----------------------------------------------
