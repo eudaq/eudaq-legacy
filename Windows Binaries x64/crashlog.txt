@@ -53,3 +53,43 @@ Uncaught exception:
 Failed to bind socket: 44002: No error
   From ..\..\main\src\TransportTCP.cc:337
 -----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-03 16:17:38.316
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ TLU Producer(1.0) at 2013-09-03 16:17:39.310
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-03 16:18:16.887
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-05 09:31:06.867
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-05 09:51:14.436
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-05 09:51:27.824
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-05 09:51:44.039
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-05 10:05:03.869
+Uncaught exception:
+invalid argument
+-----------------------------------------------

@@ -14,3 +14,23 @@ Abnormal exit of EUDAQ Run Control(1.0) at 2013-08-29 09:45:48.799
 Uncaught exception:
 invalid argument
 -----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-02 16:03:04.893
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ TLU Producer(1.0) at 2013-09-02 16:03:05.793
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-03 16:13:37.914
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ TLU Producer(1.0) at 2013-09-03 16:13:38.694
+Uncaught exception:
+invalid argument
+-----------------------------------------------
