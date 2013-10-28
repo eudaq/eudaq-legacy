@@ -93,3 +93,33 @@ Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-05 10:05:03.869
 Uncaught exception:
 invalid argument
 -----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-26 15:28:48.843
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-09-27 13:20:39.647
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-10-03 16:08:36.355
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-10-03 16:08:56.305
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-10-03 16:09:10.067
+Uncaught exception:
+invalid argument
+-----------------------------------------------
+===============================================
+Abnormal exit of EUDAQ Run Control(1.0) at 2013-10-28 11:41:26.086
+Uncaught exception:
+invalid argument
+-----------------------------------------------
