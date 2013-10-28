@@ -17,6 +17,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TLUControl", "TLUControl\TL
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestReader", "TestReader\TestReader.vcxproj", "{6A7CB690-C541-4FDA-AA5B-D0CAAA5D5AE4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Converter", "Converter\Converter.vcxproj", "{0CE0C32A-B750-42EB-BB11-0AC0A4B9BB3F}"
+EndProject
 Global
 	GlobalSection(SubversionScc) = preSolution
 		Svn-Managed = True
@@ -93,6 +95,12 @@ Global
 		{6A7CB690-C541-4FDA-AA5B-D0CAAA5D5AE4}.Release|Win32.Build.0 = Release|Win32
 		{6A7CB690-C541-4FDA-AA5B-D0CAAA5D5AE4}.Release|x64.ActiveCfg = Release|x64
 		{6A7CB690-C541-4FDA-AA5B-D0CAAA5D5AE4}.Release|x64.Build.0 = Release|x64
+		{0CE0C32A-B750-42EB-BB11-0AC0A4B9BB3F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0CE0C32A-B750-42EB-BB11-0AC0A4B9BB3F}.Debug|Win32.Build.0 = Debug|Win32
+		{0CE0C32A-B750-42EB-BB11-0AC0A4B9BB3F}.Debug|x64.ActiveCfg = Debug|Win32
+		{0CE0C32A-B750-42EB-BB11-0AC0A4B9BB3F}.Release|Win32.ActiveCfg = Release|Win32
+		{0CE0C32A-B750-42EB-BB11-0AC0A4B9BB3F}.Release|Win32.Build.0 = Release|Win32
+		{0CE0C32A-B750-42EB-BB11-0AC0A4B9BB3F}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
